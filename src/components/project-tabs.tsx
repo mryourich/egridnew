@@ -5,9 +5,10 @@ import { useMemo, useRef, useState } from "react";
 import { addDays, diffDays, fmt, fmtShort, inRange, startOfWeek, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel } from "@/lib/site";
-import { employeeName, projectProgress, resourceName, uid, useStore } from "@/lib/store";
+import { employeeName, findConflicts, projectProgress, resourceName, uid, useStore } from "@/lib/store";
 import type { Data, IssueKind, IssueStatus, Project, Task } from "@/lib/types";
 import { Gantt } from "./gantt";
+import { ResourcePlanner, usePlannerRange } from "./planner";
 import { useEditor } from "./shell";
 import { Avatar, Badge, Card, Dot, Empty, Kpi, Progress, SearchInput, Segmented } from "./ui";
 
@@ -743,6 +744,113 @@ export function DocumentsTab({ project }: { project: Project }) {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Einsatzplanung (Projektleitung) */
+
+export function ProjectPlanningTab({ project }: { project: Project }) {
+  const { data, save, notify } = useStore();
+  const openEditor = useEditor();
+  const { from, days, dayWidth, controls } = usePlannerRange();
+  const [onlyPlanned, setOnlyPlanned] = useState(false);
+  const conflicts = useMemo(() => findConflicts(data), [data]);
+  const planned = of(data.assignments, project.id).filter((a) => a.resourceType === "employee");
+  const plannedIds = new Set(planned.map((a) => a.resourceId));
+  const employees = data.employees.filter((e) => e.active && (!onlyPlanned || plannedIds.has(e.id)));
+  const team = data.employees.filter((e) => plannedIds.has(e.id));
+
+  return (
+    <div className="stack">
+      <div className="team-strip">
+        <strong>Eingeplant ({team.length})</strong>
+        {team.length ? (
+          team.map((e) => {
+            const own = planned.filter((a) => a.resourceId === e.id).sort((a, b) => a.start.localeCompare(b.start));
+            return (
+              <span key={e.id} className="team-chip" title={own.map((a) => `${fmt(a.start)} – ${fmt(a.end)}`).join("\n")}>
+                <Avatar name={e.name} size={20} /> {e.name}
+                <small>
+                  {fmtShort(own[0].start)}–{fmtShort(own.at(-1)!.end)}
+                </small>
+              </span>
+            );
+          })
+        ) : (
+          <span className="muted">Noch niemand – im Plan unten auf der Zeile einer Person ziehen.</span>
+        )}
+      </div>
+      <div className="toolbar">
+        {controls}
+        <label className="check">
+          <input type="checkbox" checked={onlyPlanned} onChange={(e) => setOnlyPlanned(e.target.checked)} /> nur eingeplante Personen
+        </label>
+        <span className="spacer" />
+        <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "assignment", item: { projectId: project.id } })}>
+          <Plus size={16} /> Person einplanen
+        </button>
+      </div>
+      <ResourcePlanner
+        employees={employees}
+        assignments={data.assignments}
+        absences={data.absences}
+        projects={data.projects}
+        from={from}
+        days={days}
+        dayWidth={dayWidth}
+        focusProjectId={project.id}
+        conflicts={conflicts}
+        onBarClick={(id) => {
+          const a = data.assignments.find((x) => x.id === id);
+          if (a && a.projectId === project.id) openEditor({ kind: "assignment", item: a });
+          else if (a) notify(`Gehört zu ${data.projects.find((p) => p.id === a.projectId)?.name ?? "anderem Projekt"}`);
+        }}
+        onChange={(id, start, end, employeeId) => {
+          const a = data.assignments.find((x) => x.id === id);
+          if (!a) return;
+          save("assignments", { ...a, start, end, resourceId: employeeId }, `Einplanung ${project.code} geändert`);
+          notify(`${fmt(start)} – ${fmt(end)}`);
+        }}
+        onCreate={(employeeId, start, end) => openEditor({ kind: "assignment", item: { resourceType: "employee", resourceId: employeeId, start, end, projectId: project.id } })}
+      />
+      <p className="hint">Blasse Balken sind Einsätze in anderen Projekten – so siehst du, wer frei ist. Rot = Urlaub, orange = Krankenstand.</p>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Zeitplan (Bauleitung, nur lesen) */
+
+export function SiteScheduleTab({ project }: { project: Project }) {
+  const { data } = useStore();
+  const { from, days, dayWidth, controls } = usePlannerRange();
+  const plannedIds = new Set(of(data.assignments, project.id).filter((a) => a.resourceType === "employee").map((a) => a.resourceId));
+  const employees = data.employees.filter((e) => plannedIds.has(e.id));
+  const t = today();
+  const onSite = employees.filter((e) => data.assignments.some((a) => a.projectId === project.id && a.resourceId === e.id && inRange(t, a.start, a.end)));
+
+  return (
+    <div className="stack">
+      <div className="toolbar">
+        {controls}
+        <span className="muted">
+          {employees.length} Personen eingeplant · heute vor Ort: {onSite.length ? onSite.map((e) => e.name).join(", ") : "niemand"}
+        </span>
+      </div>
+      <ResourcePlanner
+        employees={employees}
+        assignments={data.assignments}
+        absences={data.absences}
+        projects={data.projects}
+        from={from}
+        days={days}
+        dayWidth={dayWidth}
+        focusProjectId={project.id}
+        hideOtherProjects
+        readOnly
+        emptyText="Für diese Baustelle ist noch niemand eingeplant."
+      />
+      <p className="hint">Die Einplanung macht die Projektleitung im Projekt. Hier siehst du, wer wann auf deiner Baustelle ist.</p>
     </div>
   );
 }

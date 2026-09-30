@@ -88,3 +88,53 @@ export function workdaysBetween(start: ISODate, end: ISODate) {
   }
   return count;
 }
+
+function easterSunday(year: number) {
+  // Anonymous Gregorian algorithm.
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return toISO(Date.UTC(year, month - 1, day));
+}
+
+const holidayCache = new Map<number, Map<ISODate, string>>();
+
+/** Austrian public holidays of a year. */
+export function holidays(year: number) {
+  let map = holidayCache.get(year);
+  if (map) return map;
+  const e = easterSunday(year);
+  const y = String(year);
+  map = new Map<ISODate, string>([
+    [`${y}-01-01`, "Neujahr"],
+    [`${y}-01-06`, "Heilige Drei Könige"],
+    [addDays(e, 1), "Ostermontag"],
+    [`${y}-05-01`, "Staatsfeiertag"],
+    [addDays(e, 39), "Christi Himmelfahrt"],
+    [addDays(e, 50), "Pfingstmontag"],
+    [addDays(e, 60), "Fronleichnam"],
+    [`${y}-08-15`, "Mariä Himmelfahrt"],
+    [`${y}-10-26`, "Nationalfeiertag"],
+    [`${y}-11-01`, "Allerheiligen"],
+    [`${y}-12-08`, "Mariä Empfängnis"],
+    [`${y}-12-25`, "Christtag"],
+    [`${y}-12-26`, "Stefanitag"]
+  ]);
+  holidayCache.set(year, map);
+  return map;
+}
+
+export function holidayName(date: ISODate) {
+  return holidays(Number(date.slice(0, 4))).get(date);
+}

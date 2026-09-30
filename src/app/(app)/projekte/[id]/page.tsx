@@ -4,14 +4,14 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { DocumentsTab, IssuesTab, MaterialTab, OverviewTab, ReportsTab, ScheduleTab, TasksTab, TeamTab } from "@/components/project-tabs";
+import { DocumentsTab, IssuesTab, OverviewTab, ProjectPlanningTab, ReportsTab, ScheduleTab } from "@/components/project-tabs";
 import { useEditor } from "@/components/shell";
 import { Badge, Dot, Empty, PageHeader, Tabs } from "@/components/ui";
 import { fmt } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { useStore } from "@/lib/store";
 
-type Tab = "overview" | "schedule" | "tasks" | "issues" | "material" | "reports" | "team" | "documents";
+type Tab = "overview" | "planning" | "schedule" | "issues" | "reports" | "documents";
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,23 +61,19 @@ export default function ProjectPage() {
         onChange={setTab}
         tabs={[
           { value: "overview", label: "Übersicht" },
+          { value: "planning", label: "Einsatzplanung", count: new Set(of(data.assignments).filter((a) => a.resourceType === "employee").map((a) => a.resourceId)).size },
           { value: "schedule", label: "Terminplan" },
-          { value: "tasks", label: "Vorgänge", count: of(data.tasks).length },
-          { value: "issues", label: "Mängel & Meldungen", count: openIssues },
-          { value: "material", label: "Material", count: of(data.materials).length },
+          { value: "issues", label: "Mängel", count: openIssues },
           { value: "reports", label: "Tagesberichte", count: of(data.reports).length },
-          { value: "team", label: "Team & Geräte", count: of(data.assignments).length },
           { value: "documents", label: "Dokumente", count: of(data.documents).length }
         ]}
       />
       <div className="tab-panel">
-        {tab === "overview" && <OverviewTab project={project} goTo={setTab} />}
+        {tab === "overview" && <OverviewTab project={project} goTo={(t) => setTab(t === "team" ? "planning" : t === "schedule" || t === "issues" ? t : "overview")} />}
+        {tab === "planning" && <ProjectPlanningTab project={project} />}
         {tab === "schedule" && <ScheduleTab project={project} />}
-        {tab === "tasks" && <TasksTab project={project} />}
         {tab === "issues" && <IssuesTab projectId={project.id} />}
-        {tab === "material" && <MaterialTab project={project} />}
         {tab === "reports" && <ReportsTab project={project} />}
-        {tab === "team" && <TeamTab project={project} />}
         {tab === "documents" && <DocumentsTab project={project} />}
       </div>
     </div>

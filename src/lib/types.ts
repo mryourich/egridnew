@@ -13,7 +13,10 @@ export type Project = {
   color: string;
   start: ISODate;
   end: ISODate;
+  /** Projektleitung – plans the project and its team. */
   managerId: string;
+  /** Bauleitung – runs the site in TeamGrid. */
+  siteManagerId: string;
   budget: number;
   description: string;
 };
@@ -27,6 +30,7 @@ export type Employee = {
   id: string;
   name: string;
   role: string;
+  department: string;
   team: string;
   phone: string;
   email: string;
@@ -199,6 +203,8 @@ export type Company = {
 export type Data = {
   version: number;
   company: Company;
+  /** Signed-in user (demo: switchable in the header). */
+  currentUserId: string;
   projects: Project[];
   employees: Employee[];
   vehicles: Vehicle[];
@@ -215,6 +221,6 @@ export type Data = {
   activity: ActivityEntry[];
 };
 
-export type CollectionKey = Exclude<keyof Data, "version" | "company">;
+export type CollectionKey = Exclude<keyof Data, "version" | "company" | "currentUserId">;
 
 export type Item<K extends CollectionKey> = Data[K][number];

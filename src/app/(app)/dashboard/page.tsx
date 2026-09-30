@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarRange, FolderKanban, ShieldAlert, Truck, Users } from "lucide-react";
+import { CalendarRange, FolderKanban, ShieldAlert, Truck, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useEditor } from "@/components/shell";
@@ -23,7 +23,6 @@ export default function DashboardPage() {
       .map((a) => a.resourceId)
   );
   const freeToday = employees.filter((e) => !bookedToday.has(e.id) && !absentToday.some((a) => a.employeeId === e.id));
-  const openIssues = data.issues.filter((i) => i.status !== "erledigt");
   const active = data.projects.filter((p) => p.status === "aktiv");
 
   // Employee utilisation for the next 10 working days.
@@ -63,11 +62,11 @@ export default function DashboardPage() {
         subtitle={`${weekdayShort(t)}, ${fmt(t)} · ${data.company.name}`}
         actions={
           <>
-            <button className="btn" type="button" onClick={() => openEditor({ kind: "report" })}>
-              Tagesbericht
-            </button>
-            <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "issue" })}>
-              Mangel melden
+            <Link className="btn" href="/teamgrid">
+              Meine Baustellen
+            </Link>
+            <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "assignment" })}>
+              Einplanen
             </button>
           </>
         }
@@ -76,12 +75,11 @@ export default function DashboardPage() {
       <div className="kpi-grid">
         <Kpi icon={FolderKanban} label="Aktive Projekte" value={active.length} hint={`${data.projects.filter((p) => p.status === "planung").length} in Planung`} />
         <Kpi icon={Users} label="Heute eingeplant" value={`${bookedToday.size} / ${employees.length}`} hint={`${freeToday.length} frei · ${absentToday.length} abwesend`} tone="green" />
-        <Kpi icon={AlertTriangle} label="Offene Meldungen" value={openIssues.length} hint={`${openIssues.filter((i) => i.due && i.due < t).length} überfällig`} tone="amber" />
-        <Kpi icon={ShieldAlert} label="Planungskonflikte" value={conflicts.size} hint={conflicts.size ? <Link href="/planung">Zur Einsatzplanung</Link> : "alles sauber"} tone={conflicts.size ? "red" : "green"} />
+        <Kpi icon={ShieldAlert} label="Planungskonflikte" value={conflicts.size} hint={conflicts.size ? <Link href="/ressourcenplanung">Zur Einsatzplanung</Link> : "alles sauber"} tone={conflicts.size ? "red" : "green"} />
       </div>
 
       <div className="grid-dash">
-        <Card title="Auslastung Mitarbeiter – nächste 10 Arbeitstage" actions={<Link className="link-btn" href="/planung">Einsatzplanung</Link>}>
+        <Card title="Auslastung Mitarbeiter – nächste 10 Arbeitstage" actions={<Link className="link-btn" href="/ressourcenplanung">Einsatzplanung</Link>}>
           <div className="util-chart">
             {week.map((d) => {
               const pct = d.capacity ? (d.booked / d.capacity) * 100 : 0;
@@ -188,26 +186,6 @@ export default function DashboardPage() {
           )}
         </Card>
 
-        <Card title="Dringende Meldungen" actions={<Link className="link-btn" href="/meldungen">Alle</Link>}>
-          {openIssues.length ? (
-            <ul className="compact-list">
-              {openIssues
-                .filter((i) => i.severity === "kritisch" || i.severity === "hoch" || (i.due && i.due <= t))
-                .slice(0, 6)
-                .map((i) => (
-                  <li key={i.id}>
-                    <button type="button" onClick={() => openEditor({ kind: "issue", item: i })}>
-                      <Badge tone={L.severity[i.severity].tone}>{L.severity[i.severity].label}</Badge>
-                      <strong>{i.title}</strong>
-                      <span className={i.due < t ? "text-red" : "muted"}>{fmtShort(i.due)}</span>
-                    </button>
-                  </li>
-                ))}
-            </ul>
-          ) : (
-            <Empty>Keine offenen Meldungen.</Empty>
-          )}
-        </Card>
 
         <Card title="Aktivitäten">
           <ul className="timeline">
@@ -224,7 +202,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="quick-links">
-        <Link href="/planung" className="quick-link">
+        <Link href="/ressourcenplanung" className="quick-link">
           <CalendarRange size={18} /> Einsatzplanung öffnen
         </Link>
         <Link href="/ressourcen" className="quick-link">

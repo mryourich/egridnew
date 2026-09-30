@@ -10,12 +10,19 @@ Microsoft Dynamics Business Central / Navision: Menüleiste oben, Kacheln auf de
 Aktionsleiste und Detailkarten. Später sehen Benutzer je nach Rolle (Bauleiter, Projektleiter,
 Fuhrpark, HR, Monteur) nur ihre Bereiche.
 
-| Modul | Inhalt |
-| --- | --- |
-| **TeamGrid** (Bauleitung) | Baustellen-Übersicht mit Kacheln; je Baustelle **Struktur** (Bereiche → Unterbereiche → Abschnitte → Punkte, abhaken, Status, Zuständig, Fällig, Fortschritt rollt nach oben), **Fotodokumentation** (Handykamera, je Bereich, nach Tagen), **Mängel** (am Bereich), **Tagesberichte**, **Team**; **Einsatzplanung** (Gantt) |
-| **Projekte** | Projektliste, Terminplan, Vorgänge, Material, Dokumente |
-| **Ressourcen** | Mitarbeiter, Fahrzeuge, Geräte, Abwesenheiten |
-| **Start** | Kennzahlen, Auslastung, Fristen |
+| Modul | Rolle | Inhalt |
+| --- | --- | --- |
+| **Projekte** | Projektleitung | Projektliste; je Projekt Übersicht, **Einsatzplanung** (Personen einplanen), Terminplan, Mängel, Tagesberichte, Dokumente. **Ressourcenplanung** über alle Projekte |
+| **TeamGrid** | Bauleitung | Nur zugeteilte Baustellen. Je Baustelle **Struktur** (Bereiche → Unterbereiche → Punkte), **Zeitplan** (wer ist wann vor Ort, nur lesen), **Fotodokumentation**, **Mängel**, **Tagesberichte** |
+| **Ressourcen** | Verwaltung | Mitarbeiter, Fahrzeuge, Geräte, Abwesenheiten |
+| **Start** | alle | Kennzahlen, Auslastung, Fristen |
+
+Mängel gibt es nur innerhalb eines Projekts; Projekte sind voneinander getrennt.
+Der Planer (`src/components/planner.tsx`) ist im Stil klassischer Plantafeln aufgebaut: nummerierte
+Baumstruktur Abteilung → Team → Person, Kalenderwochen, Wochenenden, österreichische Feiertage,
+Urlaub/Krankenstand als eigene Balken, Drag & Drop.
+
+Zum Testen der Rollen kann oben rechts der angemeldete Benutzer gewechselt werden (Demo).
 
 Geplant: Fleet (Poolfahrzeuge buchen), People (HR, Urlaubsanträge), Zeiterfassung, Rollen und Login.
 
@@ -26,9 +33,10 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 
 | Pfad | Inhalt |
 | --- | --- |
-| `src/app/(app)/*` | Seiten: dashboard, teamgrid, teamgrid/[id], planung, meldungen, projekte, ressourcen, einstellungen |
+| `src/app/(app)/*` | Seiten: dashboard, projekte, projekte/[id], ressourcenplanung, teamgrid, teamgrid/[id], ressourcen, einstellungen |
+| `src/components/planner.tsx` | Ressourcenplaner (Plantafel) |
 | `src/components/site.tsx` | SiteManager: Struktur-Baum, Detailbereich, Fotos, Lightbox |
-| `src/components/gantt.tsx` | Gantt für Einsatzplanung und Terminplan |
+| `src/components/gantt.tsx` | Gantt für den Terminplan |
 | `src/components/editors.tsx` | Formulare für alle Datensätze |
 | `src/lib/site.ts` | Baum-Hilfen (Pfad, Fortschritt, Ebenen) |
 | `src/lib/store.tsx` | Datenspeicher |

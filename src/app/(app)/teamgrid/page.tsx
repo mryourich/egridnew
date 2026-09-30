@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { Badge, Dot, Empty, PageHeader, Progress } from "@/components/ui";
 import { addDays, fmt, inRange, today } from "@/lib/date";
 import { siteProgress } from "@/lib/site";
-import { employeeName, useStore } from "@/lib/store";
+import { currentUser, employeeName, myProjects, useStore } from "@/lib/store";
 
 export default function TeamGridPage() {
   const { data } = useStore();
   const router = useRouter();
   const t = today();
-  const sites = data.projects.filter((p) => p.status === "aktiv" || p.status === "planung");
+  const sites = myProjects(data);
+  const me = currentUser(data);
   const siteIds = new Set(sites.map((p) => p.id));
 
   const leaves = data.siteNodes.filter((n) => siteIds.has(n.projectId) && !data.siteNodes.some((k) => k.parentId === n.id));
@@ -26,33 +27,26 @@ export default function TeamGridPage() {
     { label: "Aktive Baustellen", value: active.length, tone: "blue" },
     { label: "Offene Punkte", value: openPoints.length, tone: "blue" },
     { label: "Überfällige Punkte", value: overdue.length, tone: overdue.length ? "red" : "green" },
-    { label: "Offene Mängel", value: openIssues.length, tone: openIssues.length ? "amber" : "green", href: "/meldungen" },
+    { label: "Offene Mängel", value: openIssues.length, tone: openIssues.length ? "amber" : "green" },
     { label: "Fotos (7 Tage)", value: weekPhotos.length, tone: "cyan" },
     { label: "Tagesbericht fehlt heute", value: missingReport.length, tone: missingReport.length ? "amber" : "green" }
   ];
 
   return (
     <div className="page">
-      <PageHeader title="Baustellen" subtitle="Bauleitung · Struktur, Fotodokumentation, Mängel und Tagesberichte je Baustelle" />
+      <PageHeader title="Meine Baustellen" subtitle={`${me?.name ?? ""} · nur Baustellen, die dir zugeteilt sind`} />
 
       <div className="cues">
-        {cues.map((c) =>
-          c.href ? (
-            <Link key={c.label} href={c.href} className={`cue cue-${c.tone}`}>
-              <span>{c.label}</span>
-              <strong>{c.value}</strong>
-            </Link>
-          ) : (
-            <div key={c.label} className={`cue cue-${c.tone}`}>
-              <span>{c.label}</span>
-              <strong>{c.value}</strong>
-            </div>
-          )
-        )}
+        {cues.map((c) => (
+          <div key={c.label} className={`cue cue-${c.tone}`}>
+            <span>{c.label}</span>
+            <strong>{c.value}</strong>
+          </div>
+        ))}
       </div>
 
       {sites.length === 0 ? (
-        <Empty>Keine aktiven Baustellen.</Empty>
+        <Empty>Dir ist derzeit keine Baustelle zugeteilt.</Empty>
       ) : (
         <div className="card card-flush table-wrap">
           <table className="table">
@@ -61,7 +55,7 @@ export default function TeamGridPage() {
                 <th>Nr.</th>
                 <th>Baustelle</th>
                 <th>Ort</th>
-                <th>Bauleitung</th>
+                <th>Projektleitung</th>
                 <th className="w-progress">Fortschritt</th>
                 <th className="num">Offene Punkte</th>
                 <th className="num">Mängel</th>

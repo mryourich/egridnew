@@ -7,7 +7,7 @@ function demoPhoto(label: string, hue: number) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 
 /** Demo data relative to today, so the planner always shows a realistic current week. */
 export function createSeed(): Data {
@@ -30,22 +30,29 @@ export function createSeed(): Data {
 
   return {
     version: DATA_VERSION,
+    currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
-      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e1", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
-      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
-      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e1", budget: 210000, description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement." },
-      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e2", budget: 390000, description: "Neubau NS-Hauptverteilung inkl. Kompensation." }
+      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e1", siteManagerId: "e10", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
+      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e1", siteManagerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
+      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e1", siteManagerId: "e2", budget: 210000, description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement." },
+      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", budget: 390000, description: "Neubau NS-Hauptverteilung inkl. Kompensation." }
     ],
     employees: [
-      { id: "e1", name: "Mario Juric", role: "Projektleiter", team: "Projektleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
-      { id: "e2", name: "Anna Berger", role: "Bauleiterin", team: "Projektleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
-      { id: "e3", name: "Lukas Hofer", role: "Elektrotechniker", team: "Montage A", phone: "+43 660 3456789", email: "lukas@example.at", hourlyRate: 52, qualifications: [{ name: "Hochvolt", validUntil: d(12) }], active: true },
-      { id: "e4", name: "Stefan Maier", role: "Monteur", team: "Montage A", phone: "+43 660 4567890", email: "stefan@example.at", hourlyRate: 45, qualifications: [{ name: "Staplerschein", validUntil: d(400) }], active: true },
-      { id: "e5", name: "Julia Wimmer", role: "Elektrotechnikerin", team: "Montage B", phone: "+43 660 5678901", email: "julia@example.at", hourlyRate: 52, qualifications: [{ name: "Hubarbeitsbühne", validUntil: d(-5) }], active: true },
-      { id: "e6", name: "Thomas Gruber", role: "Monteur", team: "Montage B", phone: "+43 660 6789012", email: "thomas@example.at", hourlyRate: 45, qualifications: [], active: true },
-      { id: "e7", name: "Daniel Huber", role: "Lehrling", team: "Montage B", phone: "+43 660 7890123", email: "daniel@example.at", hourlyRate: 22, qualifications: [], active: true },
-      { id: "e8", name: "Sabine Leitner", role: "Kabelzieherin", team: "Montage A", phone: "+43 660 8901234", email: "sabine@example.at", hourlyRate: 44, qualifications: [{ name: "Erste Hilfe", validUntil: d(90) }], active: true }
+      { id: "e1", name: "Mario Juric", role: "Projektleiter", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
+      { id: "e2", name: "Anna Berger", role: "Bauleiterin", department: "Projektleitung", team: "Bauleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
+      { id: "e3", name: "Lukas Hofer", role: "Elektrotechniker", department: "Montage", team: "Montage A", phone: "+43 660 3456789", email: "lukas@example.at", hourlyRate: 52, qualifications: [{ name: "Hochvolt", validUntil: d(12) }], active: true },
+      { id: "e4", name: "Stefan Maier", role: "Monteur", department: "Montage", team: "Montage A", phone: "+43 660 4567890", email: "stefan@example.at", hourlyRate: 45, qualifications: [{ name: "Staplerschein", validUntil: d(400) }], active: true },
+      { id: "e5", name: "Julia Wimmer", role: "Elektrotechnikerin", department: "Montage", team: "Montage B", phone: "+43 660 5678901", email: "julia@example.at", hourlyRate: 52, qualifications: [{ name: "Hubarbeitsbühne", validUntil: d(-5) }], active: true },
+      { id: "e6", name: "Thomas Gruber", role: "Monteur", department: "Montage", team: "Montage B", phone: "+43 660 6789012", email: "thomas@example.at", hourlyRate: 45, qualifications: [], active: true },
+      { id: "e7", name: "Daniel Huber", role: "Lehrling", department: "Montage", team: "Montage B", phone: "+43 660 7890123", email: "daniel@example.at", hourlyRate: 22, qualifications: [], active: true },
+      { id: "e8", name: "Sabine Leitner", role: "Kabelzieherin", department: "Montage", team: "Montage A", phone: "+43 660 8901234", email: "sabine@example.at", hourlyRate: 44, qualifications: [{ name: "Erste Hilfe", validUntil: d(90) }], active: true },
+      { id: "e9", name: "Petra Koller", role: "Projektleiterin", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
+      { id: "e10", name: "Markus Brandl", role: "Bauleiter", department: "Projektleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
+      { id: "e11", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
+      { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
+      { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
+      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     vehicles: [
       { id: "v1", plate: "VB-123AB", name: "VW Crafter", type: "Transporter", seats: 3, nextService: d(9), status: "verfuegbar" },
@@ -76,12 +83,24 @@ export function createSeed(): Data {
       { id: "a14", resourceType: "vehicle", resourceId: "v4", projectId: "p3", start: d(0), end: d(4), note: "" },
       { id: "a15", resourceType: "equipment", resourceId: "q1", projectId: "p3", start: d(1), end: d(6), note: "" },
       { id: "a16", resourceType: "equipment", resourceId: "q3", projectId: "p2", start: d(0), end: d(10), note: "" },
-      { id: "a17", resourceType: "equipment", resourceId: "q4", projectId: "p1", start: d(7), end: d(9), note: "Messungen" }
+      { id: "a17", resourceType: "equipment", resourceId: "q4", projectId: "p1", start: d(7), end: d(9), note: "Messungen" },
+      { id: "a18", resourceType: "employee", resourceId: "e9", projectId: "p4", start: d(14), end: d(30), note: "Ausführungsplanung" },
+      { id: "a19", resourceType: "employee", resourceId: "e10", projectId: "p1", start: d(-7), end: d(20), note: "" },
+      { id: "a20", resourceType: "employee", resourceId: "e11", projectId: "p1", start: d(18), end: d(32), note: "Inbetriebnahme" },
+      { id: "a21", resourceType: "employee", resourceId: "e11", projectId: "p3", start: d(3), end: d(8), note: "Lastmanagement" },
+      { id: "a22", resourceType: "employee", resourceId: "e12", projectId: "p2", start: d(-2), end: d(9), note: "" },
+      { id: "a23", resourceType: "employee", resourceId: "e12", projectId: "p3", start: d(12), end: d(22), note: "" },
+      { id: "a24", resourceType: "employee", resourceId: "e13", projectId: "p2", start: d(5), end: d(26), note: "Beleuchtung" },
+      { id: "a25", resourceType: "employee", resourceId: "e14", projectId: "p2", start: d(-10), end: d(12), note: "Kabelzug" },
+      { id: "a26", resourceType: "employee", resourceId: "e2", projectId: "p3", start: d(12), end: d(16), note: "" },
+      { id: "a27", resourceType: "employee", resourceId: "e1", projectId: "p2", start: d(7), end: d(9), note: "Baubesprechung" }
     ],
     absences: [
       { id: "ab1", employeeId: "e3", type: "schulung", start: d(10), end: d(11), note: "Hochvolt Auffrischung" },
       { id: "ab2", employeeId: "e5", type: "urlaub", start: d(14), end: d(18), note: "" },
-      { id: "ab3", employeeId: "e8", type: "krank", start: d(2), end: d(3), note: "" }
+      { id: "ab3", employeeId: "e8", type: "krank", start: d(2), end: d(3), note: "" },
+      { id: "ab4", employeeId: "e1", type: "urlaub", start: d(21), end: d(25), note: "" },
+      { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" }
     ],
     tasks: [
       { id: "t1", projectId: "p1", title: "Baustelleneinrichtung", phase: "Vorbereitung", start: d(-21), end: d(-17), progress: 100, status: "erledigt", assigneeId: "e1", dependsOn: "", milestone: false },

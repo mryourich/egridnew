@@ -12,6 +12,7 @@ type Store = {
   save: <K extends CollectionKey>(key: K, item: Item<K>, activity?: string) => void;
   remove: <K extends CollectionKey>(key: K, id: string, activity?: string) => void;
   setCompany: (company: Company) => void;
+  setCurrentUser: (id: string) => void;
   replaceAll: (data: Data) => void;
   reset: () => void;
   notify: (text: string) => void;
@@ -115,6 +116,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         save,
         remove,
         setCompany: (company) => setData((d) => d && { ...d, company }),
+        setCurrentUser: (id) => setData((d) => d && { ...d, currentUserId: id }),
         replaceAll: (next) => setData({ ...createSeed(), ...next, version: DATA_VERSION }),
         reset: () => setData(createSeed()),
         notify,
@@ -186,4 +188,17 @@ export function projectProgress(data: Data, projectId: string) {
   const weight = (t: (typeof tasks)[number]) => Math.max(1, (Date.parse(t.end) - Date.parse(t.start)) / 86_400_000 + 1);
   const total = tasks.reduce((s, t) => s + weight(t), 0);
   return Math.round(tasks.reduce((s, t) => s + weight(t) * t.progress, 0) / total);
+}
+
+export function currentUser(data: Data) {
+  return data.employees.find((e) => e.id === data.currentUserId) ?? data.employees[0];
+}
+
+/** Projects a user leads on site, manages, or is planned for – what TeamGrid may open. */
+export function myProjects(data: Data, userId = data.currentUserId) {
+  return data.projects.filter(
+    (p) =>
+      p.status !== "abgeschlossen" &&
+      (p.siteManagerId === userId || p.managerId === userId || data.assignments.some((a) => a.projectId === p.id && a.resourceType === "employee" && a.resourceId === userId))
+  );
 }
