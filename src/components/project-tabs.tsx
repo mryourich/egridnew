@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarDays, Camera, CheckCircle2, Clock, Download, Fil
 import { useMemo, useRef, useState } from "react";
 import { addDays, diffDays, fmt, fmtShort, inRange, startOfWeek, today } from "@/lib/date";
 import * as L from "@/lib/labels";
+import { pathLabel } from "@/lib/site";
 import { employeeName, projectProgress, resourceName, uid, useStore } from "@/lib/store";
 import type { Data, IssueKind, IssueStatus, Project, Task } from "@/lib/types";
 import { Gantt } from "./gantt";
@@ -351,7 +352,7 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
         <SearchInput value={query} onChange={setQuery} />
         <span className="spacer" />
         <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "issue", item: projectId ? { projectId } : undefined })}>
-          <Camera size={15} /> Melden
+          <Camera size={15} /> Mangel melden
         </button>
       </div>
       {list.length === 0 ? (
@@ -393,7 +394,7 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
                         <Dot color={p.color} /> {p.name} ·{" "}
                       </>
                     ) : null}
-                    {i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
+                    {i.nodeId ? pathLabel(data.siteNodes, i.nodeId) : i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
                     <span className={overdue ? "text-red" : ""}>Frist {fmt(i.due)}</span>
                   </small>
                   {i.description && <p>{i.description}</p>}

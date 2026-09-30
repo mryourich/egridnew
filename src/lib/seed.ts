@@ -1,5 +1,11 @@
 import { addDays, startOfWeek, today } from "./date";
-import type { Data } from "./types";
+import type { Data, SiteNode } from "./types";
+
+/** Lightweight placeholder picture so the demo photo documentation is not empty. */
+function demoPhoto(label: string, hue: number) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},45%,62%)"/><stop offset="1" stop-color="hsl(${hue + 30},40%,32%)"/></linearGradient></defs><rect width="640" height="480" fill="url(#g)"/><path d="M0 380 L160 250 L280 340 L420 200 L640 360 L640 480 L0 480Z" fill="rgba(0,0,0,.18)"/><circle cx="520" cy="110" r="42" fill="rgba(255,255,255,.35)"/><text x="32" y="446" font-family="Arial" font-size="28" fill="#fff">${label}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 export const DATA_VERSION = 1;
 
@@ -9,9 +15,22 @@ export function createSeed(): Data {
   const w = startOfWeek(t);
   const d = (n: number) => addDays(w, n);
 
+  let order = 0;
+  const node = (id: string, projectId: string, parentId: string, title: string, status: SiteNode["status"], assigneeId = "", due = "", description = ""): SiteNode => ({
+    id,
+    projectId,
+    parentId,
+    title,
+    description,
+    status,
+    assigneeId,
+    due,
+    order: order++
+  });
+
   return {
     version: DATA_VERSION,
-    company: { name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
+    company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
       { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e1", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
       { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
@@ -84,11 +103,48 @@ export function createSeed(): Data {
       { id: "t17", projectId: "p4", title: "Ausführungsplanung", phase: "Planung", start: d(14), end: d(28), progress: 0, status: "offen", assigneeId: "e2", dependsOn: "", milestone: false }
     ],
     issues: [
-      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "" },
-      { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "" },
-      { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "" },
-      { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: "" },
-      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "" }
+      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "", nodeId: "n7" },
+      { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "", nodeId: "n1" },
+      { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "", nodeId: "n16" },
+      { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: "", nodeId: "n24" },
+      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "", nodeId: "n21" }
+    ],
+    siteNodes: [
+      node("n1", "p2", "", "Elektroinstallation Tunnelabschnitt Nord", "in_arbeit", "e2", "", "Kabelwege, Verteiler und Erstprüfung."),
+      node("n2", "p2", "n1", "Kabeltrassen Ebene 2", "in_arbeit", "e8", d(6), "Montage und Dokumentation der Trassen im Technikbereich."),
+      node("n3", "p2", "n2", "Abschnitt A – Hauptachse", "erledigt", "e6"),
+      node("n4", "p2", "n3", "Konsolen setzen", "erledigt", "e6"),
+      node("n5", "p2", "n3", "Trasse montieren", "erledigt", "e6"),
+      node("n6", "p2", "n2", "Abschnitt B – Querverbindung", "in_arbeit", "e8", d(4), "Abstimmung mit Bauleitung und Fotodokumentation erforderlich."),
+      node("n7", "p2", "n6", "Befestigungspunkte prüfen", "offen", "e8", d(2), "Alle Konsolen auf festen Sitz prüfen."),
+      node("n8", "p2", "n6", "Durchgangsöffnung abdichten", "in_arbeit", "e4", d(3)),
+      node("n9", "p2", "n6", "Fotodokumentation hochladen", "offen", "e8", d(4)),
+      node("n10", "p2", "n1", "Verteiler E2", "offen", "e4", d(12)),
+      node("n11", "p2", "n10", "Verteiler setzen", "offen", "e4"),
+      node("n12", "p2", "n10", "Prüfprotokoll anhängen", "offen", "e2"),
+      node("n13", "p2", "", "Beleuchtung", "offen", "e4", d(24)),
+      node("n14", "p2", "n13", "Leuchten Abschnitt A", "offen", "e4"),
+      node("n15", "p2", "n13", "Notbeleuchtung", "offen", "e4"),
+      node("n16", "p1", "", "Feld 1 – 110 kV", "in_arbeit", "e3", d(9)),
+      node("n17", "p1", "n16", "Leistungsschalter setzen", "erledigt", "e3"),
+      node("n18", "p1", "n16", "Erdung anschließen", "erledigt", "e4"),
+      node("n19", "p1", "n16", "Sekundärverdrahtung", "in_arbeit", "e3", d(9)),
+      node("n20", "p1", "", "Feld 2 – 110 kV", "offen", "e3", d(20)),
+      node("n21", "p1", "n20", "Erdungsanschluss", "offen", "e3", d(-1)),
+      node("n22", "p1", "n20", "Wandler montieren", "offen", "e4", d(15)),
+      node("n23", "p3", "", "Parkdeck Ebene 1", "in_arbeit", "e5", d(11)),
+      node("n24", "p3", "n23", "Unterverteilung UV-P1", "erledigt", "e5"),
+      node("n25", "p3", "n23", "Wallboxen Reihe 1–4", "in_arbeit", "e5", d(8)),
+      node("n26", "p3", "n23", "Kabelbefestigung montieren", "offen", "e7", d(6)),
+      node("n27", "p3", "", "Parkdeck Ebene 2", "offen", "e5", d(20)),
+      node("n28", "p3", "n27", "Zählerschrank Reihe 4", "offen", "e5", d(18))
+    ],
+    photos: [
+      { id: "f1", projectId: "p2", nodeId: "n6", dataUrl: demoPhoto("Abschnitt B – Begehung", 205), caption: "Querverbindung vor Montage", takenAt: `${d(-2)}T09:12`, authorId: "e2" },
+      { id: "f2", projectId: "p2", nodeId: "n5", dataUrl: demoPhoto("Trasse Abschnitt A", 190), caption: "Trasse fertig montiert", takenAt: `${d(-6)}T14:40`, authorId: "e6" },
+      { id: "f3", projectId: "p2", nodeId: "n8", dataUrl: demoPhoto("Durchgang", 25), caption: "Durchgang vor Abdichtung", takenAt: `${d(-1)}T11:05`, authorId: "e4" },
+      { id: "f4", projectId: "p1", nodeId: "n17", dataUrl: demoPhoto("Feld 1 – Schalter", 150), caption: "Leistungsschalter gesetzt", takenAt: `${d(-3)}T15:20`, authorId: "e3" },
+      { id: "f5", projectId: "p3", nodeId: "n24", dataUrl: demoPhoto("UV-P1", 265), caption: "UV-P1 verdrahtet", takenAt: `${d(-2)}T10:30`, authorId: "e5" }
     ],
     materials: [
       { id: "m1", projectId: "p2", name: "Kabeltrasse KR 60×300", unit: "m", planned: 1800, delivered: 1200, used: 1050, unitPrice: 18.5, supplier: "Rexel", deliveryDate: d(3), status: "teilgeliefert" },

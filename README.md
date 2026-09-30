@@ -3,29 +3,35 @@
 Die Unternehmenszentrale für Firmen mit Projekt- und Baustellengeschäft: Ressourcen planen,
 Projekte steuern, Mängel erfassen und das Team im Blick behalten – in einer App.
 
-## Module
+## Aufbau
 
-| Bereich | Funktionen |
+Eine Plattform, mehrere Mandanten (jede Firma bekommt ihren eigenen Bereich), Bedienung angelehnt an
+Microsoft Dynamics Business Central / Navision: Menüleiste oben, Kacheln auf der Startseite, Listen mit
+Aktionsleiste und Detailkarten. Später sehen Benutzer je nach Rolle (Bauleiter, Projektleiter,
+Fuhrpark, HR, Monteur) nur ihre Bereiche.
+
+| Modul | Inhalt |
 | --- | --- |
-| **Dashboard** | Kennzahlen, Auslastung der nächsten 10 Arbeitstage, freie/abwesende Mitarbeiter, Fristen (Qualifikationen, Pickerl, Prüfungen, Lieferungen, Meilensteine), dringende Meldungen, Aktivitäten |
-| **Plantafel** | Kompakter Ressourcen-Gantt für Mitarbeiter, Fahrzeuge und Geräte. Drag & Drop zum Verschieben und Umbuchen, Dauer über die Balkenränder, neue Einplanung durch Ziehen auf freier Fläche, Zoom Woche/2 Wochen/Monat/Quartal, Konflikterkennung (Doppelbuchung, Abwesenheit), Auslastung je Team und Tag, Filter |
-| **Projekte** | Liste und Portfolio-Zeitplan. Je Projekt: Übersicht, Terminplan-Gantt mit Phasen, Meilensteinen, Abhängigkeiten und automatischem Verschieben der Nachfolger, Vorgänge, Mängel & Meldungen, Material (geplant/geliefert/verbaut, Kosten), Tagesberichte (druckbar), Team & Geräte, Dokumente |
-| **Mängel & Meldungen** | Mängel, Abweichungen und Behinderungen über alle Projekte, mit Foto (Handykamera), Priorität, Frist und Status per Klick |
-| **Ressourcen** | Mitarbeiter mit Qualifikationen und Ablaufdaten, Fahrzeuge, Geräte, Abwesenheiten, aktuelle Auslastung |
-| **Einstellungen** | Firmendaten, Sicherung exportieren/einspielen, Demo-Daten zurücksetzen |
+| **TeamGrid** (Bauleitung) | Baustellen-Übersicht mit Kacheln; je Baustelle **Struktur** (Bereiche → Unterbereiche → Abschnitte → Punkte, abhaken, Status, Zuständig, Fällig, Fortschritt rollt nach oben), **Fotodokumentation** (Handykamera, je Bereich, nach Tagen), **Mängel** (am Bereich), **Tagesberichte**, **Team**; **Einsatzplanung** (Gantt) |
+| **Projekte** | Projektliste, Terminplan, Vorgänge, Material, Dokumente |
+| **Ressourcen** | Mitarbeiter, Fahrzeuge, Geräte, Abwesenheiten |
+| **Start** | Kennzahlen, Auslastung, Fristen |
+
+Geplant: Fleet (Poolfahrzeuge buchen), People (HR, Urlaubsanträge), Zeiterfassung, Rollen und Login.
 
 Die Daten liegen im Moment im Browser (localStorage) und sind mit Demo-Daten vorbefüllt.
-Supabase als gemeinsame Datenbank mit Login ist der nächste Schritt (Schema-Entwurf in `supabase/`).
+Supabase (Login, Mandanten, Datenbank und Foto-Speicher) ist der nächste Schritt.
 
 Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CSS (`src/app/globals.css`).
 
 | Pfad | Inhalt |
 | --- | --- |
-| `src/app/(app)/*` | Seiten: dashboard, planung, projekte, projekte/[id], meldungen, ressourcen, einstellungen |
-| `src/components/gantt.tsx` | Gantt-Komponente für Plantafel, Terminplan und Portfolio |
+| `src/app/(app)/*` | Seiten: dashboard, teamgrid, teamgrid/[id], planung, meldungen, projekte, ressourcen, einstellungen |
+| `src/components/site.tsx` | SiteManager: Struktur-Baum, Detailbereich, Fotos, Lightbox |
+| `src/components/gantt.tsx` | Gantt für Einsatzplanung und Terminplan |
 | `src/components/editors.tsx` | Formulare für alle Datensätze |
-| `src/components/project-tabs.tsx` | Tabs der Projektseite |
-| `src/lib/store.tsx` | Datenspeicher, Konflikterkennung, Hilfsfunktionen |
+| `src/lib/site.ts` | Baum-Hilfen (Pfad, Fortschritt, Ebenen) |
+| `src/lib/store.tsx` | Datenspeicher |
 | `src/lib/seed.ts` | Demo-Daten (relativ zum heutigen Datum) |
 
 ## Lokal starten

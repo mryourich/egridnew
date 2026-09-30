@@ -81,9 +81,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["assignments", "tasks", "issues", "materials", "reports", "documents"] as const) {
+        for (const k of ["assignments", "tasks", "issues", "materials", "reports", "documents", "siteNodes", "photos"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
+      }
+      if (key === "siteNodes") {
+        // Removing an area removes everything below it and its photos; defects stay but lose the link.
+        const ids = new Set([id]);
+        for (let grew = true; grew; ) {
+          grew = false;
+          for (const n of d.siteNodes) if (!ids.has(n.id) && ids.has(n.parentId)) (ids.add(n.id), (grew = true));
+        }
+        next.siteNodes = d.siteNodes.filter((n) => !ids.has(n.id));
+        next.photos = d.photos.filter((p) => !ids.has(p.nodeId));
+        next.issues = d.issues.map((i) => (i.nodeId && ids.has(i.nodeId) ? { ...i, nodeId: "" } : i));
       }
       if (key === "employees") {
         next.assignments = next.assignments.filter((a) => !(a.resourceType === "employee" && a.resourceId === id));

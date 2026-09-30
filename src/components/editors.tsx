@@ -3,10 +3,11 @@
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { uid, useStore } from "@/lib/store";
+import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
 import type { CollectionKey, Data, Item } from "@/lib/types";
 import { EntityForm, Modal, type Field } from "./ui";
 
-type EditorKind = "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence";
+type EditorKind = "node" | "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence";
 
 export type EditorTarget = { kind: EditorKind; item?: Record<string, unknown> };
 
@@ -25,6 +26,20 @@ const employeeOptions = (data: Data) => data.employees.filter((e) => e.active).m
 const dateRange = (v: Record<string, unknown>) => (String(v.end) < String(v.start) ? "Das Ende darf nicht vor dem Start liegen." : null);
 
 const defs: Record<EditorKind, Def> = {
+  node: {
+    collection: "siteNodes",
+    noun: "Bereich / Punkt",
+    fields: (data, v) => [
+      { key: "title", label: "Bezeichnung", required: true, full: true },
+      { key: "parentId", label: "Gehört zu", type: "select", options: nodeOptions(data.siteNodes, String(v.projectId), v.id ? String(v.id) : undefined), full: true },
+      { key: "status", label: "Status", type: "select", options: L.options(nodeStatus), required: true },
+      { key: "assigneeId", label: "Zuständig", type: "select", options: employeeOptions(data) },
+      { key: "due", label: "Fällig am", type: "date" },
+      { key: "description", label: "Beschreibung", type: "textarea" }
+    ],
+    defaults: (data) => ({ projectId: data.projects[0]?.id ?? "", parentId: "", title: "", description: "", status: "offen", assigneeId: "", due: "", order: Date.now() }),
+    describe: (v) => `${v.parentId ? "Punkt" : levelName(0)} ${v.title}`
+  },
   project: {
     collection: "projects",
     noun: "Projekt",
@@ -106,12 +121,13 @@ const defs: Record<EditorKind, Def> = {
   },
   issue: {
     collection: "issues",
-    noun: "Meldung",
-    fields: (data) => [
+    noun: "Mangel",
+    fields: (data, v) => [
       { key: "kind", label: "Art", type: "select", options: L.options(L.issueKind), required: true },
       { key: "severity", label: "Priorität", type: "select", options: L.options(L.severity), required: true },
       { key: "title", label: "Titel", required: true, full: true },
       { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true },
+      { key: "nodeId", label: "Bereich", type: "select", options: nodeOptions(data.siteNodes, String(v.projectId)) },
       { key: "location", label: "Ort / Bauteil" },
       { key: "assigneeId", label: "Zuständig", type: "select", options: employeeOptions(data) },
       { key: "due", label: "Frist", type: "date" },
@@ -119,7 +135,7 @@ const defs: Record<EditorKind, Def> = {
       { key: "description", label: "Beschreibung", type: "textarea" },
       { key: "photo", label: "Foto", type: "image" }
     ],
-    defaults: (data) => ({ kind: "mangel", severity: "mittel", title: "", projectId: data.projects[0]?.id ?? "", location: "", assigneeId: "", due: addDays(today(), 3), status: "offen", description: "", photo: "", createdAt: today() }),
+    defaults: (data) => ({ kind: "mangel", severity: "mittel", title: "", projectId: data.projects[0]?.id ?? "", nodeId: "", location: "", assigneeId: "", due: addDays(today(), 3), status: "offen", description: "", photo: "", createdAt: today() }),
     describe: (v) => `${L.issueKind[v.kind as keyof typeof L.issueKind]?.label ?? "Meldung"} ${v.title}`
   },
   material: {
