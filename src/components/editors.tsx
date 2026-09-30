@@ -4,11 +4,12 @@ import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { canDelete, plannable, roleOf, uid, useStore, type Role } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
-import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
+import type { Booking, CollectionKey, Data, Issue, Item, ServiceEntry } from "@/lib/types";
+import { BookingSheet, ServiceSheet } from "./fleet";
 import { IssueSheet } from "./issue-sheet";
 import { EntityForm, Modal, type Field } from "./ui";
 
-type EditorKind = "node" | "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence";
+type EditorKind = "node" | "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence" | "booking" | "service";
 
 export type EditorTarget = { kind: EditorKind; item?: Record<string, unknown> };
 
@@ -30,7 +31,7 @@ const roleOptions = (data: Data, roles: Role[]) => data.employees.filter((e) => 
 
 const dateRange = (v: Record<string, unknown>) => (String(v.end) < String(v.start) ? "Das Ende darf nicht vor dem Start liegen." : null);
 
-const defs: Record<EditorKind, Def> = {
+const defs: Record<Exclude<EditorKind, "booking" | "service">, Def> = {
   node: {
     collection: "siteNodes",
     noun: "Bereich / Punkt",
@@ -201,7 +202,8 @@ const defs: Record<EditorKind, Def> = {
           { value: "monteur", label: "Monteur / Mitarbeiter" },
           { value: "bl", label: "Bauleitung" },
           { value: "pl", label: "Projektleitung" },
-          { value: "hr", label: "Personal (HR)" }
+          { value: "hr", label: "Personal (HR)" },
+          { value: "fuhrpark", label: "Fuhrpark" }
         ]
       },
       { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },
@@ -219,15 +221,23 @@ const defs: Record<EditorKind, Def> = {
   vehicle: {
     collection: "vehicles",
     noun: "Fahrzeug",
-    fields: () => [
-      { key: "name", label: "Modell", required: true },
+    fields: (data, v) => [
+      { key: "name", label: "Marke / Modell", required: true },
       { key: "plate", label: "Kennzeichen", required: true },
-      { key: "type", label: "Typ" },
+      { key: "type", label: "Art", placeholder: "PKW, Transporter, Pritsche …" },
       { key: "seats", label: "Sitzplätze", type: "number", min: 1 },
-      { key: "nextService", label: "Nächstes Service / Pickerl", type: "date" },
-      { key: "status", label: "Status", type: "select", options: L.options(L.vehicleStatus), required: true }
+      { key: "fuel", label: "Antrieb", type: "select", options: L.options(L.fuel) },
+      { key: "km", label: "Kilometerstand", type: "number", min: 0 },
+      { key: "pool", label: "Nutzung", type: "checkbox", placeholder: "Poolfahrzeug – alle dürfen buchen" },
+      ...(v.pool ? [] : ([{ key: "driverId", label: "Dienstwagen von", type: "select", options: data.employees.filter((e) => e.active).map((e) => ({ value: e.id, label: e.name })) }] as Field[])),
+      { key: "nextService", label: "Nächstes Service", type: "date" },
+      { key: "nextInspection", label: "Nächstes Pickerl (§57a)", type: "date" },
+      { key: "location", label: "Standort" },
+      { key: "vin", label: "Fahrgestellnummer" },
+      { key: "status", label: "Status", type: "select", options: L.options(L.vehicleStatus), required: true },
+      { key: "note", label: "Hinweis für Fahrer", type: "textarea", placeholder: "z. B. Ladekarte im Handschuhfach" }
     ],
-    defaults: () => ({ name: "", plate: "", type: "Transporter", seats: 3, nextService: addDays(today(), 180), status: "verfuegbar" }),
+    defaults: () => ({ name: "", plate: "", type: "PKW", seats: 5, fuel: "diesel", km: 0, pool: true, driverId: "", nextService: addDays(today(), 365), nextInspection: addDays(today(), 365), location: "", vin: "", status: "verfuegbar", note: "" }),
     describe: (v) => `Fahrzeug ${v.plate}`
   },
   equipment: {
@@ -274,10 +284,12 @@ function fromQualText(text: string) {
 
 export function Editor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
   if (target.kind === "issue") return <IssueSheet issue={(target.item ?? {}) as Partial<Issue>} onClose={onClose} />;
-  return <GenericEditor target={target} onClose={onClose} />;
+  if (target.kind === "booking") return <BookingSheet booking={(target.item ?? {}) as Partial<Booking>} onClose={onClose} />;
+  if (target.kind === "service") return <ServiceSheet entry={(target.item ?? {}) as Partial<ServiceEntry>} onClose={onClose} />;
+  return <GenericEditor target={target as EditorTarget & { kind: keyof typeof defs }} onClose={onClose} />;
 }
 
-function GenericEditor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
+function GenericEditor({ target, onClose }: { target: EditorTarget & { kind: keyof typeof defs }; onClose: () => void }) {
   const { data, save, remove, notify } = useStore();
   const def = defs[target.kind];
   const isNew = !target.item?.id;
@@ -307,6 +319,7 @@ function GenericEditor({ target, onClose }: { target: EditorTarget; onClose: () 
             delete item.qualificationsText;
           }
           if (target.kind === "task" && values.status === "erledigt") item = { ...item, progress: 100 };
+          if (target.kind === "vehicle" && values.pool) item = { ...item, driverId: "" };
           save(def.collection, item as Item<typeof def.collection>, `${def.describe(values)} ${isNew ? "angelegt" : "aktualisiert"}`);
           notify(`${def.noun} gespeichert`);
           onClose();

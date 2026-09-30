@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, HardHat, Home, LogOut, Settings, Users } from "lucide-react";
+import { CarFront, FolderKanban, HardHat, Home, LogOut, Settings, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 type NavItem = { href: string; label: string; badge?: number };
-type Module = { href: string; label: string; match: string[]; sub?: NavItem[] };
+type Module = { href: string; label: string; short?: string; match: string[]; sub?: NavItem[] };
 
 function Frame({ children }: { children: ReactNode }) {
   const { data, toast } = useStore();
@@ -48,8 +48,23 @@ function Frame({ children }: { children: ReactNode }) {
         { href: "/ressourcenplanung", label: "Ressourcenplanung", badge: conflicts }
       ]
     },
-    { href: "/teamgrid", label: role === "monteur" ? "Meine Baustellen" : "TeamGrid", icon: HardHat, match: ["/teamgrid"], roles: ["pl", "bl", "monteur"] },
-    { href: "/ressourcen", label: "Personal", icon: Users, match: ["/ressourcen"], roles: ["pl", "hr"] }
+    { href: "/teamgrid", label: role === "monteur" ? "Meine Baustellen" : "TeamGrid", short: role === "monteur" ? "Baustellen" : undefined, icon: HardHat, match: ["/teamgrid"], roles: ["pl", "bl", "monteur"] },
+    { href: "/ressourcen", label: "Personal", icon: Users, match: ["/ressourcen"], roles: ["pl", "hr"] },
+    role === "fuhrpark"
+      ? {
+          href: "/fuhrpark",
+          label: "Fuhrpark",
+          icon: CarFront,
+          match: ["/fuhrpark"],
+          roles: ["fuhrpark"],
+          sub: [
+            { href: "/fuhrpark", label: "Übersicht" },
+            { href: "/fuhrpark/buchen", label: "Buchungen" },
+            { href: "/fuhrpark/fahrzeuge", label: "Fahrzeuge" },
+            { href: "/fuhrpark/werkstatt", label: "Werkstatt", badge: data.services.filter((x) => x.status === "offen").length }
+          ]
+        }
+      : { href: "/fuhrpark", label: "Fahrzeug buchen", short: "Fahrzeuge", icon: CarFront, match: ["/fuhrpark"], roles: ["pl", "bl", "hr", "monteur"] }
   ];
   const modules = all.filter((m) => m.roles.includes(role));
 
@@ -68,7 +83,8 @@ function Frame({ children }: { children: ReactNode }) {
               {modules.map((m) => (
                 <Link key={m.href} href={m.href} className={current === m ? "active" : ""}>
                   <m.icon size={17} />
-                  <span>{m.label}</span>
+                  <span className="nav-long">{m.label}</span>
+                  <span className="nav-short">{m.short ?? m.label}</span>
                 </Link>
               ))}
             </nav>
@@ -80,7 +96,7 @@ function Frame({ children }: { children: ReactNode }) {
           {current?.sub && (
             <nav className="subbar" aria-label={current.label}>
               {current.sub.map((s) => (
-                <Link key={s.href} href={s.href} className={isActive([s.href]) ? "active" : ""}>
+                <Link key={s.href} href={s.href} className={(s.href === "/fuhrpark" ? pathname === s.href : isActive([s.href])) ? "active" : ""}>
                   {s.label}
                   {s.badge ? <em>{s.badge}</em> : null}
                 </Link>
@@ -140,7 +156,7 @@ function UserSwitch() {
             <LogOut size={12} /> Anmelden als (Demo)
           </small>
           {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Personal“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
-          {(["hr", "pl", "bl", "monteur"] as Role[])
+          {(["hr", "fuhrpark", "pl", "bl", "monteur"] as Role[])
             .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
             .map((r) => (
             <div key={r} className="menu-group">

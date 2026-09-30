@@ -103,10 +103,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.assignments = next.assignments.filter((a) => !(a.resourceType === "employee" && a.resourceId === id));
         next.absences = next.absences.filter((a) => a.employeeId !== id);
         next.jobs = next.jobs.filter((j) => j.employeeId !== id);
+        next.bookings = next.bookings.filter((b) => b.employeeId !== id);
+        next.vehicles = next.vehicles.map((v) => (v.driverId === id ? { ...v, driverId: "" } : v));
       }
       if (key === "vehicles" || key === "equipment") {
         const type = key === "vehicles" ? "vehicle" : "equipment";
         next.assignments = next.assignments.filter((a) => !(a.resourceType === type && a.resourceId === id));
+        if (key === "vehicles") {
+          next.bookings = next.bookings.filter((b) => b.vehicleId !== id);
+          next.services = next.services.filter((x) => x.vehicleId !== id);
+        }
       }
       return next;
     });
@@ -220,6 +226,7 @@ export const roleLabel: Record<Role, string> = {
   pl: "Projektleitung",
   bl: "Bauleitung",
   hr: "Personal (HR)",
+  fuhrpark: "Fuhrpark",
   monteur: "Monteur"
 };
 
@@ -230,6 +237,7 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
   if (/\bhr\b/.test(r) || r.includes("personal")) return "hr";
+  if (r.includes("fuhrpark")) return "fuhrpark";
   return "monteur";
 }
 
@@ -238,7 +246,15 @@ export function canDelete(data: Data) {
   return roleOf(currentUser(data)) !== "monteur";
 }
 
-/** People that can be planned onto sites – HR has nothing to do with projects. */
+/** Office roles that are never planned onto sites. */
+const OFFICE: Role[] = ["hr", "fuhrpark"];
+
+/** People that can be planned onto sites – HR and fleet management have nothing to do with projects. */
 export function plannable(data: Data) {
-  return data.employees.filter((e) => e.active && roleOf(e) !== "hr");
+  return data.employees.filter((e) => e.active && !OFFICE.includes(roleOf(e)));
+}
+
+/** Fleet management: all vehicles, workshop dates and service history. */
+export function canManageFleet(data: Data) {
+  return roleOf(currentUser(data)) === "fuhrpark";
 }

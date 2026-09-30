@@ -48,7 +48,7 @@ export function HrHome() {
           <h2>So startest du</h2>
           <ol>
             <li className={byRole("pl").length ? "done" : ""}>
-              <strong>Mitarbeiter anlegen und Rechte vergeben</strong> – Projektleitung, Bauleitung und Monteure.{" "}
+              <strong>Mitarbeiter anlegen und Rechte vergeben</strong> – Projektleitung, Bauleitung, Monteure und Fuhrpark.{" "}
               <button className="link-btn" type="button" onClick={() => openEditor({ kind: "employee" })}>
                 Jetzt anlegen
               </button>
@@ -67,7 +67,7 @@ export function HrHome() {
       )}
 
       <div className="role-tiles">
-        {(["pl", "bl", "monteur", "hr"] as Role[]).map((r) => (
+        {(["pl", "bl", "monteur", "hr", "fuhrpark"] as Role[]).map((r) => (
           <Link key={r} href="/ressourcen" className="role-tile">
             <span>{roleLabel[r]}</span>
             <strong>{byRole(r).length}</strong>
@@ -138,7 +138,7 @@ export function HrHome() {
         </Card>
         <Card title="Alle Mitarbeiter">
           <p className="muted small">
-            <Users size={13} /> Mitarbeiter, Fahrzeuge und Abwesenheiten verwaltest du unter <Link href="/ressourcen">Personal</Link>.
+            <Users size={13} /> Mitarbeiter und Abwesenheiten verwaltest du unter <Link href="/ressourcen">Personal</Link>, Fahrzeuge der Fuhrpark.
           </p>
         </Card>
       </div>

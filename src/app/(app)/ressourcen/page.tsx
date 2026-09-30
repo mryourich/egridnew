@@ -9,7 +9,7 @@ import * as L from "@/lib/labels";
 import { useStore, roleOf, roleLabel } from "@/lib/store";
 import type { Data, ResourceType } from "@/lib/types";
 
-type Tab = "employees" | "vehicles" | "equipment" | "absences";
+type Tab = "employees" | "equipment" | "absences";
 
 function dueTone(date: string): L.Tone {
   const d = diffDays(today(), date);
@@ -43,16 +43,16 @@ export default function ResourcesPage() {
   const match = (s: string) => !q || s.toLowerCase().includes(q);
   const t = today();
 
-  const kind = { employees: "employee", vehicles: "vehicle", equipment: "equipment", absences: "absence" } as const;
+  const kind = { employees: "employee", equipment: "equipment", absences: "absence" } as const;
 
   return (
     <div className="page">
       <PageHeader
         title="Personal"
-        subtitle="Mitarbeiter mit Rechten, Abwesenheiten, Fahrzeuge und Geräte"
+        subtitle="Mitarbeiter mit Rechten, Abwesenheiten und Geräte · Fahrzeuge verwaltet der Fuhrpark"
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: kind[tab] })}>
-            <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : tab === "vehicles" ? "Fahrzeug" : tab === "equipment" ? "Gerät" : "Abwesenheit"}
+            <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : tab === "equipment" ? "Gerät" : "Abwesenheit"}
           </button>
         }
       />
@@ -61,7 +61,6 @@ export default function ResourcesPage() {
         onChange={setTab}
         tabs={[
           { value: "employees", label: "Mitarbeiter", count: data.employees.length },
-          { value: "vehicles", label: "Fahrzeuge", count: data.vehicles.length },
           { value: "equipment", label: "Geräte", count: data.equipment.length },
           { value: "absences", label: "Abwesenheiten", count: data.absences.filter((a) => a.end >= t).length }
         ]}
@@ -104,7 +103,7 @@ export default function ResourcesPage() {
                       <td>
                         <span className="cell-title-stack">
                           {e.team}
-                          <Badge tone={roleOf(e) === "pl" ? "violet" : roleOf(e) === "bl" ? "blue" : roleOf(e) === "hr" ? "amber" : "gray"}>{roleLabel[roleOf(e)]}</Badge>
+                          <Badge tone={roleOf(e) === "pl" ? "violet" : roleOf(e) === "bl" ? "blue" : roleOf(e) === "hr" ? "amber" : roleOf(e) === "fuhrpark" ? "cyan" : "gray"}>{roleLabel[roleOf(e)]}</Badge>
                         </span>
                       </td>
                       <td>
@@ -128,7 +127,7 @@ export default function ResourcesPage() {
                           <Badge>inaktiv</Badge>
                         ) : absent ? (
                           <Badge tone={L.absenceType[absent.type].tone}>{L.absenceType[absent.type].label}</Badge>
-                        ) : roleOf(e) === "hr" ? (
+                        ) : roleOf(e) === "hr" || roleOf(e) === "fuhrpark" ? (
                           <span className="muted">–</span>
                         ) : p ? (
                           <span className="cell-person">
@@ -139,62 +138,13 @@ export default function ResourcesPage() {
                         )}
                       </td>
                       <td>
-                        {roleOf(e) === "hr" ? (
+                        {roleOf(e) === "hr" || roleOf(e) === "fuhrpark" ? (
                           <span className="muted small">nicht planbar</span>
                         ) : (
                           <span className="cell-progress">
                             <Progress value={l} color={l > 90 ? "#ef4444" : undefined} /> {l} %
                           </span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "vehicles" && (
-        <div className="table-wrap card card-flush">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Fahrzeug</th>
-                <th>Typ</th>
-                <th className="num">Sitze</th>
-                <th>Service / Pickerl</th>
-                <th>Status</th>
-                <th>Heute</th>
-                <th className="w-progress">Auslastung 2 Wo.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.vehicles
-                .filter((v) => match(`${v.name} ${v.plate} ${v.type}`))
-                .map((v) => {
-                  const p = currentProject(data, "vehicle", v.id);
-                  const l = load(data, "vehicle", v.id);
-                  return (
-                    <tr key={v.id} className="clickable" onClick={() => openEditor({ kind: "vehicle", item: v })}>
-                      <td>
-                        <strong>{v.name}</strong>
-                        <br />
-                        <span className="plate">{v.plate}</span>
-                      </td>
-                      <td>{v.type}</td>
-                      <td className="num">{v.seats}</td>
-                      <td>
-                        <Badge tone={dueTone(v.nextService)}>{fmt(v.nextService)}</Badge>
-                      </td>
-                      <td>
-                        <Badge tone={L.vehicleStatus[v.status].tone}>{L.vehicleStatus[v.status].label}</Badge>
-                      </td>
-                      <td>{p ? <span className="cell-person"><Dot color={p.color} /> {p.code}</span> : <span className="muted">–</span>}</td>
-                      <td>
-                        <span className="cell-progress">
-                          <Progress value={l} /> {l} %
-                        </span>
                       </td>
                     </tr>
                   );
