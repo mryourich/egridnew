@@ -84,18 +84,24 @@ const defs: Record<EditorKind, Def> = {
           : v.resourceType === "equipment"
             ? data.equipment.map((x) => ({ value: x.id, label: x.name }))
             : employeeOptions(data);
+      const free = !v.projectId;
       return [
-        { key: "resourceType", label: "Art", type: "select", options: L.options(L.resourceType), required: true },
-        { key: "resourceId", label: "Ressource", type: "select", options: resources, required: true },
-        { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true, full: true },
+        { key: "resourceId", label: v.resourceType === "employee" ? "Mitarbeiter" : L.resourceType[v.resourceType as keyof typeof L.resourceType]?.label ?? "Ressource", type: "select", options: resources, required: true, full: true },
+        { key: "projectId", label: "Projekt", type: "select", options: [{ value: "", label: "– Freier Eintrag (kein Projekt) –" }, ...projectOptions(data)], full: true },
+        ...(free
+          ? ([
+              { key: "label", label: "Bezeichnung", required: true, placeholder: "z. B. Büro, Schulung, Service" },
+              { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })) }
+            ] as Field[])
+          : []),
         { key: "start", label: "Von", type: "date", required: true },
         { key: "end", label: "Bis", type: "date", required: true },
         { key: "note", label: "Notiz", full: true }
       ];
     },
-    defaults: (data) => ({ resourceType: "employee", resourceId: data.employees[0]?.id ?? "", projectId: data.projects[0]?.id ?? "", start: today(), end: addDays(today(), 4), note: "" }),
+    defaults: (data) => ({ resourceType: "employee", resourceId: data.employees.find((e) => e.active)?.id ?? "", projectId: data.projects.find((p) => p.status !== "abgeschlossen")?.id ?? "", start: today(), end: addDays(today(), 4), note: "", label: "", color: "#64748b" }),
     validate: dateRange,
-    describe: () => "Einplanung"
+    describe: (v) => (v.projectId ? "Einplanung" : `Eintrag ${v.label}`)
   },
   task: {
     collection: "tasks",

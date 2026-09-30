@@ -1,14 +1,14 @@
 "use client";
 
-import { AlertTriangle, Camera, ChevronDown, ChevronLeft, ChevronRight, Download, ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Camera, ChevronDown, ChevronLeft, ChevronRight, Download, ImagePlus, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { childrenOf, depthOf, levelName, nodeProgress, nodeStatus, pathLabel, pathOf, subtreeIds } from "@/lib/site";
+import { childrenOf, levelName, nodeProgress, nodeStatus, pathLabel, pathOf, subtreeIds } from "@/lib/site";
 import { employeeName, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Photo, Project, SiteNode } from "@/lib/types";
 import { useEditor } from "./shell";
-import { Avatar, Badge, downscale, Empty, Progress, SearchInput } from "./ui";
+import { Badge, downscale, Empty, Progress, SearchInput } from "./ui";
 
 /* ---------------------------------------------------------------- Foto hinzufügen */
 
@@ -130,14 +130,14 @@ function Thumbs({ photos }: { photos: Photo[] }) {
 
 export function SiteStructure({ project }: { project: Project }) {
   const { data, save, notify } = useStore();
-  const openEditor = useEditor();
   const nodes = useMemo(() => data.siteNodes.filter((n) => n.projectId === project.id), [data.siteNodes, project.id]);
-  const [selectedId, setSelectedId] = useState<string>(() => childrenOf(nodes, "")[0]?.id ?? "");
+  const [openId, setOpenId] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [draft, setDraft] = useState("");
   const t = today();
-  const selected = nodes.find((n) => n.id === selectedId);
+  const open = nodes.find((n) => n.id === openId);
 
   const photoCount = (ids: string[]) => data.photos.filter((p) => ids.includes(p.nodeId)).length;
   const openIssues = (ids: string[]) => data.issues.filter((i) => i.nodeId && ids.includes(i.nodeId) && i.status !== "erledigt").length;
@@ -178,255 +178,322 @@ export function SiteStructure({ project }: { project: Project }) {
     notify(`${node.title}: ${nodeStatus[status].label}`);
   };
 
-  const addChild = (parent?: SiteNode) => openEditor({ kind: "node", item: { projectId: project.id, parentId: parent?.id ?? "", assigneeId: parent?.assigneeId ?? "" } });
+  const addArea = () => {
+    const title = draft.trim();
+    if (!title) return;
+    save("siteNodes", { id: uid("n"), projectId: project.id, parentId: "", title, description: "", status: "offen", assigneeId: "", due: "", order: Date.now() }, `Bereich ${title} angelegt`);
+    setDraft("");
+  };
 
   const roots = childrenOf(nodes, "");
   const total = roots.length ? Math.round(roots.reduce((s, r) => s + nodeProgress(nodes, r), 0) / roots.length) : 0;
 
   return (
-    <div className="site-layout">
-      <section className="card card-flush site-tree">
-        <div className="actionbar">
-          <button type="button" className="action" onClick={() => addChild()}>
-            <Plus size={15} /> Bereich
-          </button>
-          <button type="button" className="action" disabled={!selected} onClick={() => selected && addChild(selected)}>
-            <Plus size={15} /> Unterpunkt
-          </button>
-          <span className="action-sep" />
-          <button type="button" className="action" onClick={() => setCollapsed(new Set())}>
-            Alle aufklappen
-          </button>
-          <button type="button" className="action" onClick={() => setCollapsed(new Set(nodes.filter((n) => !n.parentId).map((n) => n.id)))}>
-            Zuklappen
-          </button>
-          <label className="check action-check">
-            <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} /> nur offene
-          </label>
-          <span className="spacer" />
-          <SearchInput value={query} onChange={setQuery} placeholder="Punkt suchen…" />
-        </div>
-        <div className="tree-total">
-          <span>Gesamtfortschritt</span>
+    <section className="card card-flush site-tree">
+      <div className="actionbar">
+        <form
+          className="quick-add"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addArea();
+          }}
+        >
+          <Plus size={15} />
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Neuen Bereich eingeben und Enter drücken…" aria-label="Neuer Bereich" />
+        </form>
+        <span className="action-sep" />
+        <button type="button" className="action" onClick={() => setCollapsed(new Set())}>
+          Aufklappen
+        </button>
+        <button type="button" className="action" onClick={() => setCollapsed(new Set(nodes.filter((n) => nodes.some((k) => k.parentId === n.id)).map((n) => n.id)))}>
+          Zuklappen
+        </button>
+        <label className="check action-check">
+          <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} /> nur offene
+        </label>
+        <span className="spacer" />
+        <span className="tree-total">
+          <span>Fortschritt</span>
           <Progress value={total} color={project.color} />
           <strong>{total} %</strong>
+        </span>
+        <SearchInput value={query} onChange={setQuery} placeholder="Suchen…" />
+      </div>
+      {rows.length === 0 ? (
+        <Empty>{nodes.length ? "Keine Treffer." : "Noch keine Bereiche – oben einen Namen eingeben und Enter drücken."}</Empty>
+      ) : (
+        <div className="table-wrap">
+          <table className="table tree-table">
+            <thead>
+              <tr>
+                <th>Bezeichnung</th>
+                <th>Status</th>
+                <th className="w-progress">Fortschritt</th>
+                <th>Zuständig</th>
+                <th>Fällig</th>
+                <th className="num" title="Fotos">
+                  <Camera size={13} />
+                </th>
+                <th className="num" title="Offene Mängel">
+                  <AlertTriangle size={13} />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ node, depth, hasKids }) => {
+                const ids = subtreeIds(nodes, node.id);
+                const progress = nodeProgress(nodes, node);
+                const overdue = node.due && node.due < t && progress < 100;
+                const photos = photoCount(ids);
+                const issues = openIssues(ids);
+                const shownStatus: NodeStatus = progress === 100 ? "erledigt" : hasKids ? (progress > 0 ? "in_arbeit" : "offen") : node.status;
+                return (
+                  <tr key={node.id} className={`clickable ${node.id === openId ? "selected" : ""} ${depth === 0 ? "tree-root" : ""}`} onClick={() => setOpenId(node.id)}>
+                    <td>
+                      <span className="tree-cell" style={{ paddingLeft: depth * 20 }}>
+                        {hasKids ? (
+                          <button
+                            type="button"
+                            className="tree-toggle"
+                            aria-label={collapsed.has(node.id) ? "Aufklappen" : "Zuklappen"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggle(node.id);
+                            }}
+                          >
+                            {collapsed.has(node.id) && !query ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+                          </button>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            className="tree-check"
+                            checked={node.status === "erledigt"}
+                            aria-label="Erledigt"
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => setStatus(node, e.target.checked ? "erledigt" : "offen")}
+                          />
+                        )}
+                        <span className={`tree-title ${node.status === "erledigt" && !hasKids ? "done" : ""}`}>{node.title}</span>
+                        {hasKids && <small className="tree-level">{levelName(depth)}</small>}
+                      </span>
+                    </td>
+                    <td>
+                      <Badge tone={nodeStatus[shownStatus].tone}>{nodeStatus[shownStatus].label}</Badge>
+                    </td>
+                    <td>
+                      <span className="cell-progress">
+                        <Progress value={progress} color={progress === 100 ? "#10b981" : project.color} /> {progress} %
+                      </span>
+                    </td>
+                    <td>{node.assigneeId ? employeeName(data, node.assigneeId) : <span className="muted">–</span>}</td>
+                    <td className={overdue ? "text-red nowrap" : "nowrap"}>{node.due ? fmtShort(node.due) : <span className="muted">–</span>}</td>
+                    <td className="num">{photos || <span className="muted">–</span>}</td>
+                    <td className="num">{issues ? <Badge tone="red">{issues}</Badge> : <span className="muted">–</span>}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        {rows.length === 0 ? (
-          <Empty>{nodes.length ? "Keine Treffer." : "Noch keine Bereiche. Lege mit „+ Bereich“ den ersten an."}</Empty>
-        ) : (
-          <div className="table-wrap">
-            <table className="table tree-table">
-              <thead>
-                <tr>
-                  <th>Bezeichnung</th>
-                  <th>Status</th>
-                  <th className="w-progress">Fortschritt</th>
-                  <th>Zuständig</th>
-                  <th>Fällig</th>
-                  <th className="num" title="Fotos">
-                    <Camera size={13} />
-                  </th>
-                  <th className="num" title="Offene Mängel">
-                    <AlertTriangle size={13} />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(({ node, depth, hasKids }) => {
-                  const ids = subtreeIds(nodes, node.id);
-                  const progress = nodeProgress(nodes, node);
-                  const overdue = node.due && node.due < t && progress < 100;
-                  const photos = photoCount(ids);
-                  const issues = openIssues(ids);
-                  return (
-                    <tr key={node.id} className={`clickable ${node.id === selectedId ? "selected" : ""} ${depth === 0 ? "tree-root" : ""}`} onClick={() => setSelectedId(node.id)}>
-                      <td>
-                        <span className="tree-cell" style={{ paddingLeft: depth * 20 }}>
-                          {hasKids ? (
-                            <button
-                              type="button"
-                              className="tree-toggle"
-                              aria-label={collapsed.has(node.id) ? "Aufklappen" : "Zuklappen"}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggle(node.id);
-                              }}
-                            >
-                              {collapsed.has(node.id) && !query ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
-                            </button>
-                          ) : (
-                            <input
-                              type="checkbox"
-                              className="tree-check"
-                              checked={node.status === "erledigt"}
-                              aria-label="Erledigt"
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => setStatus(node, e.target.checked ? "erledigt" : "offen")}
-                            />
-                          )}
-                          <span className={`tree-title ${node.status === "erledigt" && !hasKids ? "done" : ""}`}>{node.title}</span>
-                          {hasKids && <small className="tree-level">{levelName(depth)}</small>}
-                        </span>
-                      </td>
-                      <td>
-                        <Badge tone={nodeStatus[progress === 100 ? "erledigt" : hasKids ? (progress > 0 ? "in_arbeit" : "offen") : node.status].tone}>
-                          {nodeStatus[progress === 100 ? "erledigt" : hasKids ? (progress > 0 ? "in_arbeit" : "offen") : node.status].label}
-                        </Badge>
-                      </td>
-                      <td>
-                        <span className="cell-progress">
-                          <Progress value={progress} color={progress === 100 ? "#10b981" : project.color} /> {progress} %
-                        </span>
-                      </td>
-                      <td>{node.assigneeId ? employeeName(data, node.assigneeId) : <span className="muted">–</span>}</td>
-                      <td className={overdue ? "text-red nowrap" : "nowrap"}>{node.due ? fmtShort(node.due) : <span className="muted">–</span>}</td>
-                      <td className="num">{photos || <span className="muted">–</span>}</td>
-                      <td className="num">{issues ? <Badge tone="red">{issues}</Badge> : <span className="muted">–</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <aside className="card site-detail">
-        {selected ? (
-          <NodeDetail node={selected} nodes={nodes} project={project} onStatus={setStatus} onAddChild={() => addChild(selected)} onDeleted={() => setSelectedId(selected.parentId || childrenOf(nodes, "").find((n) => n.id !== selected.id)?.id || "")} />
-        ) : (
-          <Empty>Wähle links einen Bereich oder Punkt.</Empty>
-        )}
-      </aside>
-    </div>
+      )}
+      {open && <NodeDrawer node={open} nodes={nodes} project={project} onOpen={setOpenId} onClose={() => setOpenId("")} onStatus={setStatus} />}
+    </section>
   );
 }
 
-function NodeDetail({
+/** Slide-over with every field of a point editable in place – no separate edit dialog. */
+function NodeDrawer({
   node,
   nodes,
   project,
-  onStatus,
-  onAddChild,
-  onDeleted
+  onOpen,
+  onClose,
+  onStatus
 }: {
   node: SiteNode;
   nodes: SiteNode[];
   project: Project;
+  onOpen: (id: string) => void;
+  onClose: () => void;
   onStatus: (n: SiteNode, s: NodeStatus) => void;
-  onAddChild: () => void;
-  onDeleted: () => void;
 }) {
-  const { data, remove, notify } = useStore();
+  const { data, save, remove, notify } = useStore();
   const openEditor = useEditor();
+  const [child, setChild] = useState("");
   const ids = subtreeIds(nodes, node.id);
-  const hasKids = ids.length > 1;
+  const kids = childrenOf(nodes, node.id);
+  const hasKids = kids.length > 0;
   const photos = data.photos.filter((p) => ids.includes(p.nodeId)).sort((a, b) => b.takenAt.localeCompare(a.takenAt));
   const issues = data.issues.filter((i) => i.nodeId && ids.includes(i.nodeId));
   const progress = nodeProgress(nodes, node);
   const path = pathOf(nodes, node.id);
+  const set = (patch: Partial<SiteNode>) => save("siteNodes", { ...node, ...patch });
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector(".modal, .lightbox-backdrop") && onClose();
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
+
+  const addChild = () => {
+    const title = child.trim();
+    if (!title) return;
+    save("siteNodes", { id: uid("n"), projectId: project.id, parentId: node.id, title, description: "", status: "offen", assigneeId: node.assigneeId, due: "", order: Date.now() }, `${title} angelegt`);
+    setChild("");
+  };
 
   return (
-    <div className="node-detail">
-      <div className="node-path">{path.slice(0, -1).map((p) => p.title).join(" › ") || levelName(0)}</div>
-      <h2>{node.title}</h2>
-      <div className="row-inline wrap">
-        <Badge tone="gray">{levelName(depthOf(nodes, node))}</Badge>
-        {hasKids && (
-          <span className="cell-progress">
-            <Progress value={progress} color={project.color} /> {progress} %
-          </span>
-        )}
-      </div>
-
-      {!hasKids && (
-        <div className="status-switch" role="group" aria-label="Status">
-          {(Object.keys(nodeStatus) as NodeStatus[]).map((s) => (
-            <button key={s} type="button" className={`${node.status === s ? `on tone-${nodeStatus[s].tone}` : ""}`} onClick={() => onStatus(node, s)}>
-              {nodeStatus[s].label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <dl className="fields">
-        <dt>Zuständig</dt>
-        <dd>
-          {node.assigneeId ? (
-            <span className="cell-person">
-              <Avatar name={employeeName(data, node.assigneeId)} size={20} /> {employeeName(data, node.assigneeId)}
-            </span>
-          ) : (
-            "–"
-          )}
-        </dd>
-        <dt>Fällig</dt>
-        <dd className={node.due && node.due < today() && progress < 100 ? "text-red" : ""}>{fmt(node.due)}</dd>
-        {node.description && (
-          <>
-            <dt>Beschreibung</dt>
-            <dd className="prose">{node.description}</dd>
-          </>
-        )}
-      </dl>
-
-      <div className="row-inline wrap">
-        <button type="button" className="btn btn-sm" onClick={() => openEditor({ kind: "node", item: node })}>
-          <Pencil size={13} /> Bearbeiten
-        </button>
-        <button type="button" className="btn btn-sm" onClick={onAddChild}>
-          <Plus size={13} /> Unterpunkt
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-danger-ghost"
-          onClick={() => {
-            if (!window.confirm(hasKids ? `„${node.title}“ mit allen Unterpunkten und Fotos löschen?` : `„${node.title}“ löschen?`)) return;
-            remove("siteNodes", node.id, `${node.title} gelöscht`);
-            notify("Gelöscht");
-            onDeleted();
-          }}
-        >
-          <Trash2 size={13} />
-        </button>
-      </div>
-
-      <section className="detail-section">
-        <header>
-          <h3>
-            Fotos <span className="tab-count">{photos.length}</span>
-          </h3>
-          <PhotoAddButton projectId={project.id} nodeId={node.id} className="btn btn-sm btn-primary" label="Foto" />
-        </header>
-        {photos.length ? <Thumbs photos={photos} /> : <p className="muted small">Noch keine Fotos. Am Handy öffnet „Foto“ direkt die Kamera.</p>}
-      </section>
-
-      <section className="detail-section">
-        <header>
-          <h3>
-            Mängel <span className="tab-count">{issues.filter((i) => i.status !== "erledigt").length}</span>
-          </h3>
-          <button type="button" className="btn btn-sm" onClick={() => openEditor({ kind: "issue", item: { projectId: project.id, nodeId: node.id, location: node.title } })}>
-            <AlertTriangle size={13} /> Mangel
+    <>
+      <div className="drawer-backdrop" onClick={onClose} />
+      <aside className="drawer" aria-label={node.title}>
+        <header className="drawer-head">
+          <nav className="node-path">
+            {path.slice(0, -1).map((p) => (
+              <button key={p.id} type="button" onClick={() => onOpen(p.id)}>
+                {p.title}
+              </button>
+            ))}
+            {path.length === 1 && <span>{levelName(0)}</span>}
+          </nav>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Schließen">
+            <X size={18} />
           </button>
         </header>
-        {issues.length ? (
-          <ul className="compact-list">
-            {issues.map((i) => (
-              <li key={i.id}>
-                <button type="button" onClick={() => openEditor({ kind: "issue", item: i })}>
-                  <Badge tone={L.issueStatus[i.status].tone}>{L.issueStatus[i.status].label}</Badge>
-                  <strong>{i.title}</strong>
-                  <span className="muted">{fmtShort(i.due)}</span>
+
+        <div className="drawer-body">
+          <input className="drawer-title" value={node.title} onChange={(e) => set({ title: e.target.value })} aria-label="Bezeichnung" />
+
+          {hasKids ? (
+            <span className="cell-progress">
+              <Progress value={progress} color={project.color} /> {progress} % erledigt
+            </span>
+          ) : (
+            <div className="status-switch" role="group" aria-label="Status">
+              {(Object.keys(nodeStatus) as NodeStatus[]).map((st) => (
+                <button key={st} type="button" className={node.status === st ? `on tone-${nodeStatus[st].tone}` : ""} onClick={() => onStatus(node, st)}>
+                  {nodeStatus[st].label}
                 </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted small">Keine Mängel.</p>
-        )}
-      </section>
-    </div>
+              ))}
+            </div>
+          )}
+
+          <div className="inline-fields">
+            <label>
+              <span>Zuständig</span>
+              <select value={node.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
+                <option value="">–</option>
+                {data.employees
+                  .filter((e) => e.active)
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              <span>Fällig</span>
+              <input type="date" value={node.due} onChange={(e) => set({ due: e.target.value })} className={node.due && node.due < today() && progress < 100 ? "text-red" : ""} />
+            </label>
+            <label className="full">
+              <span>Beschreibung</span>
+              <textarea rows={3} value={node.description} placeholder="Notizen, Hinweise…" onChange={(e) => set({ description: e.target.value })} />
+            </label>
+          </div>
+
+          <section className="detail-section">
+            <header>
+              <h3>
+                Unterpunkte <span className="tab-count">{kids.length}</span>
+              </h3>
+            </header>
+            {kids.length > 0 && (
+              <ul className="sub-list">
+                {kids.map((k) => {
+                  const kp = nodeProgress(nodes, k);
+                  const kHasKids = nodes.some((x) => x.parentId === k.id);
+                  return (
+                    <li key={k.id}>
+                      {kHasKids ? (
+                        <span className="sub-pct">{kp}%</span>
+                      ) : (
+                        <input type="checkbox" className="tree-check" checked={k.status === "erledigt"} onChange={(e) => onStatus(k, e.target.checked ? "erledigt" : "offen")} aria-label="Erledigt" />
+                      )}
+                      <button type="button" className={k.status === "erledigt" && !kHasKids ? "done" : ""} onClick={() => onOpen(k.id)}>
+                        {k.title}
+                      </button>
+                      <ChevronRight size={14} className="muted" />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <form
+              className="quick-add small-add"
+              onSubmit={(e) => {
+                e.preventDefault();
+                addChild();
+              }}
+            >
+              <Plus size={14} />
+              <input value={child} onChange={(e) => setChild(e.target.value)} placeholder="Unterpunkt eingeben + Enter" aria-label="Neuer Unterpunkt" />
+            </form>
+          </section>
+
+          <section className="detail-section">
+            <header>
+              <h3>
+                Fotos <span className="tab-count">{photos.length}</span>
+              </h3>
+              <PhotoAddButton projectId={project.id} nodeId={node.id} className="btn btn-sm btn-primary" label="Foto" />
+            </header>
+            {photos.length ? <Thumbs photos={photos} /> : <p className="muted small">Noch keine Fotos. Am Handy öffnet „Foto“ direkt die Kamera.</p>}
+          </section>
+
+          <section className="detail-section">
+            <header>
+              <h3>
+                Mängel <span className="tab-count">{issues.filter((i) => i.status !== "erledigt").length}</span>
+              </h3>
+              <button type="button" className="btn btn-sm" onClick={() => openEditor({ kind: "issue", item: { projectId: project.id, nodeId: node.id, location: node.title } })}>
+                <AlertTriangle size={13} /> Mangel
+              </button>
+            </header>
+            {issues.length ? (
+              <ul className="compact-list">
+                {issues.map((i) => (
+                  <li key={i.id}>
+                    <button type="button" onClick={() => openEditor({ kind: "issue", item: i })}>
+                      <Badge tone={L.issueStatus[i.status].tone}>{L.issueStatus[i.status].label}</Badge>
+                      <strong>{i.title}</strong>
+                      <span className="muted">{fmtShort(i.due)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">Keine Mängel.</p>
+            )}
+          </section>
+
+          <footer className="drawer-foot">
+            <button
+              type="button"
+              className="btn btn-sm btn-danger-ghost"
+              onClick={() => {
+                if (!window.confirm(hasKids ? `„${node.title}“ mit allen Unterpunkten und Fotos löschen?` : `„${node.title}“ löschen?`)) return;
+                remove("siteNodes", node.id, `${node.title} gelöscht`);
+                notify("Gelöscht");
+                if (node.parentId) onOpen(node.parentId);
+                else onClose();
+              }}
+            >
+              <Trash2 size={13} /> Löschen
+            </button>
+          </footer>
+        </div>
+      </aside>
+    </>
   );
 }
 

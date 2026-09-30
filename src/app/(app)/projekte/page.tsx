@@ -79,16 +79,21 @@ export default function ProjectsPage() {
                 <th>Auftraggeber</th>
                 <th>Status</th>
                 <th>Projektleitung</th>
+                <th>Bauleitung</th>
+                <th>Team (heute · geplant)</th>
                 <th>Zeitraum</th>
                 <th className="w-progress">Fortschritt</th>
-                <th className="num">Offene Meldungen</th>
-                <th className="num">Budget</th>
+                <th className="num">Mängel</th>
               </tr>
             </thead>
             <tbody>
               {projects.map((p) => {
                 const progress = projectProgress(data, p.id);
                 const issues = data.issues.filter((i) => i.projectId === p.id && i.status !== "erledigt").length;
+                const t = today();
+                const team = data.assignments.filter((a) => a.projectId === p.id && a.resourceType === "employee" && a.end >= t);
+                const nowIds = [...new Set(team.filter((a) => a.start <= t).map((a) => a.resourceId))];
+                const laterIds = [...new Set(team.filter((a) => a.start > t).map((a) => a.resourceId))].filter((id) => !nowIds.includes(id));
                 return (
                   <tr key={p.id} className="clickable" onClick={() => router.push(`/projekte/${p.id}`)}>
                     <td>
@@ -113,6 +118,28 @@ export default function ProjectsPage() {
                         </span>
                       )}
                     </td>
+                    <td>
+                      {p.siteManagerId && (
+                        <span className="cell-person">
+                          <Avatar name={employeeName(data, p.siteManagerId)} size={20} /> {employeeName(data, p.siteManagerId)}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="avatar-stack" title={[...nowIds, ...laterIds].map((id) => employeeName(data, id)).join(", ")}>
+                        {nowIds.slice(0, 6).map((id) => (
+                          <Avatar key={id} name={employeeName(data, id)} size={22} />
+                        ))}
+                        {laterIds.slice(0, 4).map((id) => (
+                          <span key={id} className="later">
+                            <Avatar name={employeeName(data, id)} size={22} />
+                          </span>
+                        ))}
+                        <small>
+                          {nowIds.length} · {laterIds.length}
+                        </small>
+                      </span>
+                    </td>
                     <td className="nowrap">
                       {fmt(p.start)} – {fmt(p.end)}
                     </td>
@@ -122,7 +149,6 @@ export default function ProjectsPage() {
                       </span>
                     </td>
                     <td className="num">{issues ? <Badge tone="amber">{issues}</Badge> : "–"}</td>
-                    <td className="num">{L.eur(p.budget)}</td>
                   </tr>
                 );
               })}

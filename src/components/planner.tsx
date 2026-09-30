@@ -30,13 +30,16 @@ type Props = {
   onBarClick?: (id: string) => void;
   onAbsenceClick?: (id: string) => void;
   onCreate?: (employeeId: string, start: ISODate, end: ISODate) => void;
+  /** Add a new person, optionally into a department/team. */
+  onAddPerson?: (department: string, team: string) => void;
+  onPersonClick?: (employeeId: string) => void;
   emptyText?: string;
 };
 
 type Drag = { id: string; mode: "move" | "start" | "end" | "create"; x0: number; y0: number; start: ISODate; end: ISODate; emp: string; moved: boolean };
 
 type Row =
-  | { kind: "group"; id: string; no: string; label: string; level: number; count: number }
+  | { kind: "group"; id: string; no: string; label: string; level: number; count: number; department: string; team: string }
   | { kind: "person"; id: string; no: string; employee: Employee; level: number };
 
 const LANE = 16;
@@ -59,6 +62,8 @@ export function ResourcePlanner({
   onBarClick,
   onAbsenceClick,
   onCreate,
+  onAddPerson,
+  onPersonClick,
   emptyText = "Keine Mitarbeiter"
 }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -78,7 +83,7 @@ export function ResourcePlanner({
     departments.forEach((dep, di) => {
       const depKey = `d:${dep}`;
       const inDep = employees.filter((e) => (e.department || "Allgemein") === dep);
-      out.push({ kind: "group", id: depKey, no: `${di + 1}`, label: dep, level: 0, count: inDep.length });
+      out.push({ kind: "group", id: depKey, no: `${di + 1}`, label: dep, level: 0, count: inDep.length, department: dep, team: "" });
       if (collapsed.has(depKey)) return;
       const teams = [...new Set(inDep.map((e) => e.team || dep))];
       teams.forEach((team, ti) => {
@@ -87,7 +92,7 @@ export function ResourcePlanner({
         const teamKey = `t:${dep}:${team}`;
         const prefix = flat ? `${di + 1}` : `${di + 1}.${ti + 1}`;
         if (!flat) {
-          out.push({ kind: "group", id: teamKey, no: prefix, label: team, level: 1, count: inTeam.length });
+          out.push({ kind: "group", id: teamKey, no: prefix, label: team, level: 1, count: inTeam.length, department: dep, team });
           if (collapsed.has(teamKey)) return;
         }
         inTeam.forEach((e, ei) => out.push({ kind: "person", id: e.id, no: `${prefix}.${ei + 1}`, employee: e, level: flat ? 1 : 2 }));
@@ -228,6 +233,11 @@ export function ResourcePlanner({
             <div className="pl-corner">
               <span className="pl-no">Nr.</span>
               <span>Mitarbeiter</span>
+              {onAddPerson && (
+                <button type="button" className="pl-add" onClick={() => onAddPerson("", "")} title="Person hinzufügen">
+                  + Person
+                </button>
+              )}
             </div>
             <div className="pl-head-time" style={{ width: timelineW }}>
               <div className="pl-hrow pl-months">
@@ -281,6 +291,20 @@ export function ResourcePlanner({
                         {row.label}
                         <em>{row.count}</em>
                       </span>
+                      {onAddPerson && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className="pl-add-row"
+                          title={`Person zu ${row.label} hinzufügen`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddPerson(row.department, row.team);
+                          }}
+                        >
+                          +
+                        </span>
+                      )}
                     </button>
                     <div className="pl-time" style={{ width: timelineW }} />
                   </div>
@@ -293,12 +317,13 @@ export function ResourcePlanner({
               const creating = drag?.mode === "create" && drag.emp === emp.id ? drag : null;
               return (
                 <div key={row.id} className={`pl-row ${drag?.mode === "move" && drag.emp === emp.id && drag.moved ? "drop" : ""}`} style={{ height: Math.max(ROW, count * LANE + 3) }} data-emp={emp.id}>
-                  <div className="pl-left" title={`${emp.name} · ${emp.role}`}>
+                  <button type="button" className={`pl-left ${onPersonClick ? "clickable" : ""}`} title={`${emp.name} · ${emp.role}`} onClick={() => onPersonClick?.(emp.id)}>
                     <span className="pl-no">{row.no}</span>
                     <span className="pl-name" style={{ paddingLeft: row.level * 12 + 14 }}>
                       {emp.name}
+                      <small>{emp.role}</small>
                     </span>
-                  </div>
+                  </button>
                   <div className={`pl-time ${!readOnly && onCreate ? "creatable" : ""}`} style={{ width: timelineW }} onPointerDown={(e) => beginCreate(e, emp.id)}>
                     {abs.map((a) => {
                       const b = box(a.start, a.end);
@@ -319,17 +344,18 @@ export function ResourcePlanner({
                       const p = projectById.get(a.projectId);
                       const b = box(a.start, a.end);
                       const faded = focusProjectId && a.projectId !== focusProjectId;
+                      const label = p ? `${p.code}; ${p.name}` : a.label || "Eintrag";
                       const bad = conflicts?.has(a.id);
                       return (
                         <div
                           key={a.id}
                           className={`pl-bar ${faded ? "faded" : ""} ${bad ? "conflict" : ""} ${drag?.id === a.id ? "active" : ""} ${editable(a) ? "editable" : ""}`}
-                          style={{ left: b.left + 1, width: Math.max(4, b.width - 2), top: 2 + (lane.get(a.id) ?? 0) * LANE, "--c": p?.color ?? "#94a3b8" } as CSSProperties}
-                          title={`${p ? `${p.code} ${p.name}` : "Projekt gelöscht"}\n${fmt(a.start)} – ${fmt(a.end)}${a.note ? `\n${a.note}` : ""}${bad ? "\n⚠ Doppelt verplant oder abwesend" : ""}`}
+                          style={{ left: b.left + 1, width: Math.max(4, b.width - 2), top: 2 + (lane.get(a.id) ?? 0) * LANE, "--c": p?.color ?? a.color ?? "#64748b" } as CSSProperties}
+                          title={`${label}\n${fmt(a.start)} – ${fmt(a.end)}${a.note ? `\n${a.note}` : ""}${bad ? "\n⚠ Doppelt verplant oder abwesend" : ""}`}
                           onPointerDown={(e) => beginBar(e, a, "move")}
                         >
                           {bad && <i className="pl-warn">!</i>}
-                          <span>{p ? `${p.code}; ${p.name}` : "–"}</span>
+                          <span>{label}</span>
                           {editable(a) && <span className="h h-l" onPointerDown={(e) => beginBar(e, a, "start")} />}
                           {editable(a) && <span className="h h-r" onPointerDown={(e) => beginBar(e, a, "end")} />}
                         </div>

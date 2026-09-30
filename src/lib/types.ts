@@ -64,10 +64,15 @@ export type Assignment = {
   id: string;
   resourceType: ResourceType;
   resourceId: string;
+  /** Empty for a free entry (e.g. "Büro", "Schulung") that belongs to no project. */
   projectId: string;
   start: ISODate;
   end: ISODate;
   note: string;
+  /** Text of a free entry. */
+  label?: string;
+  /** Colour of a free entry. */
+  color?: string;
 };
 
 export type AbsenceType = "urlaub" | "krank" | "schulung" | "sonstiges";
