@@ -100,7 +100,7 @@ export function LandingPage() {
     <main className="landing-page landing-page-pro">
       <nav className="landing-nav pro-nav" aria-label="VYSNpro Navigation">
         <Link className="landing-brand pro-brand" href="/">
-          <Image src="/brand/egrid-icon.png" width={42} height={42} alt="VYSNpro" priority />
+          <Image src="/brand/vysnpro-icon.png" width={42} height={42} alt="VYSNpro" priority />
           <span>
             <strong>VYSNpro</strong>
             <small>Workspace OS</small>

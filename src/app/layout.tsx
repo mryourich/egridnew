@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "VYSNpro",
   description: "Modulare SaaS-Plattform für People, Fleet, Projekte und Unternehmensprozesse.",
   icons: {
-    icon: "/brand/egrid-icon.png"
+    icon: "/brand/vysnpro-icon.png"
   }
 };
 
