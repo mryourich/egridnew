@@ -21,9 +21,11 @@ HR (Personal, Abwesenheiten)
 | **Bauleitung** | Meine Baustellen (Karten) | TeamGrid-Menü je Baustelle: **Plan** (Aufgaben per Klick/Rechtsklick, Farbpalette, duplizieren), **Struktur** (Bereiche → Punkte, Klick öffnet), **Fotos** (Galerie je Bereich, Export ZIP/PDF), **Mängel** (Kamera zuerst), **Tagesberichte** (PDF mit KW, Aufgaben, Struktur-Fortschritt, Fotos), Team |
 | **Monteur** | Heute zu tun, die nächsten Tage | Meine Baustellen (Struktur, Fotos, Mängel) |
 | **HR** | Kennzahlen | Personal (Mitarbeiter, Abwesenheiten) |
+| **Fuhrpark** | Übersicht: fällige Services/Pickerl, Meldungen, Werkstatttermine, heute unterwegs | Buchungen (Wochenplan), Fahrzeuge (Akte mit Service-Historie), Werkstatt (Termine ausmachen, Historie mit Kosten) |
+| **Alle** | – | **Fahrzeug buchen**: freies Poolfahrzeug finden, buchen, zurückgeben (Kilometer, Schaden melden) |
 
 **Start:** Die App beginnt leer mit einem HR-Zugang („Personalabteilung“). HR legt Mitarbeiter an und vergibt
-ihre **Rechte** (Projektleitung, Bauleitung, HR, Monteur). Danach oben rechts auf den Namen klicken und in die
+ihre **Rechte** (Projektleitung, Bauleitung, HR, Fuhrpark, Monteur). Danach oben rechts auf den Namen klicken und in die
 jeweilige Rolle wechseln (Demo bis zum echten Login). Unter *Einstellungen* lässt sich eine Demo-Firma laden
 oder wieder alles löschen.
 
@@ -36,7 +38,7 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 
 | Pfad | Inhalt |
 | --- | --- |
-| `src/app/(app)/*` | Seiten: dashboard, projekte, projekte/[id], ressourcenplanung, teamgrid, teamgrid/[id], ressourcen, einstellungen |
+| `src/app/(app)/*` | Seiten: dashboard, projekte, projekte/[id], ressourcenplanung, teamgrid, teamgrid/[id], ressourcen, fuhrpark (buchen, fahrzeuge, fahrzeuge/[id], werkstatt), einstellungen |
 | `src/components/planner.tsx` | Ressourcenplaner (Plantafel) |
 | `src/components/site.tsx` | SiteManager: Struktur-Baum, Seitenfenster, Fotos, Lightbox |
 | `src/components/site-gantt.tsx` | Baustellen-Plan mit Aufgaben und Farbpalette |
@@ -46,6 +48,9 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 | `src/components/sites-overview.tsx` | Baustellen-Karten Bauleitung |
 | `src/components/gantt.tsx` | Gantt für den Terminplan |
 | `src/components/editors.tsx` | Formulare für alle Datensätze |
+| `src/components/fleet.tsx` | Fuhrpark: Buchungs- und Werkstattkarte, Wochenplan, Fahrzeugsuche |
+| `src/components/fleet-pages.tsx` | Fuhrpark-Übersicht und Buchungsseite |
+| `src/lib/fleet.ts` | Verfügbarkeit, Fahrzeugstatus, Fälligkeiten |
 | `src/lib/site.ts` | Baum-Hilfen (Pfad, Fortschritt, Ebenen) |
 | `src/lib/store.tsx` | Datenspeicher |
 | `src/lib/seed.ts` | Demo-Daten (relativ zum heutigen Datum) |

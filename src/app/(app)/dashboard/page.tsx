@@ -2,7 +2,8 @@
 
 import { CalendarRange, FolderKanban, ShieldAlert, Truck, Users } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useEditor } from "@/components/shell";
 import { Badge, Card, Dot, Empty, Kpi, PageHeader, Progress } from "@/components/ui";
 import { addDays, diffDays, fmt, fmtShort, inRange, isWeekend, startOfWeek, today, weekdayShort } from "@/lib/date";
@@ -11,6 +12,7 @@ import { currentUser, findConflicts, plannable, projectProgress, resourceName, r
 import { HrHome } from "@/components/hr-home";
 import { MyWork } from "@/components/my-work";
 import { SitesOverview } from "@/components/sites-overview";
+import { FleetHome } from "@/components/fleet-pages";
 
 export default function DashboardPage() {
   const { data } = useStore();
@@ -18,7 +20,15 @@ export default function DashboardPage() {
   if (role === "monteur") return <MyWork />;
   if (role === "bl") return <SitesOverview />;
   if (role === "hr") return <HrHome />;
+  if (role === "fuhrpark") return <FleetRedirect />;
   return <ManagementHome />;
+}
+
+/** The fleet manager's start page is the fleet overview. */
+function FleetRedirect() {
+  const router = useRouter();
+  useEffect(() => router.replace("/fuhrpark"), [router]);
+  return <FleetHome />;
 }
 
 function ManagementHome() {
@@ -58,7 +68,6 @@ function ManagementHome() {
     for (const e of employees)
       for (const q of e.qualifications)
         if (q.validUntil && q.validUntil <= horizon) items.push({ date: q.validUntil, label: `${q.name} – ${e.name}`, detail: "Qualifikation", tone: q.validUntil < t ? "red" : "amber", href: "/ressourcen" });
-    for (const v of data.vehicles) if (v.nextService <= horizon) items.push({ date: v.nextService, label: `${v.name} ${v.plate}`, detail: "Service / Pickerl", tone: v.nextService < t ? "red" : "amber", href: "/ressourcen" });
     for (const q of data.equipment) if (q.nextInspection <= horizon) items.push({ date: q.nextInspection, label: q.name, detail: "Geräteprüfung", tone: q.nextInspection < t ? "red" : "amber", href: "/ressourcen" });
     for (const task of data.tasks)
       if (task.milestone && task.status !== "erledigt" && task.start <= horizon) items.push({ date: task.start, label: task.title, detail: data.projects.find((p) => p.id === task.projectId)?.name ?? "Meilenstein", tone: "blue", href: `/projekte/${task.projectId}` });
@@ -217,8 +226,8 @@ function ManagementHome() {
         <Link href="/ressourcenplanung" className="quick-link">
           <CalendarRange size={18} /> Einsatzplanung öffnen
         </Link>
-        <Link href="/ressourcen" className="quick-link">
-          <Truck size={18} /> Fuhrpark & Geräte
+        <Link href="/fuhrpark" className="quick-link">
+          <Truck size={18} /> Fahrzeug buchen
         </Link>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import type { AbsenceType, IssueKind, IssueStatus, MaterialStatus, ProjectStatus, ResourceType, Severity, TaskStatus, Weather } from "./types";
+import type { AbsenceType, Fuel, ServiceKind, ServiceStatus, IssueKind, IssueStatus, MaterialStatus, ProjectStatus, ResourceType, Severity, TaskStatus, Weather } from "./types";
 
 export type Tone = "blue" | "green" | "amber" | "red" | "gray" | "cyan" | "violet";
 
@@ -67,6 +67,28 @@ export const vehicleStatus = {
   verfuegbar: { label: "Verfügbar", tone: "green" as Tone },
   werkstatt: { label: "Werkstatt", tone: "amber" as Tone },
   ausser_betrieb: { label: "Außer Betrieb", tone: "red" as Tone }
+};
+
+export const serviceKind: Record<ServiceKind, { label: string; icon: string }> = {
+  service: { label: "Service", icon: "🔧" },
+  pickerl: { label: "Pickerl §57a", icon: "📋" },
+  reifen: { label: "Reifenwechsel", icon: "🛞" },
+  reparatur: { label: "Reparatur", icon: "🛠️" },
+  schaden: { label: "Schaden", icon: "⚠️" },
+  sonstiges: { label: "Sonstiges", icon: "📌" }
+};
+
+export const serviceStatus: Record<ServiceStatus, { label: string; tone: Tone }> = {
+  offen: { label: "Gemeldet", tone: "red" },
+  geplant: { label: "Termin fix", tone: "amber" },
+  erledigt: { label: "Erledigt", tone: "green" }
+};
+
+export const fuel: Record<Fuel, { label: string }> = {
+  diesel: { label: "Diesel" },
+  benzin: { label: "Benzin" },
+  elektro: { label: "Elektro" },
+  hybrid: { label: "Hybrid" }
 };
 
 export const equipmentStatus = {

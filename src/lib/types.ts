@@ -26,8 +26,8 @@ export type Qualification = {
   validUntil: ISODate;
 };
 
-/** What a user may see and do: project manager, site manager, HR or worker. */
-export type AccessRole = "pl" | "bl" | "hr" | "monteur";
+/** What a user may see and do: project manager, site manager, HR, fleet manager or worker. */
+export type AccessRole = "pl" | "bl" | "hr" | "fuhrpark" | "monteur";
 
 export type Employee = {
   id: string;
@@ -44,14 +44,67 @@ export type Employee = {
   active: boolean;
 };
 
+export type Fuel = "diesel" | "benzin" | "elektro" | "hybrid";
+
 export type Vehicle = {
   id: string;
   plate: string;
   name: string;
   type: string;
   seats: number;
+  /** Next service / maintenance. */
   nextService: ISODate;
+  /** Next §57a inspection („Pickerl“). */
+  nextInspection?: ISODate;
+  /** Manual state; the workshop state also follows from planned workshop visits. */
   status: "verfuegbar" | "werkstatt" | "ausser_betrieb";
+  /** Pool vehicle – every employee may book it. */
+  pool?: boolean;
+  /** Company car permanently assigned to one person. */
+  driverId?: string;
+  fuel?: Fuel;
+  /** Current mileage in km. */
+  km?: number;
+  vin?: string;
+  location?: string;
+  note?: string;
+};
+
+/** Reservation of a vehicle; times are local "YYYY-MM-DDTHH:mm". */
+export type Booking = {
+  id: string;
+  vehicleId: string;
+  employeeId: string;
+  start: string;
+  end: string;
+  purpose: string;
+  projectId: string;
+  /** Set on return. */
+  returned?: boolean;
+  kmEnd?: number;
+  returnNote?: string;
+};
+
+export type ServiceKind = "service" | "pickerl" | "reifen" | "reparatur" | "schaden" | "sonstiges";
+/** offen = reported, no date yet · geplant = workshop date agreed · erledigt = history */
+export type ServiceStatus = "offen" | "geplant" | "erledigt";
+
+/** Workshop visit – appointment while planned, service history once done. */
+export type ServiceEntry = {
+  id: string;
+  vehicleId: string;
+  kind: ServiceKind;
+  status: ServiceStatus;
+  /** Workshop day (empty while only reported). */
+  date: ISODate;
+  /** Vehicle back on this day. */
+  until: ISODate;
+  time: string;
+  workshop: string;
+  description: string;
+  km: number;
+  cost: number;
+  reportedBy: string;
 };
 
 export type Equipment = {
@@ -241,6 +294,8 @@ export type Data = {
   projects: Project[];
   employees: Employee[];
   vehicles: Vehicle[];
+  bookings: Booking[];
+  services: ServiceEntry[];
   equipment: Equipment[];
   assignments: Assignment[];
   absences: Absence[];

@@ -20,6 +20,8 @@ export function createEmpty(): Data {
       { id: "hr", name: "Personalabteilung", role: "Personalverwaltung", access: "hr", department: "Verwaltung", team: "Personal", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
     ],
     vehicles: [],
+    bookings: [],
+    services: [],
     equipment: [],
     assignments: [],
     absences: [],
@@ -40,6 +42,8 @@ export function createSeed(): Data {
   const t = today();
   const w = startOfWeek(t);
   const d = (n: number) => addDays(w, n);
+  // fleet dates count from today so bookings are always current
+  const td = (n: number) => addDays(today(), n);
 
   let order = 0;
   const node = (id: string, projectId: string, parentId: string, title: string, status: SiteNode["status"], assigneeId = "", due = "", description = ""): SiteNode => ({
@@ -79,13 +83,34 @@ export function createSeed(): Data {
       { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
       { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
       { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true },
-      { id: "e15", name: "Claudia Wagner", role: "Personalverwaltung (HR)", department: "Verwaltung", team: "Personal", phone: "+43 660 4455667", email: "claudia@example.at", hourlyRate: 48, qualifications: [], active: true }
+      { id: "e15", name: "Claudia Wagner", role: "Personalverwaltung (HR)", department: "Verwaltung", team: "Personal", phone: "+43 660 4455667", email: "claudia@example.at", hourlyRate: 48, qualifications: [], active: true },
+      { id: "e16", name: "Robert Fischer", role: "Fuhrparkleiter", access: "fuhrpark", department: "Verwaltung", team: "Fuhrpark", phone: "+43 660 5566778", email: "robert@example.at", hourlyRate: 46, qualifications: [], active: true }
     ],
     vehicles: [
-      { id: "v1", plate: "VB-123AB", name: "VW Crafter", type: "Transporter", seats: 3, nextService: d(9), status: "verfuegbar" },
-      { id: "v2", plate: "VB-456CD", name: "Ford Transit", type: "Transporter", seats: 6, nextService: d(60), status: "verfuegbar" },
-      { id: "v3", plate: "VB-789EF", name: "Mercedes Sprinter", type: "Pritsche", seats: 3, nextService: d(-2), status: "werkstatt" },
-      { id: "v4", plate: "VB-321GH", name: "Skoda Octavia", type: "PKW", seats: 5, nextService: d(120), status: "verfuegbar" }
+      { id: "v1", plate: "VB-123AB", name: "VW Crafter", type: "Transporter", seats: 3, nextService: td(9), nextInspection: td(140), status: "verfuegbar", pool: false, driverId: "e3", fuel: "diesel", km: 84210, vin: "WV1ZZZSYZL9012345", location: "Werk Vöcklabruck", note: "Werkstattregal, Leiterträger" },
+      { id: "v2", plate: "VB-456CD", name: "Ford Transit", type: "Transporter", seats: 6, nextService: td(60), nextInspection: td(25), status: "verfuegbar", pool: false, driverId: "e2", fuel: "diesel", km: 61880, vin: "WF0XXXTTGXKA12345", location: "Werk Vöcklabruck", note: "" },
+      { id: "v3", plate: "VB-789EF", name: "Mercedes Sprinter", type: "Pritsche", seats: 3, nextService: td(-2), nextInspection: td(200), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 132400, vin: "WDB9066331S123456", location: "Werk Vöcklabruck", note: "Anhängerkupplung 3,5 t" },
+      { id: "v4", plate: "VB-321GH", name: "Skoda Octavia Combi", type: "PKW", seats: 5, nextService: td(120), nextInspection: td(260), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 45120, vin: "TMBJJ7NE0L0123456", location: "Büro Linz", note: "" },
+      { id: "v5", plate: "VB-654JK", name: "VW ID.4", type: "PKW", seats: 5, nextService: td(210), nextInspection: td(12), status: "verfuegbar", pool: true, driverId: "", fuel: "elektro", km: 18350, vin: "WVGZZZE2ZMP012345", location: "Büro Linz", note: "Ladekarte im Handschuhfach" },
+      { id: "v6", plate: "VB-987LM", name: "Toyota Hilux", type: "Pick-up", seats: 5, nextService: td(45), nextInspection: td(300), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 97600, vin: "AHTKB3CD802123456", location: "Werk Vöcklabruck", note: "Allrad, für Baustellen im Gelände" }
+    ],
+    bookings: [
+      { id: "b1", vehicleId: "v4", employeeId: "e1", start: `${td(0)}T07:30`, end: `${td(0)}T17:00`, purpose: "Baubesprechung UW Nord", projectId: "p1" },
+      { id: "b2", vehicleId: "v5", employeeId: "e9", start: `${td(1)}T08:00`, end: `${td(1)}T12:00`, purpose: "Kundentermin", projectId: "" },
+      { id: "b3", vehicleId: "v6", employeeId: "e10", start: `${td(0)}T06:30`, end: `${td(2)}T18:00`, purpose: "Material Tunnel Nord", projectId: "p2" },
+      { id: "b4", vehicleId: "v4", employeeId: "e11", start: `${td(2)}T07:00`, end: `${td(3)}T16:00`, purpose: "Inbetriebnahme Ladepark", projectId: "p3" },
+      { id: "b5", vehicleId: "v5", employeeId: "e1", start: `${td(-3)}T08:00`, end: `${td(-3)}T15:00`, purpose: "Abnahme", projectId: "p3", returned: true, kmEnd: 18350, returnNote: "" },
+      { id: "b6", vehicleId: "v3", employeeId: "e4", start: `${td(-5)}T06:30`, end: `${td(-4)}T17:00`, purpose: "Kabeltrommeln", projectId: "p2", returned: true, kmEnd: 132400, returnNote: "Kontrollleuchte Motor leuchtet" }
+    ],
+    services: [
+      { id: "s1", vehicleId: "v3", kind: "service", status: "geplant", date: td(3), until: td(3), time: "07:30", workshop: "Pappas Vöcklabruck", description: "Großes Service, Bremsen prüfen", km: 0, cost: 0, reportedBy: "e16" },
+      { id: "s2", vehicleId: "v3", kind: "schaden", status: "offen", date: "", until: "", time: "", workshop: "", description: "Kontrollleuchte Motor leuchtet", km: 132400, cost: 0, reportedBy: "e4" },
+      { id: "s3", vehicleId: "v1", kind: "reifen", status: "erledigt", date: td(-160), until: td(-160), time: "08:00", workshop: "Reifen Pichler", description: "Sommerreifen montiert", km: 76100, cost: 64, reportedBy: "e16" },
+      { id: "s4", vehicleId: "v1", kind: "service", status: "erledigt", date: td(-356), until: td(-355), time: "07:30", workshop: "Porsche Vöcklabruck", description: "Jahresservice inkl. Ölwechsel", km: 62500, cost: 486, reportedBy: "e16" },
+      { id: "s5", vehicleId: "v1", kind: "reparatur", status: "erledigt", date: td(-90), until: td(-89), time: "08:00", workshop: "Porsche Vöcklabruck", description: "Schiebetür-Führung getauscht", km: 80020, cost: 312, reportedBy: "e3" },
+      { id: "s6", vehicleId: "v2", kind: "pickerl", status: "erledigt", date: td(-340), until: td(-340), time: "09:00", workshop: "ÖAMTC Vöcklabruck", description: "§57a ohne Mängel", km: 42000, cost: 62, reportedBy: "e16" },
+      { id: "s7", vehicleId: "v4", kind: "service", status: "erledigt", date: td(-245), until: td(-245), time: "07:30", workshop: "Porsche Linz", description: "Service 30.000 km", km: 30100, cost: 398, reportedBy: "e16" },
+      { id: "s8", vehicleId: "v6", kind: "reifen", status: "geplant", date: td(8), until: td(8), time: "10:00", workshop: "Reifen Pichler", description: "Winterreifen montieren", km: 0, cost: 0, reportedBy: "e16" }
     ],
     equipment: [
       { id: "q1", name: "Hubarbeitsbühne 12 m", category: "Hebetechnik", serial: "HB-12-004", nextInspection: d(30), status: "verfuegbar" },
@@ -107,7 +132,6 @@ export function createSeed(): Data {
       { id: "a11", resourceType: "employee", resourceId: "e8", projectId: "p2", start: d(0), end: d(15), note: "Kabelzug Abschnitt B" },
       { id: "a12", resourceType: "vehicle", resourceId: "v1", projectId: "p1", start: d(0), end: d(9), note: "" },
       { id: "a13", resourceType: "vehicle", resourceId: "v2", projectId: "p2", start: d(-7), end: d(18), note: "" },
-      { id: "a14", resourceType: "vehicle", resourceId: "v4", projectId: "p3", start: d(0), end: d(4), note: "" },
       { id: "a15", resourceType: "equipment", resourceId: "q1", projectId: "p3", start: d(1), end: d(6), note: "" },
       { id: "a16", resourceType: "equipment", resourceId: "q3", projectId: "p2", start: d(0), end: d(10), note: "" },
       { id: "a17", resourceType: "equipment", resourceId: "q4", projectId: "p1", start: d(7), end: d(9), note: "Messungen" },
