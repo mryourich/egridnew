@@ -1313,11 +1313,13 @@ img {
   white-space: nowrap;
 }
 .gantt-days span {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   flex-shrink: 0;
   width: var(--dw);
-  height: 30px;
+  height: 26px;
   border-left: 1px solid var(--grid);
   color: var(--text-2);
   font-size: 11px;
@@ -1450,39 +1452,30 @@ img {
 .gantt-bar {
   --c: var(--primary);
   position: absolute;
-  height: 18px;
+  height: 20px;
   display: flex;
   align-items: center;
   overflow: hidden;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--c) 18%, white);
-  border: 1px solid color-mix(in srgb, var(--c) 55%, white);
-  color: color-mix(in srgb, var(--c) 70%, black);
-  font-size: 11px;
-  font-weight: 650;
+  background: var(--c);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
   cursor: grab;
   touch-action: none;
-  transition: box-shadow 0.1s;
-}
-.gantt-bar::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--c);
 }
 .gantt-bar:hover {
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--c) 60%, transparent);
+  filter: brightness(1.08);
   z-index: 2;
 }
 .gantt-bar.active {
   cursor: grabbing;
-  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--c) 70%, transparent);
+  box-shadow: 0 6px 16px -4px rgba(14, 26, 51, 0.45);
   z-index: 3;
 }
 .gantt-bar.conflict {
-  border: 1.5px solid var(--red);
-  background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(239, 68, 68, 0.12) 6px 12px);
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
 }
 .gantt-bar.cut-start {
   border-top-left-radius: 0;
@@ -1494,13 +1487,15 @@ img {
 }
 .gantt-bar-progress {
   position: absolute;
-  inset: 0 auto 0 0;
-  background: color-mix(in srgb, var(--c) 38%, white);
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.85);
 }
 .gantt-bar-label {
   position: relative;
   overflow: hidden;
-  padding: 0 6px 0 8px;
+  padding: 0 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1517,9 +1512,6 @@ img {
 }
 .gantt-bar .handle-r {
   right: 0;
-}
-.gantt-bar:hover .handle-r {
-  background: linear-gradient(90deg, transparent 2px, color-mix(in srgb, var(--c) 45%, transparent) 2px 4px, transparent 4px);
 }
 
 .gantt-milestone {
@@ -1550,7 +1542,7 @@ img {
 }
 
 .gantt-bg {
-  --c: #8b5cf6;
+  --c: #94a3b8;
   position: absolute;
   top: 2px;
   bottom: 2px;

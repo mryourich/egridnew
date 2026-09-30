@@ -156,38 +156,26 @@ function cascade(tasks: Task[], changed: Task): Task[] {
 export function ScheduleTab({ project }: { project: Project }) {
   const { data, save, notify } = useStore();
   const openEditor = useEditor();
-  const [zoom, setZoom] = useState<"compact" | "normal" | "wide">("normal");
-  const [autoShift, setAutoShift] = useState(true);
-  const [groupByPhase, setGroupByPhase] = useState(true);
-  const tasks = of(data.tasks, project.id).sort((a, b) => (groupByPhase ? a.phase.localeCompare(b.phase) : 0) || a.start.localeCompare(b.start));
-  const phaseOrder = new Map<string, string>();
-  for (const t of [...tasks].sort((a, b) => a.start.localeCompare(b.start))) if (!phaseOrder.has(t.phase)) phaseOrder.set(t.phase, t.start);
-  if (groupByPhase) tasks.sort((a, b) => (phaseOrder.get(a.phase) ?? "").localeCompare(phaseOrder.get(b.phase) ?? "") || a.start.localeCompare(b.start));
+  const [zoom, setZoom] = useState<"week" | "month">("month");
+  const tasks = of(data.tasks, project.id).sort((a, b) => a.start.localeCompare(b.start));
 
   const first = tasks.reduce((m, t) => (t.start < m ? t.start : m), project.start);
   const last = tasks.reduce((m, t) => (t.end > m ? t.end : m), project.end);
   const from = startOfWeek(addDays(first, -3));
   const days = diffDays(from, last) + 10;
-  const dw = zoom === "compact" ? 10 : zoom === "normal" ? 22 : 40;
+  const dw = zoom === "month" ? 12 : 28;
 
   return (
     <div className="stack">
       <div className="toolbar">
         <Segmented
           options={[
-            { value: "compact", label: "Kompakt" },
-            { value: "normal", label: "Normal" },
-            { value: "wide", label: "Detail" }
+            { value: "month", label: "Gesamt" },
+            { value: "week", label: "Tage" }
           ]}
           value={zoom}
           onChange={setZoom}
         />
-        <label className="check">
-          <input type="checkbox" checked={groupByPhase} onChange={(e) => setGroupByPhase(e.target.checked)} /> Nach Phase gruppieren
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={autoShift} onChange={(e) => setAutoShift(e.target.checked)} /> Nachfolger automatisch verschieben
-        </label>
         <span className="spacer" />
         <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "task", item: { projectId: project.id } })}>
           <Plus size={16} /> Vorgang
@@ -195,30 +183,22 @@ export function ScheduleTab({ project }: { project: Project }) {
       </div>
       <div className="card card-flush">
         <Gantt
-          rows={tasks.map((t) => ({
-            id: t.id,
-            label: t.title,
-            sub: `${fmtShort(t.start)}–${fmtShort(t.end)} · ${t.assigneeId ? employeeName(data, t.assigneeId) : "–"}`,
-            group: groupByPhase ? t.phase || "Ohne Phase" : undefined
-          }))}
+          rows={tasks.map((t) => ({ id: t.id, label: t.title }))}
           bars={tasks.map((t) => ({
             id: t.id,
             rowId: t.id,
             start: t.start,
             end: t.end,
             label: t.milestone ? t.title : `${t.progress} %`,
-            color: t.status === "blockiert" ? "#ef4444" : t.status === "erledigt" ? "#10b981" : project.color,
+            color: t.status === "erledigt" ? "#10b981" : t.status === "blockiert" ? "#ef4444" : project.color,
             progress: t.milestone ? undefined : t.progress,
             milestone: t.milestone,
-            dependsOn: t.dependsOn || undefined,
-            conflict: t.status !== "erledigt" && t.end < today(),
-            title: `${t.title}\n${fmt(t.start)} – ${fmt(t.end)} · ${L.taskStatus[t.status].label}`
+            title: `${t.title}\n${fmt(t.start)} – ${fmt(t.end)} · ${L.taskStatus[t.status].label}${t.assigneeId ? ` · ${employeeName(data, t.assigneeId)}` : ""}`
           }))}
           from={from}
           days={days}
           dayWidth={dw}
-          labelWidth={250}
-          showDependencies
+          labelWidth={220}
           emptyText="Noch keine Vorgänge – lege den ersten an."
           onBarClick={(id) => {
             const t = data.tasks.find((x) => x.id === id);
@@ -228,8 +208,8 @@ export function ScheduleTab({ project }: { project: Project }) {
             const t = data.tasks.find((x) => x.id === id);
             if (!t) return;
             const changed = { ...t, start, end: t.milestone ? start : end };
-            const all = autoShift ? cascade(data.tasks, changed) : [changed];
-            const shifted = all.filter((x) => {
+            // Successors move along so the order stays intact.
+            const shifted = cascade(data.tasks, changed).filter((x) => {
               const orig = data.tasks.find((o) => o.id === x.id);
               return orig && (orig.start !== x.start || orig.end !== x.end);
             });
@@ -239,7 +219,6 @@ export function ScheduleTab({ project }: { project: Project }) {
           onCreate={(_, start, end) => openEditor({ kind: "task", item: { projectId: project.id, start, end } })}
         />
       </div>
-      <p className="hint">Balken ziehen verschiebt, Ränder ändern die Dauer. Rot umrandet = überfällig. Pfeile zeigen Abhängigkeiten, rote Pfeile eine Überschneidung.</p>
     </div>
   );
 }

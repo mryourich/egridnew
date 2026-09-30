@@ -54,9 +54,9 @@ type Drag = {
   moved: boolean;
 };
 
-const LANE = 22;
-const PAD = 4;
-const MIN_ROW = 30;
+const LANE = 24;
+const PAD = 5;
+const MIN_ROW = 34;
 
 export function Gantt({
   rows,
@@ -189,7 +189,10 @@ export function Gantt({
   useEffect(() => {
     const el = scrollRef.current;
     const idx = diffDays(from, today());
-    if (el && idx > 0 && idx < days) el.scrollLeft = Math.max(0, idx * dw - (el.clientWidth - labelWidth) * 0.3);
+    if (!el || idx <= 0 || idx >= days) return;
+    const visible = el.clientWidth - labelWidth;
+    // Only scroll when today would otherwise be off-screen.
+    el.scrollLeft = idx * dw > visible * 0.7 ? Math.max(0, idx * dw - visible * 0.3) : 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, days, dw]);
 
@@ -254,7 +257,7 @@ export function Gantt({
               <div className="gantt-days">
                 {dayList.map((d) => (
                   <span key={d} className={`${isWeekend(d) ? "we" : ""} ${d === t ? "today" : ""} ${weekday(d) === 1 ? "mon" : ""}`} title={`${weekdayShort(d)} ${d} · KW ${isoWeek(d)}`}>
-                    {dw >= 26 ? (
+                    {dw >= 34 ? (
                       <>
                         <small>{weekdayShort(d)}</small>
                         {Number(d.slice(8))}
