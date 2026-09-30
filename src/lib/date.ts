@@ -138,3 +138,9 @@ export function holidays(year: number) {
 export function holidayName(date: ISODate) {
   return holidays(Number(date.slice(0, 4))).get(date);
 }
+
+const WEEKDAYS_LONG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+export function weekdayLong(date: ISODate) {
+  return WEEKDAYS_LONG[weekday(date)];
+}

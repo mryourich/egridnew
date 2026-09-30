@@ -3,9 +3,10 @@
 import { FolderKanban, HardHat, Home, LogOut, Settings, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { currentUser, findConflicts, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
+import { siteSections } from "@/lib/sections";
+import { currentUser, findConflicts, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
 import { Editor, type EditorTarget } from "./editors";
 import { Avatar } from "./ui";
 
@@ -75,6 +76,7 @@ function Frame({ children }: { children: ReactNode }) {
             <span className="topbar-company">{data.company.name}</span>
             <UserSwitch />
           </header>
+          {current?.href === "/teamgrid" && <TeamGridBar role={role} />}
           {current?.sub && (
             <nav className="subbar" aria-label={current.label}>
               {current.sub.map((s) => (
@@ -162,5 +164,66 @@ function UserSwitch() {
         </div>
       )}
     </div>
+  );
+}
+
+/** TeamGrid navigation: site picker plus the sections of the open site. */
+function TeamGridBar({ role }: { role: Role }) {
+  const { data } = useStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const sites = myProjects(data);
+  const [, , siteId, section] = pathname.split("/");
+  const site = sites.find((p) => p.id === siteId);
+  const t = new Date().toISOString().slice(0, 10);
+
+  if (!site) {
+    return (
+      <nav className="subbar" aria-label="Baustellen">
+        <Link href="/teamgrid" className={pathname === "/teamgrid" ? "active" : ""}>
+          Übersicht
+        </Link>
+        {sites.map((p) => (
+          <Link key={p.id} href={`/teamgrid/${p.id}`}>
+            <i className="dot" style={{ background: p.color }} /> {p.name}
+          </Link>
+        ))}
+      </nav>
+    );
+  }
+
+  const of = <T extends { projectId: string }>(list: T[]) => list.filter((x) => x.projectId === site.id);
+  const counts: Record<string, number> = {
+    plan: of(data.jobs).filter((j) => !j.done && j.end >= t).length,
+    struktur: of(data.siteNodes).filter((n) => n.status !== "erledigt" && !data.siteNodes.some((k) => k.parentId === n.id)).length,
+    fotos: of(data.photos).length,
+    maengel: of(data.issues).filter((i) => i.status !== "erledigt").length,
+    berichte: of(data.reports).length
+  };
+
+  return (
+    <nav className="subbar site-bar" aria-label={site.name}>
+      <select
+        className="site-picker"
+        value={site.id}
+        style={{ borderColor: site.color }}
+        onChange={(e) => router.push(`/teamgrid/${e.target.value}/${section ?? ""}`)}
+        aria-label="Baustelle wechseln"
+      >
+        {sites.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.code} · {p.name}
+          </option>
+        ))}
+      </select>
+      {siteSections
+        .filter((s) => s.roles.includes(role))
+        .map((s) => (
+          <Link key={s.key} href={`/teamgrid/${site.id}/${s.key}`} className={section === s.key ? "active" : ""}>
+            {s.label}
+            {counts[s.key] ? <em>{counts[s.key]}</em> : null}
+          </Link>
+        ))}
+    </nav>
   );
 }

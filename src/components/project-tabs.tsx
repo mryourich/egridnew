@@ -2,13 +2,14 @@
 
 import { AlertTriangle, CalendarDays, Camera, CheckCircle2, Clock, Download, FileText, Package, Plus, Printer, Trash2, TrendingUp, Upload, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { addDays, diffDays, fmt, fmtShort, inRange, startOfWeek, today, workdaysBetween } from "@/lib/date";
+import { addDays, diffDays, fmt, fmtShort, inRange, isoWeek, startOfWeek, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel } from "@/lib/site";
 import { employeeName, findConflicts, projectProgress, resourceName, uid, useStore } from "@/lib/store";
 import type { Data, IssueKind, IssueStatus, Project, Task } from "@/lib/types";
 import { Gantt } from "./gantt";
 import { ResourcePlanner, usePlannerRange } from "./planner";
+import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
 import { Avatar, Badge, Card, Dot, Empty, Kpi, Progress, SearchInput, Segmented } from "./ui";
 
@@ -352,9 +353,7 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
         </div>
         <SearchInput value={query} onChange={setQuery} />
         <span className="spacer" />
-        <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "issue", item: projectId ? { projectId } : undefined })}>
-          <Camera size={15} /> Mangel melden
-        </button>
+        {projectId && <IssueButton projectId={projectId} className="btn btn-primary" label="Mangel melden" />}
       </div>
       {list.length === 0 ? (
         <Empty>
@@ -509,15 +508,6 @@ export function ReportsTab({ project }: { project: Project }) {
   const { data } = useStore();
   const openEditor = useEditor();
   const list = of(data.reports, project.id).sort((a, b) => b.date.localeCompare(a.date));
-  const [printId, setPrintId] = useState<string | null>(null);
-
-  const print = (id: string) => {
-    setPrintId(id);
-    setTimeout(() => {
-      window.print();
-      setPrintId(null);
-    }, 50);
-  };
 
   return (
     <div className="stack">
@@ -535,33 +525,35 @@ export function ReportsTab({ project }: { project: Project }) {
       ) : (
         <div className="report-list">
           {list.map((r) => (
-            <article key={r.id} className={`card report ${printId === r.id ? "print-only-this" : ""}`}>
-              <header className="report-head">
-                <div>
+            <article key={r.id} className="card report-card">
+              <div className="rc-date">
+                <span>{weekdayShort(r.date)}</span>
+                <strong>{r.date.slice(8)}</strong>
+                <small>KW {isoWeek(r.date)}</small>
+              </div>
+              <div className="rc-body">
+                <div className="rc-meta">
                   <strong>{fmt(r.date)}</strong>
-                  <span className="muted">
-                    {" "}
-                    · {L.weather[r.weather].label}, {r.temperature} °C · {r.crew} Personen · {r.hours} h · {employeeName(data, r.authorId)}
-                  </span>
-                  <span className="print-title">
-                    Tagesbericht {project.code} {project.name}
-                  </span>
+                  <span className="chip-static">{L.weather[r.weather].label}, {r.temperature} °C</span>
+                  <span className="chip-static">{r.crew} Personen</span>
+                  <span className="chip-static">{r.hours} h</span>
+                  <span className="muted small">von {employeeName(data, r.authorId)}</span>
                 </div>
-                <div className="row-inline no-print">
-                  <button className="btn btn-sm btn-ghost" type="button" onClick={() => print(r.id)}>
-                    <Printer size={14} /> Drucken
-                  </button>
-                  <button className="btn btn-sm" type="button" onClick={() => openEditor({ kind: "report", item: r })}>
-                    Bearbeiten
-                  </button>
-                </div>
-              </header>
-              <p className="prose">{r.work}</p>
-              {r.incidents && (
-                <p className="report-incident">
-                  <AlertTriangle size={14} /> {r.incidents}
-                </p>
-              )}
+                <p className="prose">{r.work}</p>
+                {r.incidents && (
+                  <p className="report-incident">
+                    <AlertTriangle size={14} /> {r.incidents}
+                  </p>
+                )}
+              </div>
+              <div className="rc-actions">
+                <a className="btn btn-sm btn-primary" href={`/tagesbericht/${r.id}`} target="_blank" rel="noreferrer">
+                  <FileText size={14} /> PDF
+                </a>
+                <button className="btn btn-sm" type="button" onClick={() => openEditor({ kind: "report", item: r })}>
+                  Bearbeiten
+                </button>
+              </div>
             </article>
           ))}
         </div>
