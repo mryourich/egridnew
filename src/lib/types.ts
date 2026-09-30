@@ -115,6 +115,12 @@ export type Job = {
   nodeId: string;
   note: string;
   done: boolean;
+  /** Starts at noon (half-day precision). */
+  startPm?: boolean;
+  /** Ends at noon (half-day precision). */
+  endAm?: boolean;
+  /** Rendered as a symbol (milestone) instead of a bar. */
+  symbol?: boolean;
 };
 
 export type NodeStatus = "offen" | "in_arbeit" | "erledigt";
