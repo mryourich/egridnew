@@ -4,7 +4,7 @@ import { AlertTriangle, CalendarDays, Camera, CheckCircle2, Clock, Download, Fil
 import { useMemo, useRef, useState } from "react";
 import { addDays, diffDays, fmt, fmtShort, inRange, isoWeek, startOfWeek, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { pathLabel } from "@/lib/site";
+import { shortPath } from "@/lib/site";
 import { employeeName, findConflicts, plannable, projectProgress, resourceName, uid, useStore } from "@/lib/store";
 import type { Data, IssueKind, IssueStatus, Project, Task } from "@/lib/types";
 import { Gantt } from "./gantt";
@@ -341,16 +341,6 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
           value={status as "open" | "erledigt" | "all"}
           onChange={setStatus}
         />
-        <div className="chip-group">
-          <button type="button" className={`chip ${kind === "all" ? "on" : ""}`} onClick={() => setKind("all")}>
-            Alle Arten
-          </button>
-          {(Object.keys(L.issueKind) as IssueKind[]).map((k) => (
-            <button key={k} type="button" className={`chip ${kind === k ? "on" : ""}`} onClick={() => setKind(k)}>
-              {L.issueKind[k].label}
-            </button>
-          ))}
-        </div>
         <SearchInput value={query} onChange={setQuery} />
         <span className="spacer" />
         {projectId && <IssueButton projectId={projectId} className="btn btn-primary" label="Mangel melden" />}
@@ -384,7 +374,7 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
                 )}
                 <div className="issue-main">
                   <div className="row-inline">
-                    <Badge tone={L.issueKind[i.kind].tone}>{L.issueKind[i.kind].label}</Badge>
+                    {i.kind !== "mangel" && <Badge tone={L.issueKind[i.kind].tone}>{L.issueKind[i.kind].label}</Badge>}
                     <Badge tone={L.severity[i.severity].tone}>{L.severity[i.severity].label}</Badge>
                     <strong>{i.title}</strong>
                   </div>
@@ -394,7 +384,7 @@ export function IssuesTab({ projectId }: { projectId?: string }) {
                         <Dot color={p.color} /> {p.name} ·{" "}
                       </>
                     ) : null}
-                    {i.nodeId ? pathLabel(data.siteNodes, i.nodeId) : i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
+                    {i.nodeId ? shortPath(data.siteNodes, i.nodeId) : i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
                     <span className={overdue ? "text-red" : ""}>Frist {fmt(i.due)}</span>
                   </small>
                   {i.description && <p>{i.description}</p>}

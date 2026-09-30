@@ -80,6 +80,14 @@ export function SiteGantt({ project }: { project: Project }) {
   const [menu, setMenu] = useState<Menu | null>(null);
   const [details, setDetails] = useState<{ job: Partial<Job>; x: number; y: number } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const longPress = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const [nameW, setNameW] = useState(NAME_W);
+  useEffect(() => {
+    const fit = () => setNameW(window.innerWidth < 640 ? 132 : NAME_W);
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = today();
   const hw = dw / 2;
@@ -119,7 +127,7 @@ export function SiteGantt({ project }: { project: Project }) {
     const el = scrollRef.current;
     const idx = diffDays(from, t);
     if (!el || idx < 0 || idx >= days) return;
-    const visible = el.clientWidth - NAME_W;
+    const visible = el.clientWidth - nameW;
     el.scrollLeft = idx * dw > visible * 0.6 ? Math.max(0, idx * dw - visible * 0.2) : 0;
   }, [from, days, dw, t]);
 
@@ -240,12 +248,38 @@ export function SiteGantt({ project }: { project: Project }) {
       <div className="toolbar">
         {controls}
         <span className="spacer" />
-        <span className="hint">Ziehen = verschieben (halbe Tage) · Klick auf Balken = umbenennen · Rechtsklick = einfügen, Farbe</span>
+        <span className="hint desktop-only">Ziehen = verschieben (halbe Tage) · Klick auf Balken = umbenennen · Rechtsklick = einfügen, Farbe</span>
+        <span className="hint touch-only">Lange drücken = Menü (einfügen, Farbe) · Balken ziehen = verschieben</span>
       </div>
 
-      <div className="planner site-gantt" style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${NAME_W}px` } as CSSProperties}>
-        <div className="planner-scroll" ref={scrollRef}>
-          <div className="planner-inner" style={{ width: NAME_W + timelineW }}>
+      <div className="planner site-gantt" style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${nameW}px` } as CSSProperties}>
+        <div
+          className="planner-scroll"
+          ref={scrollRef}
+          onPointerDownCapture={(e) => {
+            // Touch devices have no right mouse button: a long press opens the same menu.
+            if (e.pointerType !== "touch") return;
+            clearTimeout(longPress.current?.timer);
+            const { clientX: x, clientY: y } = e;
+            const target = e.target as HTMLElement;
+            longPress.current = {
+              x,
+              y,
+              timer: setTimeout(() => {
+                dragRef.current = null;
+                setDrag(null);
+                target.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+              }, 550)
+            };
+          }}
+          onPointerMoveCapture={(e) => {
+            const lp = longPress.current;
+            if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 8) clearTimeout(lp.timer);
+          }}
+          onPointerUpCapture={() => clearTimeout(longPress.current?.timer)}
+          onPointerCancelCapture={() => clearTimeout(longPress.current?.timer)}
+        >
+          <div className="planner-inner" style={{ width: nameW + timelineW }}>
             <div className="pl-head">
               <div className="pl-corner sg-corner">
                 <span>Team</span>
@@ -256,7 +290,7 @@ export function SiteGantt({ project }: { project: Project }) {
               <PlannerHeadTime dayList={dayList} dw={dw} />
             </div>
             <div className="pl-body">
-              <PlannerCols dayList={dayList} dw={dw} left={NAME_W} />
+              <PlannerCols dayList={dayList} dw={dw} left={nameW} />
               {team.length === 0 && <div className="pl-empty">Die Projektleitung hat dieser Baustelle noch niemanden zugeteilt.</div>}
               {team.map((emp) => {
                 const own = jobs
