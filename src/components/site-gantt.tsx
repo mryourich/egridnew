@@ -30,7 +30,8 @@ export function textOn(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2937" : "#ffffff";
 }
 
-const LANE = 20;
+/** One lane = one grid row; bars fill it completely. */
+const LANE = 32;
 const NAME_W = 220;
 
 /* Half-day helpers: position = day * 2 (+1 for afternoon). */
@@ -253,7 +254,7 @@ export function SiteGantt({ project }: { project: Project }) {
                   return { left: s * dw, width: Math.max(0, (e - s + 1) * dw) };
                 };
                 return (
-                  <div key={emp.id} className={`pl-row sg-row ${drag?.kind === "job" && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE + 10 }} data-emp={emp.id}>
+                  <div key={emp.id} className={`pl-row sg-row ${drag?.kind === "job" && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
                     <div className="pl-left sg-left">
                       <Avatar name={emp.name} size={24} />
                       <span>
@@ -306,7 +307,7 @@ export function SiteGantt({ project }: { project: Project }) {
                       })}
                       {own.map((j) => {
                         const { s, e } = jobHalves(from, j);
-                        const top = 5 + (lane.get(j.id) ?? 0) * LANE;
+                        const top = (lane.get(j.id) ?? 0) * LANE;
                         const onCtx = (ev: React.MouseEvent) => {
                           ev.preventDefault();
                           ev.stopPropagation();
@@ -314,7 +315,7 @@ export function SiteGantt({ project }: { project: Project }) {
                         };
                         if (j.symbol) {
                           return (
-                            <div key={j.id} className="sg-symbol" style={{ left: s * hw + hw - 8, top, "--c": j.color } as CSSProperties} title={`${j.title} · ${fmt(j.start)}`} onPointerDown={(ev) => beginJob(ev, j, "move")} onContextMenu={onCtx}>
+                            <div key={j.id} className="sg-symbol" style={{ left: s * hw + hw - 8, top: top + (LANE - 18) / 2, "--c": j.color } as CSSProperties} title={`${j.title} · ${fmt(j.start)}`} onPointerDown={(ev) => beginJob(ev, j, "move")} onContextMenu={onCtx}>
                               <Star size={16} fill={j.color} color="#1f2937" strokeWidth={1.2} />
                               {editing === j.id ? <RenameInput job={j} onDone={() => setEditing(null)} /> : <span>{j.title}</span>}
                             </div>
@@ -324,7 +325,7 @@ export function SiteGantt({ project }: { project: Project }) {
                           <div
                             key={j.id}
                             className={`sg-job ${j.done ? "done" : ""} ${drag?.kind === "job" && drag.id === j.id ? "active" : ""} ${editing === j.id ? "editing" : ""}`}
-                            style={{ left: s * hw + 1, width: Math.max(8, (e - s) * hw - 2), top, background: j.color, color: textOn(j.color) } as CSSProperties}
+                            style={{ left: s * hw, width: Math.max(8, (e - s) * hw), top: top + 1, height: LANE - 1, background: j.color, color: textOn(j.color) } as CSSProperties}
                             title={`${j.title}\n${fmt(j.start)}${j.startPm ? " (ab Mittag)" : ""} – ${fmt(j.end)}${j.endAm ? " (bis Mittag)" : ""}${j.note ? `\n${j.note}` : ""}`}
                             onPointerDown={(ev) => beginJob(ev, j, "move")}
                             onContextMenu={onCtx}

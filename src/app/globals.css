@@ -4682,3 +4682,25 @@ body {
 .status-switch button:not(.on):hover {
   background: #fff;
 }
+
+/* Bars fill the whole grid cell (width and height), like on a planning board. */
+.site-gantt .pl-row {
+  min-height: 32px;
+}
+.site-gantt .sg-job {
+  height: auto;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.site-gantt .sg-job .rename-input {
+  height: 100%;
+  margin: 0;
+}
+.site-gantt .sg-presence,
+.site-gantt .sg-elsewhere,
+.site-gantt .sg-abs {
+  top: 0;
+  bottom: 0;
+  border-radius: 0;
+}
