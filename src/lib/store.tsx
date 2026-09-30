@@ -121,7 +121,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setCompany: (company) => setData((d) => d && { ...d, company }),
         setCurrentUser: (id) => setData((d) => d && { ...d, currentUserId: id }),
         replaceAll: (next) => setData({ ...createEmpty(), ...next, version: DATA_VERSION }),
-        reset: (kind) => setData(kind === "demo" ? createSeed() : createEmpty()),
+        reset: (kind) =>
+          setData((old) => {
+            if (kind === "empty") return createEmpty();
+            // keep the viewer in the same role when switching to the demo firm
+            const seed = createSeed();
+            const role = old ? roleOf(currentUser(old)) : "hr";
+            const same = seed.employees.find((e) => roleOf(e) === role);
+            return same ? { ...seed, currentUserId: same.id } : seed;
+          }),
         notify,
         toast
       },
@@ -221,7 +229,7 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   const r = (e?.role ?? "").toLowerCase();
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
-  if (r.includes("hr") || r.includes("personal")) return "hr";
+  if (/\bhr\b/.test(r) || r.includes("personal")) return "hr";
   return "monteur";
 }
 

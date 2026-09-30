@@ -6,7 +6,7 @@ import { useEditor } from "@/components/shell";
 import { Avatar, Badge, Dot, Empty, PageHeader, Progress, SearchInput, Tabs } from "@/components/ui";
 import { addDays, diffDays, fmt, inRange, isWeekend, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { useStore } from "@/lib/store";
+import { useStore, roleOf, roleLabel } from "@/lib/store";
 import type { Data, ResourceType } from "@/lib/types";
 
 type Tab = "employees" | "vehicles" | "equipment" | "absences";
@@ -48,8 +48,8 @@ export default function ResourcesPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Ressourcen"
-        subtitle="Mitarbeiter, Fuhrpark, Geräte und Abwesenheiten"
+        title="Personal"
+        subtitle="Mitarbeiter mit Rechten, Abwesenheiten, Fahrzeuge und Geräte"
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: kind[tab] })}>
             <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : tab === "vehicles" ? "Fahrzeug" : tab === "equipment" ? "Gerät" : "Abwesenheit"}
@@ -101,7 +101,12 @@ export default function ResourcesPage() {
                           </span>
                         </span>
                       </td>
-                      <td>{e.team}</td>
+                      <td>
+                        <span className="cell-title-stack">
+                          {e.team}
+                          <Badge tone={roleOf(e) === "pl" ? "violet" : roleOf(e) === "bl" ? "blue" : roleOf(e) === "hr" ? "amber" : "gray"}>{roleLabel[roleOf(e)]}</Badge>
+                        </span>
+                      </td>
                       <td>
                         <small>
                           {e.phone}
@@ -123,6 +128,8 @@ export default function ResourcesPage() {
                           <Badge>inaktiv</Badge>
                         ) : absent ? (
                           <Badge tone={L.absenceType[absent.type].tone}>{L.absenceType[absent.type].label}</Badge>
+                        ) : roleOf(e) === "hr" ? (
+                          <span className="muted">–</span>
                         ) : p ? (
                           <span className="cell-person">
                             <Dot color={p.color} /> {p.code}
@@ -132,9 +139,13 @@ export default function ResourcesPage() {
                         )}
                       </td>
                       <td>
-                        <span className="cell-progress">
-                          <Progress value={l} color={l > 90 ? "#ef4444" : undefined} /> {l} %
-                        </span>
+                        {roleOf(e) === "hr" ? (
+                          <span className="muted small">nicht planbar</span>
+                        ) : (
+                          <span className="cell-progress">
+                            <Progress value={l} color={l > 90 ? "#ef4444" : undefined} /> {l} %
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

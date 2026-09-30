@@ -4,11 +4,12 @@ import { Download, RotateCcw, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
 import { today } from "@/lib/date";
-import { useStore } from "@/lib/store";
+import { useStore, currentUser, roleOf } from "@/lib/store";
 import type { Data } from "@/lib/types";
 
 export default function SettingsPage() {
   const { data, setCompany, replaceAll, reset, notify } = useStore();
+  const admin = ["hr", "pl"].includes(roleOf(currentUser(data)));
   const [name, setName] = useState(data.company.name);
   const [address, setAddress] = useState(data.company.address);
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function SettingsPage() {
           </form>
         </Card>
 
+        {admin ? (
         <Card title="Daten">
           <p className="muted">
             Im Demo-Modus werden alle Daten nur in diesem Browser gespeichert. Erstelle regelmäßig eine Sicherung, um sie auf ein anderes Gerät zu übertragen.
@@ -127,6 +129,11 @@ export default function SettingsPage() {
             </button>
           </div>
         </Card>
+        ) : (
+          <Card title="Daten">
+            <p className="muted">Datensicherung und Löschen sind der Personalabteilung und der Projektleitung vorbehalten.</p>
+          </Card>
+        )}
       </div>
     </div>
   );
