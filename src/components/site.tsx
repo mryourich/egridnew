@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { childrenOf, levelName, nodeProgress, nodeStatus, pathLabel, pathOf, subtreeIds } from "@/lib/site";
-import { employeeName, uid, useStore } from "@/lib/store";
+import { canDelete, employeeName, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Photo, Project, SiteNode } from "@/lib/types";
 import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
@@ -94,6 +94,7 @@ export function PhotoLightbox({ photos, index, onClose }: { photos: Photo[]; ind
             <a className="btn btn-sm" href={photo.dataUrl} download={`${photo.caption || "foto"}.jpg`}>
               <Download size={14} /> Laden
             </a>
+            {canDelete(data) && (
             <button
               type="button"
               className="btn btn-sm btn-danger-ghost"
@@ -105,6 +106,7 @@ export function PhotoLightbox({ photos, index, onClose }: { photos: Photo[]; ind
             >
               <Trash2 size={14} /> Löschen
             </button>
+            )}
           </span>
         </figcaption>
       </figure>
@@ -507,6 +509,7 @@ function NodeDrawer({
             )}
           </section>
 
+          {canDelete(data) && (
           <footer className="drawer-foot">
             <button
               type="button"
@@ -522,6 +525,7 @@ function NodeDrawer({
               <Trash2 size={13} /> Löschen
             </button>
           </footer>
+          )}
         </div>
       </aside>
     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, RotateCcw, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
 import { today } from "@/lib/date";
 import { useStore } from "@/lib/store";
@@ -11,6 +11,10 @@ export default function SettingsPage() {
   const { data, setCompany, replaceAll, reset, notify } = useStore();
   const [name, setName] = useState(data.company.name);
   const [address, setAddress] = useState(data.company.address);
+  useEffect(() => {
+    setName(data.company.name);
+    setAddress(data.company.address);
+  }, [data.company.name, data.company.address]);
   const file = useRef<HTMLInputElement>(null);
 
   const exportData = () => {
@@ -98,16 +102,28 @@ export default function SettingsPage() {
             </button>
             <input ref={file} type="file" accept="application/json" hidden onChange={(e) => importData(e.target.files?.[0])} />
             <button
-              className="btn btn-danger-ghost"
+              className="btn"
               type="button"
               onClick={() => {
-                if (window.confirm("Alle Daten löschen und Demo-Daten neu laden?")) {
-                  reset();
-                  notify("Demo-Daten wiederhergestellt");
+                if (window.confirm("Aktuelle Daten durch die Demo-Firma ersetzen?")) {
+                  reset("demo");
+                  notify("Demo-Firma geladen");
                 }
               }}
             >
-              <RotateCcw size={15} /> Auf Demo-Daten zurücksetzen
+              <RotateCcw size={15} /> Demo-Firma laden
+            </button>
+            <button
+              className="btn btn-danger-ghost"
+              type="button"
+              onClick={() => {
+                if (window.confirm("ALLE Daten löschen und leer starten? Es bleibt nur der HR-Zugang.")) {
+                  reset("empty");
+                  notify("Alles gelöscht – leer gestartet");
+                }
+              }}
+            >
+              <RotateCcw size={15} /> Alles löschen (leer starten)
             </button>
           </div>
         </Card>

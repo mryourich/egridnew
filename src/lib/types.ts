@@ -26,10 +26,15 @@ export type Qualification = {
   validUntil: ISODate;
 };
 
+/** What a user may see and do: project manager, site manager, HR or worker. */
+export type AccessRole = "pl" | "bl" | "hr" | "monteur";
+
 export type Employee = {
   id: string;
   name: string;
   role: string;
+  /** Access rights; derived from the job title when missing. */
+  access?: AccessRole;
   department: string;
   team: string;
   phone: string;
@@ -121,6 +126,8 @@ export type Job = {
   endAm?: boolean;
   /** Rendered as a symbol (milestone) instead of a bar. */
   symbol?: boolean;
+  /** Emoji shown for a symbol. */
+  icon?: string;
 };
 
 export type NodeStatus = "offen" | "in_arbeit" | "erledigt";

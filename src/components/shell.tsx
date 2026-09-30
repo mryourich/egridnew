@@ -137,14 +137,16 @@ function UserSwitch() {
             <Settings size={15} /> Einstellungen
           </Link>
           <small className="menu-title">
-            <LogOut size={12} /> Ansicht wechseln (Demo)
+            <LogOut size={12} /> Anmelden als (Demo)
           </small>
-          {(["pl", "bl", "hr", "monteur"] as Role[]).map((r) => (
+          {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Personal“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
+          {(["hr", "pl", "bl", "monteur"] as Role[])
+            .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
+            .map((r) => (
             <div key={r} className="menu-group">
               <span>{roleLabel[r]}</span>
               {data.employees
                 .filter((e) => e.active && roleOf(e) === r)
-                .slice(0, r === "monteur" ? 8 : 3)
                 .map((e) => (
                   <button
                     key={e.id}

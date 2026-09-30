@@ -8,6 +8,7 @@ import { Badge, Card, Dot, Empty, Kpi, PageHeader, Progress } from "@/components
 import { addDays, diffDays, fmt, fmtShort, inRange, isWeekend, startOfWeek, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { currentUser, findConflicts, projectProgress, resourceName, roleOf, useStore } from "@/lib/store";
+import { HrHome } from "@/components/hr-home";
 import { MyWork } from "@/components/my-work";
 import { SitesOverview } from "@/components/sites-overview";
 
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const role = roleOf(currentUser(data));
   if (role === "monteur") return <MyWork />;
   if (role === "bl") return <SitesOverview />;
+  if (role === "hr") return <HrHome />;
   return <ManagementHome />;
 }
 

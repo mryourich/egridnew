@@ -69,6 +69,13 @@ export default function ResourcePlanningPage() {
           const a = data.assignments.find((x) => x.id === id);
           if (a) openEditor({ kind: "assignment", item: a });
         }}
+        onAbsenceChange={(id, start, end, employeeId) => {
+          const a = data.absences.find((x) => x.id === id);
+          if (!a) return;
+          const who = data.employees.find((x) => x.id === employeeId)?.name ?? "";
+          save("absences", { ...a, start, end, employeeId }, `Abwesenheit ${who} ${fmt(start)} – ${fmt(end)}`);
+          notify(`${who}: ${fmt(start)} – ${fmt(end)}`);
+        }}
         onAbsenceClick={(id) => {
           const a = data.absences.find((x) => x.id === id);
           if (a) openEditor({ kind: "absence", item: a });

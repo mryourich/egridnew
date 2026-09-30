@@ -22,7 +22,12 @@ HR (Personal, Abwesenheiten)
 | **Monteur** | Heute zu tun, die nächsten Tage | Meine Baustellen (Struktur, Fotos, Mängel) |
 | **HR** | Kennzahlen | Personal (Mitarbeiter, Abwesenheiten) |
 
-Zum Ausprobieren oben rechts auf den Namen klicken und die Ansicht wechseln (Demo bis zum echten Login).
+**Start:** Die App beginnt leer mit einem HR-Zugang („Personalabteilung“). HR legt Mitarbeiter an und vergibt
+ihre **Rechte** (Projektleitung, Bauleitung, HR, Monteur). Danach oben rechts auf den Namen klicken und in die
+jeweilige Rolle wechseln (Demo bis zum echten Login). Unter *Einstellungen* lässt sich eine Demo-Firma laden
+oder wieder alles löschen.
+
+**Rechte:** Monteure dürfen erfassen und abhaken, aber nichts löschen (keine Aufgaben, Fotos, Mängel, Punkte).
 
 Die Daten liegen im Moment im Browser (localStorage) und sind mit Demo-Daten vorbefüllt.
 Supabase (Login, Mandanten, Datenbank und Foto-Speicher) ist der nächste Schritt.

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { uid, useStore } from "@/lib/store";
+import { canDelete, uid, useStore } from "@/lib/store";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
 import { downscale } from "./ui";
 
@@ -197,7 +197,7 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
           )}
 
           <footer>
-            {!isNew && (
+            {!isNew && canDelete(data) && (
               <button
                 type="button"
                 className="icon-btn"
