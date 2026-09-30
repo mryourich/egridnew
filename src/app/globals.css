@@ -4465,3 +4465,220 @@ body {
 .ctx-colors button.on {
   box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--text);
 }
+
+/* ------------------------------------------------------------ plan v2 (planning-board look) */
+.site-gantt .sg-job {
+  height: 18px;
+  justify-content: center;
+  padding: 0 6px;
+  border: 1px solid rgba(15, 23, 42, 0.45);
+  border-radius: 5px;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+}
+.site-gantt .sg-job:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.4);
+}
+.site-gantt .sg-job.editing {
+  z-index: 6;
+  overflow: visible;
+  padding: 0;
+  cursor: text;
+}
+.rename-input {
+  min-width: 160px;
+  width: 100%;
+  height: 22px;
+  margin-top: -2px;
+  padding: 0 6px;
+  border: 2px solid var(--primary);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  outline: none;
+  box-shadow: 0 6px 16px -6px rgba(15, 23, 42, 0.45);
+}
+.sg-symbol {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  white-space: nowrap;
+  cursor: grab;
+  touch-action: none;
+  font-size: 11px;
+  font-weight: 600;
+}
+.sg-symbol .rename-input {
+  width: 160px;
+}
+.sg-abs {
+  cursor: grab;
+  touch-action: none;
+}
+.sg-abs.active {
+  cursor: grabbing;
+  z-index: 5;
+  box-shadow: 0 6px 14px -4px rgba(15, 23, 42, 0.5);
+}
+.sg-abs .h {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: ew-resize;
+}
+.sg-abs .h-l {
+  left: 0;
+}
+.sg-abs .h-r {
+  right: 0;
+}
+.site-gantt .pl-time {
+  cursor: default;
+}
+
+.plan-menu {
+  position: fixed;
+  z-index: 135;
+  min-width: 250px;
+  padding: 6px 0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 28px -6px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  animation: pop 0.08s ease-out;
+}
+.pm-item-wrap {
+  position: relative;
+}
+.pm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 16px;
+  border: 0;
+  background: none;
+  color: #374151;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.pm-item:hover,
+.pm-item.open {
+  background: #f3f4f6;
+}
+.pm-item.danger {
+  color: var(--red);
+}
+.pm-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  color: #4b5563;
+}
+.pm-item.danger .pm-icon {
+  color: var(--red);
+}
+.pm-chev {
+  margin-left: auto;
+  color: #9ca3af;
+}
+.pm-palette {
+  position: absolute;
+  top: 18px;
+  left: calc(100% - 8px);
+  z-index: 2;
+  padding: 16px 18px 10px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 10px 30px -6px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+.pm-palette.flip {
+  left: auto;
+  right: calc(100% - 8px);
+}
+.pm-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 20px);
+  gap: 12px 18px;
+}
+.pm-grid button {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+.pm-grid button:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #374151;
+}
+.pm-custom {
+  display: block;
+  margin-top: 14px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pm-custom:hover {
+  color: var(--primary);
+}
+.menu-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #dc2626;
+}
+.menu-swatch.abs-krank {
+  background: #ea580c;
+}
+.menu-swatch.abs-schulung {
+  background: #7c3aed;
+}
+.menu-swatch.abs-sonstiges {
+  background: #64748b;
+}
+.job-pop .palette {
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+.job-grid label.half {
+  display: flex;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------ coloured status buttons */
+.status-switch button.st-offen.on,
+.status-switch button.on.tone-gray,
+.status-switch button.on.tone-red {
+  background: #f59e0b;
+  color: #fff;
+}
+.status-switch button.on.tone-blue {
+  background: #2563eb;
+  color: #fff;
+}
+.status-switch button.on.tone-green {
+  background: #16a34a;
+  color: #fff;
+}
+.status-switch button.on {
+  box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.35);
+}
+.status-switch button:not(.on):hover {
+  background: #fff;
+}

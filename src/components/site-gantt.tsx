@@ -1,38 +1,71 @@
 "use client";
 
-import { AlertTriangle, Check, Trash2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { AlertTriangle, Check, ChevronRight, Diamond, Palette, Pencil, Star, Trash2, X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
 import { uid, useStore } from "@/lib/store";
-import type { ISODate, Job, Project } from "@/lib/types";
+import type { Absence, AbsenceType, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
 import { Avatar } from "./ui";
 
-/** Tom's-Planner-like colour palette for jobs. */
-export const JOB_COLORS = ["#dc2626", "#ea580c", "#f59e0b", "#ca8a04", "#84cc16", "#16a34a", "#0d9488", "#0891b2", "#0ea5e9", "#2563eb", "#1e3a8a", "#7c3aed", "#c026d3", "#db2777", "#78716c", "#334155"];
+/** Palette in the layout of classic planning boards: 6 rows × 5 columns. */
+export const PALETTE = [
+  ["#808033", "#7a9a8a", "#2e75b6", "#7f6252", "#707070"],
+  ["#bfcb2c", "#8fbfa6", "#5fb3d9", "#b07d5e", "#a0a0a0"],
+  ["#e8f55a", "#c6e0a3", "#a9c8f7", "#dfb398", "#d4d4d4"],
+  ["#735a97", "#b03a50", "#d91414", "#de7a25", "#fbd02e"],
+  ["#b673b8", "#c07070", "#ff3b30", "#ff8a1e", "#fff31a"],
+  ["#f5a0cf", "#e6a8ac", "#f47070", "#ffa726", "#faf59a"]
+];
+export const JOB_COLORS = PALETTE.flat();
 
-const LANE = 18;
+/** Readable text colour on a given background. */
+export function textOn(hex: string) {
+  const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2937" : "#ffffff";
+}
+
+const LANE = 20;
 const NAME_W = 220;
 
-type Drag = { id: string; mode: "move" | "start" | "end" | "create"; x0: number; y0: number; start: ISODate; end: ISODate; emp: string; moved: boolean };
-type Pop = { job: Partial<Job>; x: number; y: number };
-type Menu = { x: number; y: number; job?: Job; emp?: string; date?: ISODate };
+/* Half-day helpers: position = day * 2 (+1 for afternoon). */
+function jobHalves(from: ISODate, j: Pick<Job, "start" | "end" | "startPm" | "endAm">) {
+  const s = diffDays(from, j.start) * 2 + (j.startPm ? 1 : 0);
+  const e = diffDays(from, j.end) * 2 + (j.endAm ? 1 : 2);
+  return { s, e: Math.max(e, s + 1) };
+}
+function fromHalves(from: ISODate, s: number, e: number) {
+  const last = e - 1;
+  return { start: addDays(from, Math.floor(s / 2)), startPm: s % 2 === 1, end: addDays(from, Math.floor(last / 2)), endAm: last % 2 === 0 };
+}
+
+type Drag =
+  | { kind: "job"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dh: number; emp: string }
+  | { kind: "abs"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dd: number };
+
+type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half?: number };
 
 /**
- * Site schedule for the site manager: rows are the people the project manager
- * planned onto this site; the site manager drops coloured jobs onto their days.
+ * Site schedule for the site manager in the style of classic planning boards:
+ * left mouse = move / resize in half days, click on a bar = rename,
+ * right mouse = small menu to insert bars or symbols with a colour palette.
  */
 export function SiteGantt({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
   const { from, days, dayWidth: dw, controls } = usePlannerRange("detail");
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
-  const [pop, setPop] = useState<Pop | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
+  const [details, setDetails] = useState<{ job: Partial<Job>; x: number; y: number } | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = today();
+  const hw = dw / 2;
   const to = addDays(from, days - 1);
   const dayList = useMemo(() => Array.from({ length: days }, (_, i) => addDays(from, i)), [from, days]);
 
@@ -41,7 +74,29 @@ export function SiteGantt({ project }: { project: Project }) {
   const team = data.employees.filter((e) => teamIds.includes(e.id));
   const jobs = data.jobs.filter((j) => j.projectId === project.id);
 
-  const shownJobs = drag && drag.mode !== "create" ? jobs.map((j) => (j.id === drag.id ? { ...j, start: drag.start, end: drag.end, employeeId: drag.emp } : j)) : jobs;
+  const previewJob = (j: Job): Job => {
+    if (!drag || drag.kind !== "job" || drag.id !== j.id) return j;
+    const { s, e } = jobHalves(from, j);
+    let ns = s;
+    let ne = e;
+    if (drag.mode === "move") {
+      ns = s + drag.dh;
+      ne = e + drag.dh;
+    } else if (drag.mode === "start") ns = Math.min(e - 1, s + drag.dh);
+    else ne = Math.max(s + 1, e + drag.dh);
+    return { ...j, ...fromHalves(from, ns, ne), employeeId: drag.emp };
+  };
+
+  const previewAbs = (a: Absence): Absence => {
+    if (!drag || drag.kind !== "abs" || drag.id !== a.id) return a;
+    if (drag.mode === "move") return { ...a, start: addDays(a.start, drag.dd), end: addDays(a.end, drag.dd) };
+    if (drag.mode === "start") {
+      const s = addDays(a.start, drag.dd);
+      return { ...a, start: s > a.end ? a.end : s };
+    }
+    const e = addDays(a.end, drag.dd);
+    return { ...a, end: e < a.start ? a.start : e };
+  };
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -56,42 +111,62 @@ export function SiteGantt({ project }: { project: Project }) {
     const move = (e: PointerEvent) => {
       const d = dragRef.current;
       if (!d) return;
-      const delta = Math.round((e.clientX - d.x0) / dw);
-      const orig = jobs.find((j) => j.id === d.id);
-      let next: Drag = { ...d, moved: d.moved || Math.abs(e.clientX - d.x0) > 3 || Math.abs(e.clientY - d.y0) > 3 };
-      if (d.mode === "create") next = { ...next, end: addDays(d.start, Math.max(0, delta)) };
-      else if (orig) {
+      const moved = d.moved || Math.abs(e.clientX - d.x0) > 3 || Math.abs(e.clientY - d.y0) > 3;
+      let next: Drag;
+      if (d.kind === "job") {
+        next = { ...d, moved, dh: Math.round((e.clientX - d.x0) / hw) };
         if (d.mode === "move") {
-          next = { ...next, start: addDays(orig.start, delta), end: addDays(orig.end, delta) };
           const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-emp]");
-          if (el?.dataset.emp) next.emp = el.dataset.emp;
-        } else if (d.mode === "start") {
-          const s = addDays(orig.start, delta);
-          next = { ...next, start: s > orig.end ? orig.end : s };
-        } else {
-          const en = addDays(orig.end, delta);
-          next = { ...next, end: en < orig.start ? orig.start : en };
+          if (el?.dataset.emp) next = { ...next, emp: el.dataset.emp };
         }
-      }
+      } else next = { ...d, moved, dd: Math.round((e.clientX - d.x0) / dw) };
       dragRef.current = next;
       setDrag(next);
     };
-    const up = (e: PointerEvent) => {
+    const up = () => {
       const d = dragRef.current;
       dragRef.current = null;
       setDrag(null);
       if (!d) return;
-      if (d.mode === "create") {
-        setPop({ job: { employeeId: d.emp, start: d.start, end: d.end }, x: e.clientX, y: e.clientY });
-        return;
+      if (d.kind === "job") {
+        const j = jobs.find((x) => x.id === d.id);
+        if (!j) return;
+        if (!d.moved) {
+          setEditing(j.id);
+          return;
+        }
+        const p = previewJobWith(j, d);
+        if (p.start !== j.start || p.end !== j.end || p.startPm !== j.startPm || p.endAm !== j.endAm || p.employeeId !== j.employeeId) save("jobs", p);
+      } else {
+        const a = data.absences.find((x) => x.id === d.id);
+        if (!a || !d.moved) return;
+        const p = previewAbsWith(a, d);
+        if (p.start !== a.start || p.end !== a.end) {
+          save("absences", p, `${L.absenceType[a.type].label} ${fmt(p.start)} – ${fmt(p.end)}`);
+          notify(`${L.absenceType[a.type].label}: ${fmt(p.start)} – ${fmt(p.end)}`);
+        }
       }
-      const orig = jobs.find((j) => j.id === d.id);
-      if (!orig) return;
-      if (!d.moved) {
-        setPop({ job: orig, x: e.clientX, y: e.clientY });
-        return;
+    };
+    // Resolve previews from the final drag state (closures above see the render-time state).
+    const previewJobWith = (j: Job, d: Extract<Drag, { kind: "job" }>) => {
+      const { s, e } = jobHalves(from, j);
+      let ns = s;
+      let ne = e;
+      if (d.mode === "move") {
+        ns = s + d.dh;
+        ne = e + d.dh;
+      } else if (d.mode === "start") ns = Math.min(e - 1, s + d.dh);
+      else ne = Math.max(s + 1, e + d.dh);
+      return { ...j, ...fromHalves(from, ns, ne), employeeId: d.emp };
+    };
+    const previewAbsWith = (a: Absence, d: Extract<Drag, { kind: "abs" }>) => {
+      if (d.mode === "move") return { ...a, start: addDays(a.start, d.dd), end: addDays(a.end, d.dd) };
+      if (d.mode === "start") {
+        const s = addDays(a.start, d.dd);
+        return { ...a, start: s > a.end ? a.end : s };
       }
-      if (orig.start !== d.start || orig.end !== d.end || orig.employeeId !== d.emp) save("jobs", { ...orig, start: d.start, end: d.end, employeeId: d.emp });
+      const e = addDays(a.end, d.dd);
+      return { ...a, end: e < a.start ? a.start : e };
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
@@ -102,39 +177,41 @@ export function SiteGantt({ project }: { project: Project }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag !== null]);
 
-  const beginJob = (e: React.PointerEvent, j: Job, mode: Drag["mode"]) => {
+  const beginJob = (e: React.PointerEvent, j: Job, mode: "move" | "start" | "end") => {
+    if (e.button !== 0 || editing === j.id) return;
     e.stopPropagation();
-    if (e.button !== 0) return;
     e.preventDefault();
-    const d: Drag = { id: j.id, mode, x0: e.clientX, y0: e.clientY, start: j.start, end: j.end, emp: j.employeeId, moved: false };
+    const d: Drag = { kind: "job", id: j.id, mode: j.symbol ? "move" : mode, x0: e.clientX, y0: e.clientY, moved: false, dh: 0, emp: j.employeeId };
     dragRef.current = d;
     setDrag(d);
   };
 
-  const beginCreate = (e: React.PointerEvent<HTMLDivElement>, emp: string) => {
+  const beginAbs = (e: React.PointerEvent, a: Absence, mode: "move" | "start" | "end") => {
     if (e.button !== 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const date = addDays(from, Math.floor((e.clientX - rect.left) / dw));
-    const d: Drag = { id: "__new", mode: "create", x0: e.clientX, y0: e.clientY, start: date, end: date, emp, moved: false };
+    e.stopPropagation();
+    e.preventDefault();
+    const d: Drag = { kind: "abs", id: a.id, mode, x0: e.clientX, y0: e.clientY, moved: false, dd: 0 };
     dragRef.current = d;
     setDrag(d);
   };
 
-  const box = (start: ISODate, end: ISODate) => {
-    const s = Math.max(0, diffDays(from, start));
-    const e = Math.min(days - 1, diffDays(from, end));
-    return { left: s * dw, width: Math.max(0, (e - s + 1) * dw) };
+  const insert = (emp: string, half: number, color: string, symbol: boolean) => {
+    const day = Math.floor(half / 2);
+    const s = day * 2;
+    const id = uid("j");
+    save("jobs", { id, projectId: project.id, employeeId: emp, title: symbol ? "Meilenstein" : "Neue Aufgabe", color, ...fromHalves(from, s, s + 2), nodeId: "", note: "", done: false, symbol }, symbol ? "Symbol eingefügt" : "Zeitbalken eingefügt");
+    setEditing(id);
   };
 
   const timelineW = days * dw;
-  const todayJobs = jobs.filter((j) => j.start <= t && j.end >= t);
+  const todayJobs = jobs.filter((j) => j.start <= t && j.end >= t && !j.symbol);
 
   return (
     <div className="stack">
       <div className="toolbar">
         {controls}
         <span className="spacer" />
-        <span className="hint">Klick oder Rechtsklick auf einen Tag = Aufgabe · Rechtsklick auf Aufgabe = Farbe, erledigt, duplizieren</span>
+        <span className="hint">Ziehen = verschieben (halbe Tage) · Klick auf Balken = umbenennen · Rechtsklick = einfügen, Farbe</span>
       </div>
 
       <div className="planner site-gantt" style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${NAME_W}px` } as CSSProperties}>
@@ -143,7 +220,9 @@ export function SiteGantt({ project }: { project: Project }) {
             <div className="pl-head">
               <div className="pl-corner sg-corner">
                 <span>Team</span>
-                <em>{team.length} Personen · {todayJobs.length} Aufgaben heute</em>
+                <em>
+                  {team.length} Personen · {todayJobs.length} Aufgaben heute
+                </em>
               </div>
               <PlannerHeadTime dayList={dayList} dw={dw} />
             </div>
@@ -151,22 +230,30 @@ export function SiteGantt({ project }: { project: Project }) {
               <PlannerCols dayList={dayList} dw={dw} left={NAME_W} />
               {team.length === 0 && <div className="pl-empty">Die Projektleitung hat dieser Baustelle noch niemanden zugeteilt.</div>}
               {team.map((emp) => {
-                const own = shownJobs.filter((j) => j.employeeId === emp.id && j.end >= from && j.start <= to).sort((a, b) => a.start.localeCompare(b.start));
-                const ends: ISODate[] = [];
+                const own = jobs
+                  .map(previewJob)
+                  .filter((j) => j.employeeId === emp.id && j.end >= from && j.start <= to)
+                  .sort((a, b) => a.start.localeCompare(b.start) || Number(!!a.startPm) - Number(!!b.startPm));
+                const ends: number[] = [];
                 const lane = new Map<string, number>();
                 for (const j of own) {
-                  let i = ends.findIndex((x) => x < j.start);
+                  const { s, e } = jobHalves(from, j);
+                  let i = ends.findIndex((x) => x <= s);
                   if (i === -1) i = ends.length;
-                  ends[i] = j.end;
+                  ends[i] = j.symbol ? s + 6 : e;
                   lane.set(j.id, i);
                 }
                 const lanes = Math.max(1, ends.length);
                 const here = presence.filter((a) => a.resourceId === emp.id);
                 const elsewhere = data.assignments.filter((a) => a.resourceType === "employee" && a.resourceId === emp.id && a.projectId !== project.id && a.end >= from && a.start <= to);
-                const abs = data.absences.filter((a) => a.employeeId === emp.id && a.end >= from && a.start <= to);
-                const creating = drag?.mode === "create" && drag.emp === emp.id ? drag : null;
+                const abs = data.absences.filter((a) => a.employeeId === emp.id).map(previewAbs).filter((a) => a.end >= from && a.start <= to);
+                const dayBox = (start: ISODate, end: ISODate) => {
+                  const s = Math.max(0, diffDays(from, start));
+                  const e = Math.min(days - 1, diffDays(from, end));
+                  return { left: s * dw, width: Math.max(0, (e - s + 1) * dw) };
+                };
                 return (
-                  <div key={emp.id} className={`pl-row sg-row ${drag?.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE + 8 }} data-emp={emp.id}>
+                  <div key={emp.id} className={`pl-row sg-row ${drag?.kind === "job" && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE + 10 }} data-emp={emp.id}>
                     <div className="pl-left sg-left">
                       <Avatar name={emp.name} size={24} />
                       <span>
@@ -175,21 +262,20 @@ export function SiteGantt({ project }: { project: Project }) {
                       </span>
                     </div>
                     <div
-                      className="pl-time creatable"
+                      className="pl-time"
                       style={{ width: timelineW }}
-                      onPointerDown={(e) => beginCreate(e, emp.id)}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setMenu({ x: e.clientX, y: e.clientY, emp: emp.id, date: addDays(from, Math.floor((e.clientX - rect.left) / dw)) });
+                        setMenu({ x: e.clientX, y: e.clientY, emp: emp.id, half: Math.floor((e.clientX - rect.left) / hw) });
                       }}
                     >
                       {here.map((a) => {
-                        const b = box(a.start, a.end);
+                        const b = dayBox(a.start, a.end);
                         return b.width > 0 ? <div key={a.id} className="sg-presence" style={{ left: b.left, width: b.width }} title={`Auf der Baustelle ${fmt(a.start)} – ${fmt(a.end)}`} /> : null;
                       })}
                       {elsewhere.map((a) => {
-                        const b = box(a.start, a.end);
+                        const b = dayBox(a.start, a.end);
                         const p = data.projects.find((x) => x.id === a.projectId);
                         return b.width > 0 ? (
                           <div key={a.id} className="sg-elsewhere" style={{ left: b.left, width: b.width }} title={`Woanders: ${p?.name ?? a.label ?? ""}`}>
@@ -198,40 +284,64 @@ export function SiteGantt({ project }: { project: Project }) {
                         ) : null;
                       })}
                       {abs.map((a) => {
-                        const b = box(a.start, a.end);
+                        const b = dayBox(a.start, a.end);
                         return (
-                          <div key={a.id} className={`sg-abs abs-${a.type}`} style={{ left: b.left, width: b.width }} title={`${L.absenceType[a.type].label} ${fmt(a.start)} – ${fmt(a.end)}`} onPointerDown={(e) => e.stopPropagation()}>
+                          <div
+                            key={a.id}
+                            className={`sg-abs abs-${a.type} ${drag?.kind === "abs" && drag.id === a.id ? "active" : ""}`}
+                            style={{ left: b.left, width: b.width }}
+                            title={`${L.absenceType[a.type].label} ${fmt(a.start)} – ${fmt(a.end)} · ziehen zum Verschieben`}
+                            onPointerDown={(e) => beginAbs(e, a, "move")}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setMenu({ x: e.clientX, y: e.clientY, abs: data.absences.find((x) => x.id === a.id) });
+                            }}
+                          >
                             {L.absenceType[a.type].label}
+                            <i className="h h-l" onPointerDown={(e) => beginAbs(e, a, "start")} />
+                            <i className="h h-r" onPointerDown={(e) => beginAbs(e, a, "end")} />
                           </div>
                         );
                       })}
                       {own.map((j) => {
-                        const b = box(j.start, j.end);
+                        const { s, e } = jobHalves(from, j);
+                        const top = 5 + (lane.get(j.id) ?? 0) * LANE;
+                        const onCtx = (ev: React.MouseEvent) => {
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          setMenu({ x: ev.clientX, y: ev.clientY, job: jobs.find((x) => x.id === j.id) });
+                        };
+                        if (j.symbol) {
+                          return (
+                            <div key={j.id} className="sg-symbol" style={{ left: s * hw + hw - 8, top, "--c": j.color } as CSSProperties} title={`${j.title} · ${fmt(j.start)}`} onPointerDown={(ev) => beginJob(ev, j, "move")} onContextMenu={onCtx}>
+                              <Star size={16} fill={j.color} color="#1f2937" strokeWidth={1.2} />
+                              {editing === j.id ? <RenameInput job={j} onDone={() => setEditing(null)} /> : <span>{j.title}</span>}
+                            </div>
+                          );
+                        }
                         return (
                           <div
                             key={j.id}
-                            className={`sg-job ${j.done ? "done" : ""} ${drag?.id === j.id ? "active" : ""}`}
-                            style={{ left: b.left + 1, width: Math.max(6, b.width - 2), top: 4 + (lane.get(j.id) ?? 0) * LANE, "--c": j.color } as CSSProperties}
-                            title={`${j.title}\n${fmt(j.start)} – ${fmt(j.end)}${j.note ? `\n${j.note}` : ""}`}
-                            onPointerDown={(e) => beginJob(e, j, "move")}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setMenu({ x: e.clientX, y: e.clientY, job: j });
-                            }}
+                            className={`sg-job ${j.done ? "done" : ""} ${drag?.kind === "job" && drag.id === j.id ? "active" : ""} ${editing === j.id ? "editing" : ""}`}
+                            style={{ left: s * hw + 1, width: Math.max(8, (e - s) * hw - 2), top, background: j.color, color: textOn(j.color) } as CSSProperties}
+                            title={`${j.title}\n${fmt(j.start)}${j.startPm ? " (ab Mittag)" : ""} – ${fmt(j.end)}${j.endAm ? " (bis Mittag)" : ""}${j.note ? `\n${j.note}` : ""}`}
+                            onPointerDown={(ev) => beginJob(ev, j, "move")}
+                            onContextMenu={onCtx}
                           >
-                            {j.done && <Check size={11} />}
-                            <span>{j.title}</span>
-                            <i className="h h-l" onPointerDown={(e) => beginJob(e, j, "start")} />
-                            <i className="h h-r" onPointerDown={(e) => beginJob(e, j, "end")} />
+                            {editing === j.id ? (
+                              <RenameInput job={j} onDone={() => setEditing(null)} />
+                            ) : (
+                              <>
+                                {j.done && <Check size={11} />}
+                                <span>{j.title}</span>
+                                <i className="h h-l" onPointerDown={(ev) => beginJob(ev, j, "start")} />
+                                <i className="h h-r" onPointerDown={(ev) => beginJob(ev, j, "end")} />
+                              </>
+                            )}
                           </div>
                         );
                       })}
-                      {creating && (
-                        <div className="pl-creating" style={{ left: diffDays(from, creating.start) * dw, width: (diffDays(creating.start, creating.end) + 1) * dw }}>
-                          {diffDays(creating.start, creating.end) + 1}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
@@ -249,39 +359,173 @@ export function SiteGantt({ project }: { project: Project }) {
           <i className="sg-elsewhere" /> auf anderer Baustelle
         </span>
         <span>
-          <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand (HR)
+          <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand (HR) – verschiebbar
         </span>
       </div>
 
       {menu && (
-        <ContextMenu
+        <PlanMenu
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
           items={
             menu.job
               ? [
-                  { label: "Bearbeiten …", onClick: () => setPop({ job: menu.job!, x: menu.x, y: menu.y }) },
-                  { label: menu.job.done ? "Wieder öffnen" : "Als erledigt markieren", onClick: () => save("jobs", { ...menu.job!, done: !menu.job!.done }) },
+                  { icon: <Palette size={16} />, label: "Farbe", colors: (c) => save("jobs", { ...menu.job!, color: c }) },
+                  { icon: <Pencil size={16} />, label: "Umbenennen", onClick: () => setEditing(menu.job!.id) },
+                  { icon: <ChevronRight size={16} />, label: "Details …", onClick: () => setDetails({ job: menu.job!, x: menu.x, y: menu.y }) },
+                  { icon: <Check size={16} />, label: menu.job.done ? "Wieder öffnen" : "Als erledigt markieren", onClick: () => save("jobs", { ...menu.job!, done: !menu.job!.done }) },
                   {
-                    label: "Duplizieren (danach)",
+                    icon: <Diamond size={16} />,
+                    label: "Duplizieren",
                     onClick: () => {
-                      const len = diffDays(menu.job!.start, menu.job!.end);
-                      const start = addDays(menu.job!.end, 1);
-                      save("jobs", { ...menu.job!, id: uid("j"), start, end: addDays(start, len), done: false });
-                      notify("Aufgabe dupliziert");
+                      const { s, e } = jobHalves(from, menu.job!);
+                      save("jobs", { ...menu.job!, id: uid("j"), ...fromHalves(from, e, e + (e - s)), done: false });
+                      notify("Dupliziert");
                     }
                   },
-                  { label: "Löschen", danger: true, onClick: () => remove("jobs", menu.job!.id, `Aufgabe „${menu.job!.title}“ gelöscht`) }
+                  { icon: <Trash2 size={16} />, label: "Löschen", danger: true, onClick: () => remove("jobs", menu.job!.id, `Aufgabe „${menu.job!.title}“ gelöscht`) }
                 ]
-              : [{ label: `Aufgabe am ${fmt(menu.date!)} hinzufügen …`, onClick: () => setPop({ job: { employeeId: menu.emp, start: menu.date, end: menu.date }, x: menu.x, y: menu.y }) }]
+              : menu.abs
+                ? [
+                    ...(Object.keys(L.absenceType) as AbsenceType[]).map((type) => ({
+                      icon: <span className={`menu-swatch abs-${type}`} />,
+                      label: L.absenceType[type].label + (menu.abs!.type === type ? " ✓" : ""),
+                      onClick: () => save("absences", { ...menu.abs!, type })
+                    })),
+                    { icon: <Trash2 size={16} />, label: "Abwesenheit löschen", danger: true, onClick: () => remove("absences", menu.abs!.id, "Abwesenheit gelöscht") }
+                  ]
+                : [
+                    { icon: <InsertBarIcon />, label: "Neuen Zeitbalken einfügen", colors: (c) => insert(menu.emp!, menu.half!, c, false) },
+                    { icon: <Star size={17} strokeWidth={1.6} />, label: "Neues Symbol einfügen", colors: (c) => insert(menu.emp!, menu.half!, c, true) }
+                  ]
           }
-          colors={menu.job ? { value: menu.job.color, onPick: (c) => save("jobs", { ...menu.job!, color: c }) } : undefined}
         />
       )}
 
-      {pop && <JobPopover project={project} job={pop.job} x={pop.x} y={pop.y} teamIds={teamIds} onClose={() => setPop(null)} />}
+      {details && <JobPopover project={project} job={details.job} x={details.x} y={details.y} teamIds={teamIds} onClose={() => setDetails(null)} />}
     </div>
+  );
+}
+
+function InsertBarIcon() {
+  return (
+    <svg width="18" height="16" viewBox="0 0 18 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
+      <rect x="1" y="2" width="13" height="8" rx="1.5" />
+      <circle cx="13.5" cy="11.5" r="3.6" fill="#fff" />
+      <path d="M13.5 9.8v3.4M11.8 11.5h3.4" />
+    </svg>
+  );
+}
+
+/** Rename a job in place: Enter or leaving the field saves, Esc cancels. */
+function RenameInput({ job, onDone }: { job: Job; onDone: () => void }) {
+  const { save } = useStore();
+  const [text, setText] = useState(job.title);
+  const ref = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+  const commit = (keep: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    if (keep && text.trim() && text.trim() !== job.title) save("jobs", { ...job, title: text.trim() });
+    onDone();
+  };
+  return (
+    <input
+      ref={ref}
+      className="rename-input"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit(true);
+        if (e.key === "Escape") commit(false);
+      }}
+      onBlur={() => commit(true)}
+      aria-label="Aufgabe umbenennen"
+    />
+  );
+}
+
+type PlanMenuItem = { icon: ReactNode; label: string; onClick?: () => void; colors?: (c: string) => void; danger?: boolean };
+
+/** Small right-click menu; items with colours open the palette on hover or click. */
+function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanMenuItem[]; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const custom = useRef<HTMLInputElement>(null);
+  const [pos, setPos] = useState({ left: x, top: y });
+  const [sub, setSub] = useState<number | null>(null);
+  const [flip, setFlip] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const left = Math.min(x, window.innerWidth - el.offsetWidth - 8);
+    setPos({ left, top: Math.min(y, window.innerHeight - el.offsetHeight - 8) });
+    setFlip(left + el.offsetWidth + 240 > window.innerWidth);
+  }, [x, y]);
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
+
+  const pick = (item: PlanMenuItem, c: string) => {
+    onClose();
+    item.colors?.(c);
+  };
+
+  return (
+    <>
+      <div
+        className="pop-backdrop"
+        onPointerDown={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
+      <div ref={ref} className="plan-menu" style={pos} role="menu">
+        {items.map((it, i) => (
+          <div key={it.label} className="pm-item-wrap" onMouseEnter={() => setSub(it.colors ? i : null)}>
+            <button
+              type="button"
+              role="menuitem"
+              className={`pm-item ${it.danger ? "danger" : ""} ${sub === i ? "open" : ""}`}
+              onClick={() => {
+                if (it.colors) setSub(i);
+                else {
+                  onClose();
+                  it.onClick?.();
+                }
+              }}
+            >
+              <span className="pm-icon">{it.icon}</span>
+              {it.label}
+              {it.colors && <ChevronRight size={14} className="pm-chev" />}
+            </button>
+            {it.colors && sub === i && (
+              <div className={`pm-palette ${flip ? "flip" : ""}`} role="radiogroup" aria-label="Farbe">
+                <div className="pm-grid">
+                  {PALETTE.flat().map((c) => (
+                    <button key={c} type="button" style={{ background: c }} aria-label={c} onClick={() => pick(it, c)} />
+                  ))}
+                </div>
+                <button type="button" className="pm-custom" onClick={() => custom.current?.click()}>
+                  benutzerdefiniert …
+                </button>
+                <input ref={custom} type="color" hidden onChange={(e) => pick(it, e.target.value)} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -299,7 +543,10 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
     end: job.end ?? job.start ?? today(),
     nodeId: job.nodeId ?? "",
     note: job.note ?? "",
-    done: job.done ?? false
+    done: job.done ?? false,
+    startPm: job.startPm ?? false,
+    endAm: job.endAm ?? false,
+    symbol: job.symbol ?? false
   });
   const ref = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -385,6 +632,12 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
               <span>Bis</span>
               <input type="date" value={v.end} min={v.start} onChange={(e) => set({ end: e.target.value })} />
             </label>
+            <label className="check half">
+              <input type="checkbox" checked={!!v.startPm} onChange={(e) => set({ startPm: e.target.checked })} /> ab Mittag
+            </label>
+            <label className="check half">
+              <input type="checkbox" checked={!!v.endAm} onChange={(e) => set({ endAm: e.target.checked })} /> bis Mittag
+            </label>
             <label className="full">
               <span>Bereich / Punkt</span>
               <select value={v.nodeId} onChange={(e) => set({ nodeId: e.target.value })}>
@@ -440,70 +693,3 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
   );
 }
 
-type MenuItem = { label: string; onClick: () => void; danger?: boolean };
-
-/** Right-click menu with optional colour palette row. */
-function ContextMenu({ x, y, items, colors, onClose }: { x: number; y: number; items: MenuItem[]; colors?: { value: string; onPick: (c: string) => void }; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ left: x, top: y });
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setPos({ left: Math.min(x, window.innerWidth - el.offsetWidth - 8), top: Math.min(y, window.innerHeight - el.offsetHeight - 8) });
-  }, [x, y]);
-
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [onClose]);
-
-  return (
-    <>
-      <div
-        className="pop-backdrop"
-        onPointerDown={onClose}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-      />
-      <div ref={ref} className="ctx-menu" style={pos} role="menu">
-        {colors && (
-          <div className="ctx-colors" role="radiogroup" aria-label="Farbe">
-            {JOB_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                role="radio"
-                aria-checked={colors.value === c}
-                aria-label={c}
-                className={colors.value === c ? "on" : ""}
-                style={{ background: c }}
-                onClick={() => {
-                  colors.onPick(c);
-                  onClose();
-                }}
-              />
-            ))}
-          </div>
-        )}
-        {items.map((it) => (
-          <button
-            key={it.label}
-            type="button"
-            role="menuitem"
-            className={it.danger ? "danger" : ""}
-            onClick={() => {
-              onClose();
-              it.onClick();
-            }}
-          >
-            {it.label}
-          </button>
-        ))}
-      </div>
-    </>
-  );
-}
