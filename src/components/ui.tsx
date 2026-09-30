@@ -214,7 +214,7 @@ export function EntityForm<T extends Values>({
             case "select":
               input = (
                 <select id={id} value={String(v ?? "")} onChange={(e) => set(f.key, e.target.value)} required={f.required}>
-                  {!f.required && <option value="">–</option>}
+                  {!f.required && !f.options?.some((o) => o.value === "") && <option value="">–</option>}
                   {f.options?.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}

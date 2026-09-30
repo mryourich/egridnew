@@ -81,6 +81,11 @@ export default function ResourcePlanningPage() {
           save("assignments", { ...a, start, end, resourceId: employeeId }, moved ? `Einplanung umgebucht auf ${name}` : undefined);
           notify(moved ? `Umgebucht auf ${name}` : `${fmt(start)} – ${fmt(end)}`);
         }}
+        onAddPerson={(department, team) => openEditor({ kind: "employee", item: { department, team } })}
+        onPersonClick={(id) => {
+          const e = data.employees.find((x) => x.id === id);
+          if (e) openEditor({ kind: "employee", item: e });
+        }}
         onCreate={(employeeId, start, end) => openEditor({ kind: "assignment", item: { resourceType: "employee", resourceId: employeeId, start, end, projectId: focus || active[0]?.id || "" } })}
       />
     </div>

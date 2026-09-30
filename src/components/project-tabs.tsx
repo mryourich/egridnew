@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CalendarDays, Camera, CheckCircle2, Clock, Download, FileText, Package, Plus, Printer, Trash2, TrendingUp, Upload, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { addDays, diffDays, fmt, fmtShort, inRange, startOfWeek, today } from "@/lib/date";
+import { addDays, diffDays, fmt, fmtShort, inRange, startOfWeek, today, workdaysBetween } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel } from "@/lib/site";
 import { employeeName, findConflicts, projectProgress, resourceName, uid, useStore } from "@/lib/store";
@@ -759,37 +759,17 @@ export function ProjectPlanningTab({ project }: { project: Project }) {
   const planned = of(data.assignments, project.id).filter((a) => a.resourceType === "employee");
   const plannedIds = new Set(planned.map((a) => a.resourceId));
   const employees = data.employees.filter((e) => e.active && (!onlyPlanned || plannedIds.has(e.id)));
-  const team = data.employees.filter((e) => plannedIds.has(e.id));
 
   return (
     <div className="stack">
-      <div className="team-strip">
-        <strong>Eingeplant ({team.length})</strong>
-        {team.length ? (
-          team.map((e) => {
-            const own = planned.filter((a) => a.resourceId === e.id).sort((a, b) => a.start.localeCompare(b.start));
-            return (
-              <span key={e.id} className="team-chip" title={own.map((a) => `${fmt(a.start)} – ${fmt(a.end)}`).join("\n")}>
-                <Avatar name={e.name} size={20} /> {e.name}
-                <small>
-                  {fmtShort(own[0].start)}–{fmtShort(own.at(-1)!.end)}
-                </small>
-              </span>
-            );
-          })
-        ) : (
-          <span className="muted">Noch niemand – im Plan unten auf der Zeile einer Person ziehen.</span>
-        )}
-      </div>
+      <ResourceList project={project} />
       <div className="toolbar">
         {controls}
         <label className="check">
           <input type="checkbox" checked={onlyPlanned} onChange={(e) => setOnlyPlanned(e.target.checked)} /> nur eingeplante Personen
         </label>
         <span className="spacer" />
-        <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "assignment", item: { projectId: project.id } })}>
-          <Plus size={16} /> Person einplanen
-        </button>
+        <span className="hint">Auf der Zeile einer Person ziehen = einplanen</span>
       </div>
       <ResourcePlanner
         employees={employees}
@@ -801,10 +781,12 @@ export function ProjectPlanningTab({ project }: { project: Project }) {
         dayWidth={dayWidth}
         focusProjectId={project.id}
         conflicts={conflicts}
+        onAddPerson={(department, team) => openEditor({ kind: "employee", item: { department, team } })}
+        onPersonClick={(id) => openEditor({ kind: "assignment", item: { resourceType: "employee", resourceId: id, projectId: project.id, start: project.start > today() ? project.start : today(), end: addDays(project.start > today() ? project.start : today(), 4) } })}
         onBarClick={(id) => {
           const a = data.assignments.find((x) => x.id === id);
           if (a && a.projectId === project.id) openEditor({ kind: "assignment", item: a });
-          else if (a) notify(`Gehört zu ${data.projects.find((p) => p.id === a.projectId)?.name ?? "anderem Projekt"}`);
+          else if (a) notify(`Gehört zu ${data.projects.find((p) => p.id === a.projectId)?.name ?? a.label ?? "anderem Eintrag"}`);
         }}
         onChange={(id, start, end, employeeId) => {
           const a = data.assignments.find((x) => x.id === id);
@@ -814,8 +796,102 @@ export function ProjectPlanningTab({ project }: { project: Project }) {
         }}
         onCreate={(employeeId, start, end) => openEditor({ kind: "assignment", item: { resourceType: "employee", resourceId: employeeId, start, end, projectId: project.id } })}
       />
-      <p className="hint">Blasse Balken sind Einsätze in anderen Projekten – so siehst du, wer frei ist. Rot = Urlaub, orange = Krankenstand.</p>
+      <p className="hint">Klick auf einen Namen plant die Person ein. Blasse Balken = andere Projekte. Rot = Urlaub, orange = Krankenstand.</p>
     </div>
+  );
+}
+
+/** Who works on the site: one row per planned stint. */
+export function ResourceList({ project, readOnly }: { project: Project; readOnly?: boolean }) {
+  const { data, remove } = useStore();
+  const openEditor = useEditor();
+  const t = today();
+  const list = of(data.assignments, project.id)
+    .filter((a) => a.resourceType === "employee")
+    .sort((a, b) => (a.end < t ? 1 : 0) - (b.end < t ? 1 : 0) || a.start.localeCompare(b.start));
+  const people = new Set(list.map((a) => a.resourceId)).size;
+  const onSite = new Set(list.filter((a) => inRange(t, a.start, a.end)).map((a) => a.resourceId)).size;
+  const personDays = list.reduce((s, a) => s + workdaysBetween(a.start, a.end), 0);
+
+  return (
+    <section className="card card-flush">
+      <header className="card-header">
+        <h2>
+          Ressourcen <span className="tab-count">{people}</span>
+        </h2>
+        <span className="muted small">
+          heute vor Ort: <strong>{onSite}</strong> · {personDays} Personentage
+        </span>
+        {!readOnly && (
+          <button className="btn btn-sm btn-primary" type="button" onClick={() => openEditor({ kind: "assignment", item: { resourceType: "employee", projectId: project.id, start: project.start > t ? project.start : t, end: addDays(project.start > t ? project.start : t, 4) } })}>
+            <Plus size={14} /> Person einplanen
+          </button>
+        )}
+      </header>
+      {list.length === 0 ? (
+        <Empty>Noch niemand eingeplant.</Empty>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Funktion</th>
+                <th>Von</th>
+                <th>Bis</th>
+                <th className="num">Arbeitstage</th>
+                <th>Status</th>
+                <th>Notiz</th>
+                {!readOnly && <th />}
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((a) => {
+                const e = data.employees.find((x) => x.id === a.resourceId);
+                const absent = data.absences.find((ab) => ab.employeeId === a.resourceId && ab.start <= a.end && ab.end >= a.start);
+                return (
+                  <tr key={a.id} className={`${readOnly ? "" : "clickable"} ${a.end < t ? "inactive" : ""}`} onClick={() => !readOnly && openEditor({ kind: "assignment", item: a })}>
+                    <td>
+                      <span className="cell-person">
+                        <Avatar name={e?.name ?? "?"} size={22} /> <strong>{e?.name ?? "–"}</strong>
+                      </span>
+                    </td>
+                    <td>{e?.role}</td>
+                    <td className="nowrap">{fmt(a.start)}</td>
+                    <td className="nowrap">{fmt(a.end)}</td>
+                    <td className="num">{workdaysBetween(a.start, a.end)}</td>
+                    <td>
+                      {inRange(t, a.start, a.end) ? <Badge tone="green">Vor Ort</Badge> : a.start > t ? <Badge tone="blue">Geplant</Badge> : <Badge tone="gray">Beendet</Badge>}
+                      {absent && (
+                        <Badge tone="red">
+                          {L.absenceType[absent.type].label} {fmtShort(absent.start)}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="muted">{a.note}</td>
+                    {!readOnly && (
+                      <td className="num">
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title="Aus Projekt entfernen"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            if (window.confirm(`${e?.name ?? "Person"} aus dem Projekt entfernen?`)) remove("assignments", a.id, `${e?.name} aus ${project.code} entfernt`);
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -831,6 +907,7 @@ export function SiteScheduleTab({ project }: { project: Project }) {
 
   return (
     <div className="stack">
+      <ResourceList project={project} readOnly />
       <div className="toolbar">
         {controls}
         <span className="muted">
