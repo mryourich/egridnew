@@ -1,0 +1,188 @@
+/** ISO date string, YYYY-MM-DD */
+export type ISODate = string;
+
+export type ProjectStatus = "planung" | "aktiv" | "pausiert" | "abgeschlossen";
+
+export type Project = {
+  id: string;
+  code: string;
+  name: string;
+  client: string;
+  location: string;
+  status: ProjectStatus;
+  color: string;
+  start: ISODate;
+  end: ISODate;
+  managerId: string;
+  budget: number;
+  description: string;
+};
+
+export type Qualification = {
+  name: string;
+  validUntil: ISODate;
+};
+
+export type Employee = {
+  id: string;
+  name: string;
+  role: string;
+  team: string;
+  phone: string;
+  email: string;
+  hourlyRate: number;
+  qualifications: Qualification[];
+  active: boolean;
+};
+
+export type Vehicle = {
+  id: string;
+  plate: string;
+  name: string;
+  type: string;
+  seats: number;
+  nextService: ISODate;
+  status: "verfuegbar" | "werkstatt" | "ausser_betrieb";
+};
+
+export type Equipment = {
+  id: string;
+  name: string;
+  category: string;
+  serial: string;
+  nextInspection: ISODate;
+  status: "verfuegbar" | "defekt" | "ausser_betrieb";
+};
+
+export type ResourceType = "employee" | "vehicle" | "equipment";
+
+export type Assignment = {
+  id: string;
+  resourceType: ResourceType;
+  resourceId: string;
+  projectId: string;
+  start: ISODate;
+  end: ISODate;
+  note: string;
+};
+
+export type AbsenceType = "urlaub" | "krank" | "schulung" | "sonstiges";
+
+export type Absence = {
+  id: string;
+  employeeId: string;
+  type: AbsenceType;
+  start: ISODate;
+  end: ISODate;
+  note: string;
+};
+
+export type TaskStatus = "offen" | "in_arbeit" | "erledigt" | "blockiert";
+
+export type Task = {
+  id: string;
+  projectId: string;
+  title: string;
+  phase: string;
+  start: ISODate;
+  end: ISODate;
+  progress: number;
+  status: TaskStatus;
+  assigneeId: string;
+  dependsOn: string;
+  milestone: boolean;
+};
+
+export type IssueKind = "mangel" | "abweichung" | "behinderung";
+export type IssueStatus = "offen" | "in_arbeit" | "erledigt";
+export type Severity = "niedrig" | "mittel" | "hoch" | "kritisch";
+
+export type Issue = {
+  id: string;
+  projectId: string;
+  kind: IssueKind;
+  title: string;
+  description: string;
+  location: string;
+  severity: Severity;
+  status: IssueStatus;
+  assigneeId: string;
+  due: ISODate;
+  createdAt: ISODate;
+  photo: string;
+};
+
+export type MaterialStatus = "geplant" | "bestellt" | "teilgeliefert" | "geliefert";
+
+export type Material = {
+  id: string;
+  projectId: string;
+  name: string;
+  unit: string;
+  planned: number;
+  delivered: number;
+  used: number;
+  unitPrice: number;
+  supplier: string;
+  deliveryDate: ISODate;
+  status: MaterialStatus;
+};
+
+export type Weather = "sonnig" | "bewoelkt" | "regen" | "schnee" | "frost";
+
+export type DailyReport = {
+  id: string;
+  projectId: string;
+  date: ISODate;
+  weather: Weather;
+  temperature: number;
+  crew: number;
+  hours: number;
+  work: string;
+  incidents: string;
+  authorId: string;
+};
+
+export type DocumentFile = {
+  id: string;
+  projectId: string;
+  name: string;
+  category: string;
+  size: number;
+  addedAt: ISODate;
+  dataUrl: string;
+};
+
+export type ActivityEntry = {
+  id: string;
+  at: string;
+  text: string;
+  projectId: string;
+};
+
+export type Company = {
+  name: string;
+  address: string;
+  workdays: number[];
+};
+
+export type Data = {
+  version: number;
+  company: Company;
+  projects: Project[];
+  employees: Employee[];
+  vehicles: Vehicle[];
+  equipment: Equipment[];
+  assignments: Assignment[];
+  absences: Absence[];
+  tasks: Task[];
+  issues: Issue[];
+  materials: Material[];
+  reports: DailyReport[];
+  documents: DocumentFile[];
+  activity: ActivityEntry[];
+};
+
+export type CollectionKey = Exclude<keyof Data, "version" | "company">;
+
+export type Item<K extends CollectionKey> = Data[K][number];
