@@ -1529,7 +1529,7 @@ export function AppShell({
     <div className="app-frame">
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="brand-row">
-          <Image src="/brand/egrid-icon.png" width={58} height={58} alt="VYSNpro" priority />
+          <Image src="/brand/vysnpro-icon.png" width={58} height={58} alt="VYSNpro" priority />
           <strong>VYSNpro</strong>
           <button className="icon-button sidebar-close" type="button" aria-label="Menü schließen" onClick={() => setMobileOpen(false)}>
             <X size={18} />

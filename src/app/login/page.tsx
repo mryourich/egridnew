@@ -7,7 +7,7 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="login-panel">
         <Link href="/" className="login-brand">
-          <Image src="/brand/egrid-icon.png" width={42} height={42} alt="VYSNpro" priority />
+          <Image src="/brand/vysnpro-icon.png" width={42} height={42} alt="VYSNpro" priority />
           <span>VYSNpro</span>
         </Link>
         <div className="login-copy">
