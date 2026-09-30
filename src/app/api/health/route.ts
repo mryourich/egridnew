@@ -4,7 +4,6 @@ export function GET() {
   return NextResponse.json({
     status: "ok",
     product: "VYSNpro",
-    architecture: "nextjs-app-router",
-    modules: ["core", "people", "fleet", "site", "roles", "billing"]
+    modules: ["dashboard", "plantafel", "projekte", "meldungen", "ressourcen", "einstellungen"]
   });
 }

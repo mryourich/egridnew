@@ -2,24 +2,18 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VYSNpro",
-  description: "Modulare SaaS-Plattform für People, Fleet, Projekte und Unternehmensprozesse.",
-  icons: {
-    icon: "/brand/vysnpro-icon.png"
-  }
+  title: { default: "VYSNpro", template: "%s · VYSNpro" },
+  description: "Die Unternehmenszentrale für Ressourcenplanung, Projekte, Baustellen und Teams.",
+  icons: { icon: "/brand/vysnpro-icon.png" }
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f7f8fb"
+  themeColor: "#0b1733"
 };
 
-export default function RootLayout({
-  children
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de">
       <body>{children}</body>
