@@ -77,11 +77,11 @@ export default function DashboardPage() {
         <Kpi icon={FolderKanban} label="Aktive Projekte" value={active.length} hint={`${data.projects.filter((p) => p.status === "planung").length} in Planung`} />
         <Kpi icon={Users} label="Heute eingeplant" value={`${bookedToday.size} / ${employees.length}`} hint={`${freeToday.length} frei · ${absentToday.length} abwesend`} tone="green" />
         <Kpi icon={AlertTriangle} label="Offene Meldungen" value={openIssues.length} hint={`${openIssues.filter((i) => i.due && i.due < t).length} überfällig`} tone="amber" />
-        <Kpi icon={ShieldAlert} label="Planungskonflikte" value={conflicts.size} hint={conflicts.size ? <Link href="/planung">Zur Plantafel</Link> : "alles sauber"} tone={conflicts.size ? "red" : "green"} />
+        <Kpi icon={ShieldAlert} label="Planungskonflikte" value={conflicts.size} hint={conflicts.size ? <Link href="/planung">Zur Einsatzplanung</Link> : "alles sauber"} tone={conflicts.size ? "red" : "green"} />
       </div>
 
       <div className="grid-dash">
-        <Card title="Auslastung Mitarbeiter – nächste 10 Arbeitstage" actions={<Link className="link-btn" href="/planung">Plantafel</Link>}>
+        <Card title="Auslastung Mitarbeiter – nächste 10 Arbeitstage" actions={<Link className="link-btn" href="/planung">Einsatzplanung</Link>}>
           <div className="util-chart">
             {week.map((d) => {
               const pct = d.capacity ? (d.booked / d.capacity) * 100 : 0;
@@ -225,7 +225,7 @@ export default function DashboardPage() {
 
       <div className="quick-links">
         <Link href="/planung" className="quick-link">
-          <CalendarRange size={18} /> Plantafel öffnen
+          <CalendarRange size={18} /> Einsatzplanung öffnen
         </Link>
         <Link href="/ressourcen" className="quick-link">
           <Truck size={18} /> Fuhrpark & Geräte

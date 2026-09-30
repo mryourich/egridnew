@@ -93,6 +93,33 @@ export type Task = {
   milestone: boolean;
 };
 
+export type NodeStatus = "offen" | "in_arbeit" | "erledigt";
+
+/** Structure of a construction site: areas, sub-areas and single points (any depth). */
+export type SiteNode = {
+  id: string;
+  projectId: string;
+  /** Empty string for top-level areas. */
+  parentId: string;
+  title: string;
+  description: string;
+  status: NodeStatus;
+  assigneeId: string;
+  due: ISODate;
+  order: number;
+};
+
+export type Photo = {
+  id: string;
+  projectId: string;
+  nodeId: string;
+  dataUrl: string;
+  caption: string;
+  /** ISO date-time YYYY-MM-DDTHH:mm */
+  takenAt: string;
+  authorId: string;
+};
+
 export type IssueKind = "mangel" | "abweichung" | "behinderung";
 export type IssueStatus = "offen" | "in_arbeit" | "erledigt";
 export type Severity = "niedrig" | "mittel" | "hoch" | "kritisch";
@@ -110,6 +137,7 @@ export type Issue = {
   due: ISODate;
   createdAt: ISODate;
   photo: string;
+  nodeId?: string;
 };
 
 export type MaterialStatus = "geplant" | "bestellt" | "teilgeliefert" | "geliefert";
@@ -161,6 +189,8 @@ export type ActivityEntry = {
 };
 
 export type Company = {
+  /** Tenant id – every company that buys VYSNpro gets its own. */
+  tenantId: string;
   name: string;
   address: string;
   workdays: number[];
@@ -177,6 +207,8 @@ export type Data = {
   absences: Absence[];
   tasks: Task[];
   issues: Issue[];
+  siteNodes: SiteNode[];
+  photos: Photo[];
   materials: Material[];
   reports: DailyReport[];
   documents: DocumentFile[];

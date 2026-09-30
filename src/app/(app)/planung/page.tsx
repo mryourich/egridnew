@@ -79,7 +79,7 @@ export default function PlanningPage() {
   return (
     <div className="page page-planner">
       <PageHeader
-        title="Plantafel"
+        title="Einsatzplanung"
         subtitle={`${fmt(from)} – ${fmt(to)}`}
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "assignment" })}>

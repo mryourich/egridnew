@@ -143,7 +143,7 @@ export type Field = {
 
 type Values = Record<string, unknown>;
 
-async function downscale(file: File, max = 1280): Promise<string> {
+export async function downscale(file: File, max = 1280): Promise<string> {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
