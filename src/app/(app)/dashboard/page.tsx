@@ -7,9 +7,19 @@ import { useEditor } from "@/components/shell";
 import { Badge, Card, Dot, Empty, Kpi, PageHeader, Progress } from "@/components/ui";
 import { addDays, diffDays, fmt, fmtShort, inRange, isWeekend, startOfWeek, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { findConflicts, projectProgress, resourceName, useStore } from "@/lib/store";
+import { currentUser, findConflicts, projectProgress, resourceName, roleOf, useStore } from "@/lib/store";
+import { MyWork } from "@/components/my-work";
+import { SitesOverview } from "@/components/sites-overview";
 
 export default function DashboardPage() {
+  const { data } = useStore();
+  const role = roleOf(currentUser(data));
+  if (role === "monteur") return <MyWork />;
+  if (role === "bl") return <SitesOverview />;
+  return <ManagementHome />;
+}
+
+function ManagementHome() {
   const { data } = useStore();
   const openEditor = useEditor();
   const t = today();

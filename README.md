@@ -5,26 +5,24 @@ Projekte steuern, Mängel erfassen und das Team im Blick behalten – in einer A
 
 ## Aufbau
 
-Eine Plattform, mehrere Mandanten (jede Firma bekommt ihren eigenen Bereich), Bedienung angelehnt an
-Microsoft Dynamics Business Central / Navision: Menüleiste oben, Kacheln auf der Startseite, Listen mit
-Aktionsleiste und Detailkarten. Später sehen Benutzer je nach Rolle (Bauleiter, Projektleiter,
-Fuhrpark, HR, Monteur) nur ihre Bereiche.
+Eine Plattform für mehrere Mandanten (jede Firma bekommt ihren eigenen Bereich). Jede Rolle sieht nur,
+was sie braucht – und alles ist verknüpft:
 
-| Modul | Rolle | Inhalt |
+```
+HR (Personal, Abwesenheiten)
+  → Projektleitung (plant, wer auf welcher Baustelle ist)
+    → Bauleitung (verteilt Aufgaben an das Team im Baustellen-Plan)
+      → Monteure (sehen „Heute zu tun“, haken ab, machen Fotos)
+```
+
+| Rolle | Startseite | Module |
 | --- | --- | --- |
-| **Projekte** | Projektleitung | Projektliste; je Projekt Übersicht, **Einsatzplanung** (Personen einplanen), Terminplan, Mängel, Tagesberichte, Dokumente. **Ressourcenplanung** über alle Projekte |
-| **TeamGrid** | Bauleitung | Nur zugeteilte Baustellen. Je Baustelle **Struktur** (Bereiche → Unterbereiche → Punkte), **Zeitplan** (wer ist wann vor Ort, nur lesen), **Fotodokumentation**, **Mängel**, **Tagesberichte** |
-| **Ressourcen** | Verwaltung | Mitarbeiter, Fahrzeuge, Geräte, Abwesenheiten |
-| **Start** | alle | Kennzahlen, Auslastung, Fristen |
+| **Projektleitung** | Kennzahlen, Auslastung, Fristen | Projekte (Einsatzplanung je Projekt, Ressourcenplanung), TeamGrid, Personal |
+| **Bauleitung** | Meine Baustellen (Karten) | TeamGrid: **Plan** (Aufgaben mit Farbpalette per Klick auf den Tag), Struktur (Bereiche → Punkte, Klick öffnet), Fotos, Mängel, Tagesberichte, Team |
+| **Monteur** | Heute zu tun, die nächsten Tage | Meine Baustellen (Struktur, Fotos, Mängel) |
+| **HR** | Kennzahlen | Personal (Mitarbeiter, Abwesenheiten) |
 
-Mängel gibt es nur innerhalb eines Projekts; Projekte sind voneinander getrennt.
-Der Planer (`src/components/planner.tsx`) ist im Stil klassischer Plantafeln aufgebaut: nummerierte
-Baumstruktur Abteilung → Team → Person, Kalenderwochen, Wochenenden, österreichische Feiertage,
-Urlaub/Krankenstand als eigene Balken, Drag & Drop.
-
-Zum Testen der Rollen kann oben rechts der angemeldete Benutzer gewechselt werden (Demo).
-
-Geplant: Fleet (Poolfahrzeuge buchen), People (HR, Urlaubsanträge), Zeiterfassung, Rollen und Login.
+Zum Ausprobieren oben rechts auf den Namen klicken und die Ansicht wechseln (Demo bis zum echten Login).
 
 Die Daten liegen im Moment im Browser (localStorage) und sind mit Demo-Daten vorbefüllt.
 Supabase (Login, Mandanten, Datenbank und Foto-Speicher) ist der nächste Schritt.
@@ -35,7 +33,10 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 | --- | --- |
 | `src/app/(app)/*` | Seiten: dashboard, projekte, projekte/[id], ressourcenplanung, teamgrid, teamgrid/[id], ressourcen, einstellungen |
 | `src/components/planner.tsx` | Ressourcenplaner (Plantafel) |
-| `src/components/site.tsx` | SiteManager: Struktur-Baum, Detailbereich, Fotos, Lightbox |
+| `src/components/site.tsx` | SiteManager: Struktur-Baum, Seitenfenster, Fotos, Lightbox |
+| `src/components/site-gantt.tsx` | Baustellen-Plan mit Aufgaben und Farbpalette |
+| `src/components/my-work.tsx` | Startseite Monteur |
+| `src/components/sites-overview.tsx` | Baustellen-Karten Bauleitung |
 | `src/components/gantt.tsx` | Gantt für den Terminplan |
 | `src/components/editors.tsx` | Formulare für alle Datensätze |
 | `src/lib/site.ts` | Baum-Hilfen (Pfad, Fortschritt, Ebenen) |

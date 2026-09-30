@@ -325,6 +325,7 @@ function NodeDrawer({
   const hasKids = kids.length > 0;
   const photos = data.photos.filter((p) => ids.includes(p.nodeId)).sort((a, b) => b.takenAt.localeCompare(a.takenAt));
   const issues = data.issues.filter((i) => i.nodeId && ids.includes(i.nodeId));
+  const jobs = data.jobs.filter((j) => ids.includes(j.nodeId)).sort((a, b) => a.start.localeCompare(b.start));
   const progress = nodeProgress(nodes, node);
   const path = pathOf(nodes, node.id);
   const set = (patch: Partial<SiteNode>) => save("siteNodes", { ...node, ...patch });
@@ -439,6 +440,31 @@ function NodeDrawer({
               <input value={child} onChange={(e) => setChild(e.target.value)} placeholder="Unterpunkt eingeben + Enter" aria-label="Neuer Unterpunkt" />
             </form>
           </section>
+
+          {jobs.length > 0 && (
+            <section className="detail-section">
+              <header>
+                <h3>
+                  Aufgaben <span className="tab-count">{jobs.length}</span>
+                </h3>
+              </header>
+              <ul className="sub-list">
+                {jobs.map((j) => (
+                  <li key={j.id}>
+                    <input type="checkbox" className="tree-check" checked={j.done} onChange={() => save("jobs", { ...j, done: !j.done })} aria-label="Erledigt" />
+                    <span className="job-dot" style={{ background: j.color }} />
+                    <span className={`job-line ${j.done ? "done" : ""}`}>
+                      {j.title}
+                      <small>
+                        {employeeName(data, j.employeeId)} · {fmtShort(j.start)}
+                        {j.end !== j.start ? `–${fmtShort(j.end)}` : ""}
+                      </small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="detail-section">
             <header>

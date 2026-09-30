@@ -102,6 +102,21 @@ export type Task = {
   milestone: boolean;
 };
 
+/** Work the site manager hands to a worker on the site schedule (Tom's-Planner style bar). */
+export type Job = {
+  id: string;
+  projectId: string;
+  employeeId: string;
+  title: string;
+  color: string;
+  start: ISODate;
+  end: ISODate;
+  /** Optional link to a point of the site structure. */
+  nodeId: string;
+  note: string;
+  done: boolean;
+};
+
 export type NodeStatus = "offen" | "in_arbeit" | "erledigt";
 
 /** Structure of a construction site: areas, sub-areas and single points (any depth). */
@@ -219,6 +234,7 @@ export type Data = {
   tasks: Task[];
   issues: Issue[];
   siteNodes: SiteNode[];
+  jobs: Job[];
   photos: Photo[];
   materials: Material[];
   reports: DailyReport[];
