@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { overlaps } from "./date";
-import { createSeed, DATA_VERSION } from "./seed";
-import type { Assignment, Company, CollectionKey, Data, Item } from "./types";
+import { createEmpty, createSeed, DATA_VERSION } from "./seed";
+import type { AccessRole, Assignment, Company, CollectionKey, Data, Item } from "./types";
 
 const STORAGE_KEY = "vysnpro:data";
 
@@ -14,7 +14,8 @@ type Store = {
   setCompany: (company: Company) => void;
   setCurrentUser: (id: string) => void;
   replaceAll: (data: Data) => void;
-  reset: () => void;
+  /** "empty" starts a clean company with one HR login, "demo" loads the sample company. */
+  reset: (kind: "empty" | "demo") => void;
   notify: (text: string) => void;
   toast: string;
 };
@@ -30,12 +31,12 @@ function load(): Data {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Data;
-      if (parsed.version === DATA_VERSION) return { ...createSeed(), ...parsed };
+      if (parsed.version === DATA_VERSION) return { ...createEmpty(), ...parsed };
     }
   } catch {
     // Storage unavailable or corrupt: fall back to demo data.
   }
-  return createSeed();
+  return createEmpty();
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -119,8 +120,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         remove,
         setCompany: (company) => setData((d) => d && { ...d, company }),
         setCurrentUser: (id) => setData((d) => d && { ...d, currentUserId: id }),
-        replaceAll: (next) => setData({ ...createSeed(), ...next, version: DATA_VERSION }),
-        reset: () => setData(createSeed()),
+        replaceAll: (next) => setData({ ...createEmpty(), ...next, version: DATA_VERSION }),
+        reset: (kind) => setData(kind === "demo" ? createSeed() : createEmpty()),
         notify,
         toast
       },
@@ -205,7 +206,7 @@ export function myProjects(data: Data, userId = data.currentUserId) {
   );
 }
 
-export type Role = "pl" | "bl" | "hr" | "monteur";
+export type Role = AccessRole;
 
 export const roleLabel: Record<Role, string> = {
   pl: "Projektleitung",
@@ -215,10 +216,16 @@ export const roleLabel: Record<Role, string> = {
 };
 
 /** Role derived from the job title until real roles come with the login. */
-export function roleOf(e: { role: string } | undefined): Role {
+export function roleOf(e: { role: string; access?: Role } | undefined): Role {
+  if (e?.access) return e.access;
   const r = (e?.role ?? "").toLowerCase();
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
   if (r.includes("hr") || r.includes("personal")) return "hr";
   return "monteur";
+}
+
+/** Workers may add and tick off, but never delete. */
+export function canDelete(data: Data) {
+  return roleOf(currentUser(data)) !== "monteur";
 }

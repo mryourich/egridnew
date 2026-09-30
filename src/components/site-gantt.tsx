@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { uid, useStore } from "@/lib/store";
+import { canDelete, uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
 import { Avatar } from "./ui";
@@ -20,6 +20,22 @@ export const PALETTE = [
   ["#f5a0cf", "#e6a8ac", "#f47070", "#ffa726", "#faf59a"]
 ];
 export const JOB_COLORS = PALETTE.flat();
+
+/** Symbols like on classic planning boards. */
+export const SYMBOLS = [
+  "❌", "✅", "➕", "❓", "❗", "⛔", "♦️",
+  "⚠️", "🕒", "💬", "ℹ️", "🧮", "👩", "👨‍💼",
+  "👷", "👩‍🔧", "👨‍🔧", "🧑‍💼", "👥", "📖", "🔔",
+  "⬇️", "💲", "💶", "💷", "💴", "🔻", "💎",
+  "🔷", "🔶", "🔒", "📞", "📱", "💡", "☕",
+  "🔧", "🚚", "🔑", "✉️", "⏰", "⏱️", "⭐",
+  "⚙️", "🎂", "🍸", "📦", "🔍", "📅", "⏳",
+  "📊", "✏️", "☀️", "⛅", "☁️", "🙂", "🙁",
+  "✍️", "❔", "❕", "‼️", "🚩", "🏁", "🚧",
+  "🏳️", "➡️", "⬅️", "⬆️", "✔️", "☑️", "✖️",
+  "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "▶️",
+  "🏗️", "🔌", "⚡", "🧯", "🪜", "📐", "📸"
+];
 
 /** Readable text colour on a given background. */
 export function textOn(hex: string) {
@@ -47,7 +63,7 @@ function fromHalves(from: ISODate, s: number, e: number) {
 
 type Drag =
   | { kind: "job"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dh: number; emp: string }
-  | { kind: "abs"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dd: number };
+  | { kind: "abs"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dd: number; emp: string };
 
 type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half?: number };
 
@@ -90,7 +106,7 @@ export function SiteGantt({ project }: { project: Project }) {
 
   const previewAbs = (a: Absence): Absence => {
     if (!drag || drag.kind !== "abs" || drag.id !== a.id) return a;
-    if (drag.mode === "move") return { ...a, start: addDays(a.start, drag.dd), end: addDays(a.end, drag.dd) };
+    if (drag.mode === "move") return { ...a, start: addDays(a.start, drag.dd), end: addDays(a.end, drag.dd), employeeId: drag.emp };
     if (drag.mode === "start") {
       const s = addDays(a.start, drag.dd);
       return { ...a, start: s > a.end ? a.end : s };
@@ -120,7 +136,13 @@ export function SiteGantt({ project }: { project: Project }) {
           const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-emp]");
           if (el?.dataset.emp) next = { ...next, emp: el.dataset.emp };
         }
-      } else next = { ...d, moved, dd: Math.round((e.clientX - d.x0) / dw) };
+      } else {
+        next = { ...d, moved, dd: Math.round((e.clientX - d.x0) / dw) };
+        if (d.mode === "move") {
+          const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-emp]");
+          if (el?.dataset.emp) next = { ...next, emp: el.dataset.emp };
+        }
+      }
       dragRef.current = next;
       setDrag(next);
     };
@@ -142,9 +164,10 @@ export function SiteGantt({ project }: { project: Project }) {
         const a = data.absences.find((x) => x.id === d.id);
         if (!a || !d.moved) return;
         const p = previewAbsWith(a, d);
-        if (p.start !== a.start || p.end !== a.end) {
-          save("absences", p, `${L.absenceType[a.type].label} ${fmt(p.start)} – ${fmt(p.end)}`);
-          notify(`${L.absenceType[a.type].label}: ${fmt(p.start)} – ${fmt(p.end)}`);
+        if (p.start !== a.start || p.end !== a.end || p.employeeId !== a.employeeId) {
+          const who = data.employees.find((x) => x.id === p.employeeId)?.name ?? "";
+          save("absences", p, `${L.absenceType[a.type].label} ${who} ${fmt(p.start)} – ${fmt(p.end)}`);
+          notify(`${L.absenceType[a.type].label} · ${who}: ${fmt(p.start)} – ${fmt(p.end)}`);
         }
       }
     };
@@ -161,7 +184,7 @@ export function SiteGantt({ project }: { project: Project }) {
       return { ...j, ...fromHalves(from, ns, ne), employeeId: d.emp };
     };
     const previewAbsWith = (a: Absence, d: Extract<Drag, { kind: "abs" }>) => {
-      if (d.mode === "move") return { ...a, start: addDays(a.start, d.dd), end: addDays(a.end, d.dd) };
+      if (d.mode === "move") return { ...a, start: addDays(a.start, d.dd), end: addDays(a.end, d.dd), employeeId: d.emp };
       if (d.mode === "start") {
         const s = addDays(a.start, d.dd);
         return { ...a, start: s > a.end ? a.end : s };
@@ -191,16 +214,16 @@ export function SiteGantt({ project }: { project: Project }) {
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
-    const d: Drag = { kind: "abs", id: a.id, mode, x0: e.clientX, y0: e.clientY, moved: false, dd: 0 };
+    const d: Drag = { kind: "abs", id: a.id, mode, x0: e.clientX, y0: e.clientY, moved: false, dd: 0, emp: a.employeeId };
     dragRef.current = d;
     setDrag(d);
   };
 
-  const insert = (emp: string, half: number, color: string, symbol: boolean) => {
+  const insert = (emp: string, half: number, color: string, symbol: boolean, icon?: string) => {
     const day = Math.floor(half / 2);
     const s = day * 2;
     const id = uid("j");
-    save("jobs", { id, projectId: project.id, employeeId: emp, title: symbol ? "Meilenstein" : "Neue Aufgabe", color, ...fromHalves(from, s, s + 2), nodeId: "", note: "", done: false, symbol }, symbol ? "Symbol eingefügt" : "Zeitbalken eingefügt");
+    save("jobs", { id, projectId: project.id, employeeId: emp, title: symbol ? "" : "Neue Aufgabe", color, ...fromHalves(from, s, s + 2), nodeId: "", note: "", done: false, symbol, icon }, symbol ? "Symbol eingefügt" : "Zeitbalken eingefügt");
     setEditing(id);
   };
 
@@ -247,14 +270,14 @@ export function SiteGantt({ project }: { project: Project }) {
                 const lanes = Math.max(1, ends.length);
                 const here = presence.filter((a) => a.resourceId === emp.id);
                 const elsewhere = data.assignments.filter((a) => a.resourceType === "employee" && a.resourceId === emp.id && a.projectId !== project.id && a.end >= from && a.start <= to);
-                const abs = data.absences.filter((a) => a.employeeId === emp.id).map(previewAbs).filter((a) => a.end >= from && a.start <= to);
+                const abs = data.absences.map(previewAbs).filter((a) => a.employeeId === emp.id && a.end >= from && a.start <= to);
                 const dayBox = (start: ISODate, end: ISODate) => {
                   const s = Math.max(0, diffDays(from, start));
                   const e = Math.min(days - 1, diffDays(from, end));
                   return { left: s * dw, width: Math.max(0, (e - s + 1) * dw) };
                 };
                 return (
-                  <div key={emp.id} className={`pl-row sg-row ${drag?.kind === "job" && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
+                  <div key={emp.id} className={`pl-row sg-row ${drag && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
                     <div className="pl-left sg-left">
                       <Avatar name={emp.name} size={24} />
                       <span>
@@ -316,8 +339,8 @@ export function SiteGantt({ project }: { project: Project }) {
                         if (j.symbol) {
                           return (
                             <div key={j.id} className="sg-symbol" style={{ left: s * hw + hw - 8, top: top + (LANE - 18) / 2, "--c": j.color } as CSSProperties} title={`${j.title} · ${fmt(j.start)}`} onPointerDown={(ev) => beginJob(ev, j, "move")} onContextMenu={onCtx}>
-                              <Star size={16} fill={j.color} color="#1f2937" strokeWidth={1.2} />
-                              {editing === j.id ? <RenameInput job={j} onDone={() => setEditing(null)} /> : <span>{j.title}</span>}
+                              {j.icon ? <span className="sg-emoji">{j.icon}</span> : <Star size={16} fill={j.color} color="#1f2937" strokeWidth={1.2} />}
+                              {editing === j.id ? <RenameInput job={j} onDone={() => setEditing(null)} /> : j.title ? <span>{j.title}</span> : null}
                             </div>
                           );
                         }
@@ -370,7 +393,13 @@ export function SiteGantt({ project }: { project: Project }) {
           y={menu.y}
           onClose={() => setMenu(null)}
           items={
-            menu.job
+            menu.job?.symbol
+              ? [
+                  { icon: <Star size={16} />, label: "Symbol ändern", icons: (ic) => save("jobs", { ...menu.job!, icon: ic }) },
+                  { icon: <Pencil size={16} />, label: menu.job.title ? "Text ändern" : "Text hinzufügen", onClick: () => setEditing(menu.job!.id) },
+                  ...(canDelete(data) ? [{ icon: <Trash2 size={16} />, label: "Löschen", danger: true, onClick: () => remove("jobs", menu.job!.id, "Symbol gelöscht") }] : [])
+                ]
+              : menu.job
               ? [
                   { icon: <Palette size={16} />, label: "Farbe", colors: (c) => save("jobs", { ...menu.job!, color: c }) },
                   { icon: <Pencil size={16} />, label: "Umbenennen", onClick: () => setEditing(menu.job!.id) },
@@ -398,7 +427,7 @@ export function SiteGantt({ project }: { project: Project }) {
                   ]
                 : [
                     { icon: <InsertBarIcon />, label: "Neuen Zeitbalken einfügen", colors: (c) => insert(menu.emp!, menu.half!, c, false) },
-                    { icon: <Star size={17} strokeWidth={1.6} />, label: "Neues Symbol einfügen", colors: (c) => insert(menu.emp!, menu.half!, c, true) }
+                    { icon: <Star size={17} strokeWidth={1.6} />, label: "Neues Symbol einfügen", icons: (ic) => insert(menu.emp!, menu.half!, "#f59e0b", true, ic) }
                   ]
           }
         />
@@ -452,7 +481,7 @@ function RenameInput({ job, onDone }: { job: Job; onDone: () => void }) {
   );
 }
 
-type PlanMenuItem = { icon: ReactNode; label: string; onClick?: () => void; colors?: (c: string) => void; danger?: boolean };
+type PlanMenuItem = { icon: ReactNode; label: string; onClick?: () => void; colors?: (c: string) => void; icons?: (icon: string) => void; danger?: boolean };
 
 /** Small right-click menu; items with colours open the palette on hover or click. */
 function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanMenuItem[]; onClose: () => void }) {
@@ -493,13 +522,13 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
       />
       <div ref={ref} className="plan-menu" style={pos} role="menu">
         {items.map((it, i) => (
-          <div key={it.label} className="pm-item-wrap" onMouseEnter={() => setSub(it.colors ? i : null)}>
+          <div key={it.label} className="pm-item-wrap" onMouseEnter={() => setSub(it.colors || it.icons ? i : null)}>
             <button
               type="button"
               role="menuitem"
               className={`pm-item ${it.danger ? "danger" : ""} ${sub === i ? "open" : ""}`}
               onClick={() => {
-                if (it.colors) setSub(i);
+                if (it.colors || it.icons) setSub(i);
                 else {
                   onClose();
                   it.onClick?.();
@@ -508,8 +537,25 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
             >
               <span className="pm-icon">{it.icon}</span>
               {it.label}
-              {it.colors && <ChevronRight size={14} className="pm-chev" />}
+              {(it.colors || it.icons) && <ChevronRight size={14} className="pm-chev" />}
             </button>
+            {it.icons && sub === i && (
+              <div className={`pm-palette pm-symbols ${flip ? "flip" : ""}`} role="listbox" aria-label="Symbol">
+                {SYMBOLS.map((ic) => (
+                  <button
+                    key={ic}
+                    type="button"
+                    aria-label={ic}
+                    onClick={() => {
+                      onClose();
+                      it.icons?.(ic);
+                    }}
+                  >
+                    {ic}
+                  </button>
+                ))}
+              </div>
+            )}
             {it.colors && sub === i && (
               <div className={`pm-palette ${flip ? "flip" : ""}`} role="radiogroup" aria-label="Farbe">
                 <div className="pm-grid">

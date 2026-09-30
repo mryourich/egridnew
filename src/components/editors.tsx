@@ -2,7 +2,7 @@
 
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { uid, useStore } from "@/lib/store";
+import { canDelete, roleOf, uid, useStore, type Role } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
 import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
 import { IssueSheet } from "./issue-sheet";
@@ -188,7 +188,19 @@ const defs: Record<EditorKind, Def> = {
     noun: "Mitarbeiter",
     fields: () => [
       { key: "name", label: "Name", required: true },
-      { key: "role", label: "Funktion" },
+      {
+        key: "access",
+        label: "Rechte in VYSNpro",
+        type: "select",
+        required: true,
+        options: [
+          { value: "monteur", label: "Monteur / Mitarbeiter" },
+          { value: "bl", label: "Bauleitung" },
+          { value: "pl", label: "Projektleitung" },
+          { value: "hr", label: "Personal (HR)" }
+        ]
+      },
+      { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },
       { key: "department", label: "Abteilung" },
       { key: "team", label: "Team / Partie" },
       { key: "hourlyRate", label: "Stundensatz (€)", type: "number", min: 0 },
@@ -197,7 +209,7 @@ const defs: Record<EditorKind, Def> = {
       { key: "qualificationsText", label: "Qualifikationen (je Zeile: Name; gültig bis JJJJ-MM-TT)", type: "textarea", placeholder: "SCC**; 2027-05-31" },
       { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (planbar)" }
     ],
-    defaults: () => ({ name: "", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
+    defaults: () => ({ name: "", access: "monteur", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
     describe: (v) => `Mitarbeiter ${v.name}`
   },
   vehicle: {
@@ -266,7 +278,7 @@ function GenericEditor({ target, onClose }: { target: EditorTarget; onClose: () 
   const def = defs[target.kind];
   const isNew = !target.item?.id;
   let initial = { ...def.defaults(data), ...target.item };
-  if (target.kind === "employee") initial = { ...initial, qualificationsText: toQualText(initial) };
+  if (target.kind === "employee") initial = { ...initial, qualificationsText: toQualText(initial), access: target.item?.id ? roleOf(target.item as { role: string; access?: Role }) : initial.access };
 
   return (
     <Modal title={`${def.noun} ${isNew ? "anlegen" : "bearbeiten"}`} onClose={onClose}>
@@ -276,7 +288,7 @@ function GenericEditor({ target, onClose }: { target: EditorTarget; onClose: () 
         validate={def.validate}
         onCancel={onClose}
         onDelete={
-          isNew
+          isNew || !canDelete(data)
             ? undefined
             : () => {
                 remove(def.collection, String(target.item?.id), `${def.describe(initial)} gelöscht`);

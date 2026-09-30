@@ -29,6 +29,8 @@ type Props = {
   onChange?: (id: string, start: ISODate, end: ISODate, employeeId: string) => void;
   onBarClick?: (id: string) => void;
   onAbsenceClick?: (id: string) => void;
+  /** Move / resize an absence, also onto another person. */
+  onAbsenceChange?: (id: string, start: ISODate, end: ISODate, employeeId: string) => void;
   onCreate?: (employeeId: string, start: ISODate, end: ISODate) => void;
   /** Add a new person, optionally into a department/team. */
   onAddPerson?: (department: string, team: string) => void;
@@ -36,7 +38,7 @@ type Props = {
   emptyText?: string;
 };
 
-type Drag = { id: string; mode: "move" | "start" | "end" | "create"; x0: number; y0: number; start: ISODate; end: ISODate; emp: string; moved: boolean };
+type Drag = { id: string; mode: "move" | "start" | "end" | "create"; x0: number; y0: number; start: ISODate; end: ISODate; emp: string; moved: boolean; abs?: boolean };
 
 type Row =
   | { kind: "group"; id: string; no: string; label: string; level: number; count: number; department: string; team: string }
@@ -61,6 +63,7 @@ export function ResourcePlanner({
   onChange,
   onBarClick,
   onAbsenceClick,
+  onAbsenceChange,
   onCreate,
   onAddPerson,
   onPersonClick,
@@ -129,10 +132,11 @@ export function ResourcePlanner({
       const d = dragRef.current;
       if (!d) return;
       const delta = Math.round((e.clientX - d.x0) / dw);
-      const orig = assignments.find((a) => a.id === d.id);
+      const absOrig = d.abs ? absences.find((x) => x.id === d.id) : undefined;
+      const orig = absOrig ? ({ ...absOrig, resourceId: absOrig.employeeId, resourceType: "employee", projectId: "", note: "" } as Assignment) : assignments.find((a) => a.id === d.id);
       let next: Drag = { ...d, moved: d.moved || Math.abs(e.clientX - d.x0) > 3 || Math.abs(e.clientY - d.y0) > 3 };
       if (d.mode === "create") next = { ...next, end: addDays(d.start, Math.max(0, delta)) };
-      else if (orig && editable(orig)) {
+      else if (orig && (d.abs ? !!onAbsenceChange : editable(orig))) {
         if (d.mode === "move") {
           next = { ...next, start: addDays(orig.start, delta), end: addDays(orig.end, delta) };
           const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-emp]");
@@ -154,6 +158,12 @@ export function ResourcePlanner({
       setDrag(null);
       if (!d) return;
       if (d.mode === "create") return onCreate?.(d.emp, d.start, d.end);
+      if (d.abs) {
+        if (!d.moved) return onAbsenceClick?.(d.id);
+        const a = absences.find((x) => x.id === d.id);
+        if (a && (a.start !== d.start || a.end !== d.end || a.employeeId !== d.emp)) onAbsenceChange?.(d.id, d.start, d.end, d.emp);
+        return;
+      }
       if (!d.moved) return onBarClick?.(d.id);
       const orig = assignments.find((a) => a.id === d.id);
       if (orig && (orig.start !== d.start || orig.end !== d.end || orig.resourceId !== d.emp)) onChange?.(d.id, d.start, d.end, d.emp);
@@ -181,6 +191,15 @@ export function ResourcePlanner({
     e.stopPropagation();
     e.preventDefault();
     const d: Drag = { id: a.id, mode: editable(a) ? mode : "move", x0: e.clientX, y0: e.clientY, start: a.start, end: a.end, emp: a.resourceId, moved: false };
+    dragRef.current = d;
+    setDrag(d);
+  };
+
+  const beginAbs = (e: React.PointerEvent, a: Absence, mode: Drag["mode"]) => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const d: Drag = { id: a.id, mode: onAbsenceChange ? mode : "move", x0: e.clientX, y0: e.clientY, start: a.start, end: a.end, emp: a.employeeId, moved: false, abs: true };
     dragRef.current = d;
     setDrag(d);
   };
@@ -264,7 +283,9 @@ export function ResourcePlanner({
               const emp = row.employee;
               const { lane, count } = lanesFor(emp.id);
               const own = shown.filter((a) => a.resourceId === emp.id);
-              const abs = absences.filter((a) => a.employeeId === emp.id && a.end >= from && a.start <= to);
+              const abs = absences
+                .map((a) => (drag?.abs && drag.id === a.id ? { ...a, start: drag.start, end: drag.end, employeeId: drag.emp } : a))
+                .filter((a) => a.employeeId === emp.id && a.end >= from && a.start <= to);
               const creating = drag?.mode === "create" && drag.emp === emp.id ? drag : null;
               return (
                 <div key={row.id} className={`pl-row ${drag?.mode === "move" && drag.emp === emp.id && drag.moved ? "drop" : ""}`} style={{ height: Math.max(ROW, count * LANE + 3) }} data-emp={emp.id}>
@@ -281,13 +302,14 @@ export function ResourcePlanner({
                       return (
                         <div
                           key={a.id}
-                          className={`pl-abs abs-${a.type}`}
+                          className={`pl-abs abs-${a.type} ${onAbsenceChange ? "movable" : ""} ${drag?.abs && drag.id === a.id ? "active" : ""}`}
                           style={{ left: b.left, width: b.width }}
                           title={`${L.absenceType[a.type].label} ${fmt(a.start)} – ${fmt(a.end)}`}
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => onAbsenceClick?.(a.id)}
+                          onPointerDown={(e) => beginAbs(e, a, "move")}
                         >
                           {L.absenceType[a.type].label}
+                          {onAbsenceChange && <span className="h h-l" onPointerDown={(e) => beginAbs(e, a, "start")} />}
+                          {onAbsenceChange && <span className="h h-r" onPointerDown={(e) => beginAbs(e, a, "end")} />}
                         </div>
                       );
                     })}

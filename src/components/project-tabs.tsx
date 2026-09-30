@@ -773,6 +773,13 @@ export function ProjectPlanningTab({ project }: { project: Project }) {
         dayWidth={dayWidth}
         focusProjectId={project.id}
         conflicts={conflicts}
+        onAbsenceChange={(id, start, end, employeeId) => {
+          const a = data.absences.find((x) => x.id === id);
+          if (!a) return;
+          const who = data.employees.find((x) => x.id === employeeId)?.name ?? "";
+          save("absences", { ...a, start, end, employeeId }, `Abwesenheit ${who} ${fmt(start)} – ${fmt(end)}`);
+          notify(`${who}: ${fmt(start)} – ${fmt(end)}`);
+        }}
         onAddPerson={(department, team) => openEditor({ kind: "employee", item: { department, team } })}
         onPersonClick={(id) => openEditor({ kind: "assignment", item: { resourceType: "employee", resourceId: id, projectId: project.id, start: project.start > today() ? project.start : today(), end: addDays(project.start > today() ? project.start : today(), 4) } })}
         onBarClick={(id) => {

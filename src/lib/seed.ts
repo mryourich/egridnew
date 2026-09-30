@@ -7,7 +7,33 @@ function demoPhoto(label: string, hue: number) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export const DATA_VERSION = 3;
+export const DATA_VERSION = 4;
+
+/** A clean company: only one HR login, which then creates everyone else. */
+export function createEmpty(): Data {
+  return {
+    version: DATA_VERSION,
+    currentUserId: "hr",
+    company: { tenantId: "firma", name: "Meine Firma", address: "", workdays: [1, 2, 3, 4, 5] },
+    projects: [],
+    employees: [
+      { id: "hr", name: "Personalabteilung", role: "Personalverwaltung", access: "hr", department: "Verwaltung", team: "Personal", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
+    ],
+    vehicles: [],
+    equipment: [],
+    assignments: [],
+    absences: [],
+    tasks: [],
+    issues: [],
+    siteNodes: [],
+    jobs: [],
+    photos: [],
+    materials: [],
+    reports: [],
+    documents: [],
+    activity: []
+  };
+}
 
 /** Demo data relative to today, so the planner always shows a realistic current week. */
 export function createSeed(): Data {
