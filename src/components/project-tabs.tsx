@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { addDays, diffDays, fmt, fmtShort, inRange, isoWeek, startOfWeek, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel } from "@/lib/site";
-import { employeeName, findConflicts, projectProgress, resourceName, uid, useStore } from "@/lib/store";
+import { employeeName, findConflicts, plannable, projectProgress, resourceName, uid, useStore } from "@/lib/store";
 import type { Data, IssueKind, IssueStatus, Project, Task } from "@/lib/types";
 import { Gantt } from "./gantt";
 import { ResourcePlanner, usePlannerRange } from "./planner";
@@ -750,7 +750,7 @@ export function ProjectPlanningTab({ project }: { project: Project }) {
   const conflicts = useMemo(() => findConflicts(data), [data]);
   const planned = of(data.assignments, project.id).filter((a) => a.resourceType === "employee");
   const plannedIds = new Set(planned.map((a) => a.resourceId));
-  const employees = data.employees.filter((e) => e.active && (!onlyPlanned || plannedIds.has(e.id)));
+  const employees = plannable(data).filter((e) => !onlyPlanned || plannedIds.has(e.id));
 
   return (
     <div className="stack">

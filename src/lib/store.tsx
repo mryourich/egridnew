@@ -229,3 +229,8 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
 export function canDelete(data: Data) {
   return roleOf(currentUser(data)) !== "monteur";
 }
+
+/** People that can be planned onto sites – HR has nothing to do with projects. */
+export function plannable(data: Data) {
+  return data.employees.filter((e) => e.active && roleOf(e) !== "hr");
+}

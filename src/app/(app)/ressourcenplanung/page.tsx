@@ -6,7 +6,7 @@ import { ResourcePlanner, usePlannerRange } from "@/components/planner";
 import { useEditor } from "@/components/shell";
 import { PageHeader, SearchInput } from "@/components/ui";
 import { fmt } from "@/lib/date";
-import { findConflicts, useStore } from "@/lib/store";
+import { findConflicts, plannable, useStore } from "@/lib/store";
 
 export default function ResourcePlanningPage() {
   const { data, save, notify } = useStore();
@@ -19,7 +19,7 @@ export default function ResourcePlanningPage() {
 
   const employees = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = data.employees.filter((e) => e.active && (!q || `${e.name} ${e.role} ${e.team} ${e.department}`.toLowerCase().includes(q)));
+    let list = plannable(data).filter((e) => (!q || `${e.name} ${e.role} ${e.team} ${e.department}`.toLowerCase().includes(q)));
     if (onlyConflicts) list = list.filter((e) => data.assignments.some((a) => a.resourceId === e.id && conflicts.has(a.id)));
     return list;
   }, [data, query, onlyConflicts, conflicts]);

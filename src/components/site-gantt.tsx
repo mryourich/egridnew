@@ -227,6 +227,11 @@ export function SiteGantt({ project }: { project: Project }) {
     setEditing(id);
   };
 
+  /** Symbol exactly at the clicked half day (e.g. on top of a bar). */
+  const insertSymbolAt = (emp: string, half: number, icon: string) => {
+    save("jobs", { id: uid("j"), projectId: project.id, employeeId: emp, title: "", color: "#f59e0b", ...fromHalves(from, half, half + 1), nodeId: "", note: "", done: false, symbol: true, icon }, "Symbol eingefügt");
+  };
+
   const timelineW = days * dw;
   const todayJobs = jobs.filter((j) => j.start <= t && j.end >= t && !j.symbol);
 
@@ -260,12 +265,18 @@ export function SiteGantt({ project }: { project: Project }) {
                   .sort((a, b) => a.start.localeCompare(b.start) || Number(!!a.startPm) - Number(!!b.startPm));
                 const ends: number[] = [];
                 const lane = new Map<string, number>();
-                for (const j of own) {
+                // Bars get lanes; symbols sit on top of the bar they are placed on.
+                for (const j of own.filter((x) => !x.symbol)) {
                   const { s, e } = jobHalves(from, j);
                   let i = ends.findIndex((x) => x <= s);
                   if (i === -1) i = ends.length;
-                  ends[i] = j.symbol ? s + 6 : e;
+                  ends[i] = e;
                   lane.set(j.id, i);
+                }
+                for (const j of own.filter((x) => x.symbol)) {
+                  const { s } = jobHalves(from, j);
+                  const under = own.find((b) => !b.symbol && b.id !== j.id && jobHalves(from, b).s <= s && jobHalves(from, b).e > s);
+                  lane.set(j.id, under ? (lane.get(under.id) ?? 0) : 0);
                 }
                 const lanes = Math.max(1, ends.length);
                 const here = presence.filter((a) => a.resourceId === emp.id);
@@ -334,7 +345,8 @@ export function SiteGantt({ project }: { project: Project }) {
                         const onCtx = (ev: React.MouseEvent) => {
                           ev.preventDefault();
                           ev.stopPropagation();
-                          setMenu({ x: ev.clientX, y: ev.clientY, job: jobs.find((x) => x.id === j.id) });
+                          const rect = (ev.currentTarget as HTMLElement).closest(".pl-time")!.getBoundingClientRect();
+                          setMenu({ x: ev.clientX, y: ev.clientY, job: jobs.find((x) => x.id === j.id), emp: j.employeeId, half: Math.floor((ev.clientX - rect.left) / hw) });
                         };
                         if (j.symbol) {
                           return (
@@ -402,6 +414,7 @@ export function SiteGantt({ project }: { project: Project }) {
               : menu.job
               ? [
                   { icon: <Palette size={16} />, label: "Farbe", colors: (c) => save("jobs", { ...menu.job!, color: c }) },
+                  { icon: <Star size={16} />, label: "Symbol hier einfügen", icons: (ic) => insertSymbolAt(menu.emp!, menu.half!, ic) },
                   { icon: <Pencil size={16} />, label: "Umbenennen", onClick: () => setEditing(menu.job!.id) },
                   { icon: <ChevronRight size={16} />, label: "Details …", onClick: () => setDetails({ job: menu.job!, x: menu.x, y: menu.y }) },
                   { icon: <Check size={16} />, label: menu.job.done ? "Wieder öffnen" : "Als erledigt markieren", onClick: () => save("jobs", { ...menu.job!, done: !menu.job!.done }) },

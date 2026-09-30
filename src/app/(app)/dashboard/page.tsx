@@ -7,7 +7,7 @@ import { useEditor } from "@/components/shell";
 import { Badge, Card, Dot, Empty, Kpi, PageHeader, Progress } from "@/components/ui";
 import { addDays, diffDays, fmt, fmtShort, inRange, isWeekend, startOfWeek, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { currentUser, findConflicts, projectProgress, resourceName, roleOf, useStore } from "@/lib/store";
+import { currentUser, findConflicts, plannable, projectProgress, resourceName, roleOf, useStore } from "@/lib/store";
 import { HrHome } from "@/components/hr-home";
 import { MyWork } from "@/components/my-work";
 import { SitesOverview } from "@/components/sites-overview";
@@ -25,7 +25,7 @@ function ManagementHome() {
   const { data } = useStore();
   const openEditor = useEditor();
   const t = today();
-  const employees = data.employees.filter((e) => e.active);
+  const employees = plannable(data);
   const conflicts = useMemo(() => findConflicts(data), [data]);
 
   const absentToday = data.absences.filter((a) => inRange(t, a.start, a.end));

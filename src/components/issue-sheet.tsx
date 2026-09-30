@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { canDelete, uid, useStore } from "@/lib/store";
+import { canDelete, plannable, uid, useStore } from "@/lib/store";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
 import { downscale } from "./ui";
 
@@ -167,9 +167,7 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
               <span>Zuständig</span>
               <select value={v.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
                 <option value="">–</option>
-                {data.employees
-                  .filter((e) => e.active)
-                  .map((e) => (
+                {plannable(data).map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
                     </option>

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { childrenOf, levelName, nodeProgress, nodeStatus, pathLabel, pathOf, subtreeIds } from "@/lib/site";
-import { canDelete, employeeName, uid, useStore } from "@/lib/store";
+import { canDelete, employeeName, plannable, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Photo, Project, SiteNode } from "@/lib/types";
 import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
@@ -392,9 +392,7 @@ function NodeDrawer({
               <span>Zuständig</span>
               <select value={node.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
                 <option value="">–</option>
-                {data.employees
-                  .filter((e) => e.active)
-                  .map((e) => (
+                {plannable(data).map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
                     </option>

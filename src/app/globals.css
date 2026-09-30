@@ -4803,3 +4803,18 @@ body {
 .role-tile:hover {
   border-color: #b8cdfa;
 }
+/* Symbols lie on top of the bars and can be dragged along them. */
+.site-gantt .sg-symbol {
+  z-index: 4;
+  padding: 0 3px;
+  border-radius: 4px;
+}
+.site-gantt .sg-symbol:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+.site-gantt .sg-symbol span:not(.sg-emoji) {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+}

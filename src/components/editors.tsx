@@ -2,7 +2,7 @@
 
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { canDelete, roleOf, uid, useStore, type Role } from "@/lib/store";
+import { canDelete, plannable, roleOf, uid, useStore, type Role } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
 import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
 import { IssueSheet } from "./issue-sheet";
@@ -22,7 +22,11 @@ type Def = {
 };
 
 const projectOptions = (data: Data) => data.projects.filter((p) => p.status !== "abgeschlossen").map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }));
-const employeeOptions = (data: Data) => data.employees.filter((e) => e.active).map((e) => ({ value: e.id, label: e.name }));
+/** People for planning and assignments – without HR. */
+const employeeOptions = (data: Data) => plannable(data).map((e) => ({ value: e.id, label: e.name }));
+/** Everybody, e.g. for absences. */
+const allEmployeeOptions = (data: Data) => data.employees.filter((e) => e.active).map((e) => ({ value: e.id, label: e.name }));
+const roleOptions = (data: Data, roles: Role[]) => data.employees.filter((e) => e.active && roles.includes(roleOf(e))).map((e) => ({ value: e.id, label: e.name }));
 
 const dateRange = (v: Record<string, unknown>) => (String(v.end) < String(v.start) ? "Das Ende darf nicht vor dem Start liegen." : null);
 
@@ -50,8 +54,8 @@ const defs: Record<EditorKind, Def> = {
       { key: "client", label: "Auftraggeber" },
       { key: "location", label: "Ort" },
       { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true },
-      { key: "managerId", label: "Projektleitung", type: "select", options: employeeOptions(data) },
-      { key: "siteManagerId", label: "Bauleitung", type: "select", options: employeeOptions(data) },
+      { key: "managerId", label: "Projektleitung", type: "select", options: roleOptions(data, ["pl"]) },
+      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]) },
       { key: "start", label: "Start", type: "date", required: true },
       { key: "end", label: "Ende", type: "date", required: true },
       { key: "budget", label: "Budget (€)", type: "number", min: 0 },
@@ -243,7 +247,7 @@ const defs: Record<EditorKind, Def> = {
     collection: "absences",
     noun: "Abwesenheit",
     fields: (data) => [
-      { key: "employeeId", label: "Mitarbeiter", type: "select", options: employeeOptions(data), required: true },
+      { key: "employeeId", label: "Mitarbeiter", type: "select", options: allEmployeeOptions(data), required: true },
       { key: "type", label: "Art", type: "select", options: L.options(L.absenceType), required: true },
       { key: "start", label: "Von", type: "date", required: true },
       { key: "end", label: "Bis", type: "date", required: true },
