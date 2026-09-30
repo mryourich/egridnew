@@ -18,17 +18,19 @@ const NAME_W = 220;
 
 type Drag = { id: string; mode: "move" | "start" | "end" | "create"; x0: number; y0: number; start: ISODate; end: ISODate; emp: string; moved: boolean };
 type Pop = { job: Partial<Job>; x: number; y: number };
+type Menu = { x: number; y: number; job?: Job; emp?: string; date?: ISODate };
 
 /**
  * Site schedule for the site manager: rows are the people the project manager
  * planned onto this site; the site manager drops coloured jobs onto their days.
  */
 export function SiteGantt({ project }: { project: Project }) {
-  const { data, save } = useStore();
+  const { data, save, remove, notify } = useStore();
   const { from, days, dayWidth: dw, controls } = usePlannerRange("detail");
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const [pop, setPop] = useState<Pop | null>(null);
+  const [menu, setMenu] = useState<Menu | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = today();
   const to = addDays(from, days - 1);
@@ -102,6 +104,7 @@ export function SiteGantt({ project }: { project: Project }) {
 
   const beginJob = (e: React.PointerEvent, j: Job, mode: Drag["mode"]) => {
     e.stopPropagation();
+    if (e.button !== 0) return;
     e.preventDefault();
     const d: Drag = { id: j.id, mode, x0: e.clientX, y0: e.clientY, start: j.start, end: j.end, emp: j.employeeId, moved: false };
     dragRef.current = d;
@@ -131,7 +134,7 @@ export function SiteGantt({ project }: { project: Project }) {
       <div className="toolbar">
         {controls}
         <span className="spacer" />
-        <span className="hint">Auf einen Tag klicken oder ziehen = Aufgabe · Balken ziehen = verschieben</span>
+        <span className="hint">Klick oder Rechtsklick auf einen Tag = Aufgabe · Rechtsklick auf Aufgabe = Farbe, erledigt, duplizieren</span>
       </div>
 
       <div className="planner site-gantt" style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${NAME_W}px` } as CSSProperties}>
@@ -171,7 +174,16 @@ export function SiteGantt({ project }: { project: Project }) {
                         <small>{emp.role}</small>
                       </span>
                     </div>
-                    <div className="pl-time creatable" style={{ width: timelineW }} onPointerDown={(e) => beginCreate(e, emp.id)}>
+                    <div
+                      className="pl-time creatable"
+                      style={{ width: timelineW }}
+                      onPointerDown={(e) => beginCreate(e, emp.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenu({ x: e.clientX, y: e.clientY, emp: emp.id, date: addDays(from, Math.floor((e.clientX - rect.left) / dw)) });
+                      }}
+                    >
                       {here.map((a) => {
                         const b = box(a.start, a.end);
                         return b.width > 0 ? <div key={a.id} className="sg-presence" style={{ left: b.left, width: b.width }} title={`Auf der Baustelle ${fmt(a.start)} – ${fmt(a.end)}`} /> : null;
@@ -202,6 +214,11 @@ export function SiteGantt({ project }: { project: Project }) {
                             style={{ left: b.left + 1, width: Math.max(6, b.width - 2), top: 4 + (lane.get(j.id) ?? 0) * LANE, "--c": j.color } as CSSProperties}
                             title={`${j.title}\n${fmt(j.start)} – ${fmt(j.end)}${j.note ? `\n${j.note}` : ""}`}
                             onPointerDown={(e) => beginJob(e, j, "move")}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setMenu({ x: e.clientX, y: e.clientY, job: j });
+                            }}
                           >
                             {j.done && <Check size={11} />}
                             <span>{j.title}</span>
@@ -235,6 +252,33 @@ export function SiteGantt({ project }: { project: Project }) {
           <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand (HR)
         </span>
       </div>
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={
+            menu.job
+              ? [
+                  { label: "Bearbeiten …", onClick: () => setPop({ job: menu.job!, x: menu.x, y: menu.y }) },
+                  { label: menu.job.done ? "Wieder öffnen" : "Als erledigt markieren", onClick: () => save("jobs", { ...menu.job!, done: !menu.job!.done }) },
+                  {
+                    label: "Duplizieren (danach)",
+                    onClick: () => {
+                      const len = diffDays(menu.job!.start, menu.job!.end);
+                      const start = addDays(menu.job!.end, 1);
+                      save("jobs", { ...menu.job!, id: uid("j"), start, end: addDays(start, len), done: false });
+                      notify("Aufgabe dupliziert");
+                    }
+                  },
+                  { label: "Löschen", danger: true, onClick: () => remove("jobs", menu.job!.id, `Aufgabe „${menu.job!.title}“ gelöscht`) }
+                ]
+              : [{ label: `Aufgabe am ${fmt(menu.date!)} hinzufügen …`, onClick: () => setPop({ job: { employeeId: menu.emp, start: menu.date, end: menu.date }, x: menu.x, y: menu.y }) }]
+          }
+          colors={menu.job ? { value: menu.job.color, onPick: (c) => save("jobs", { ...menu.job!, color: c }) } : undefined}
+        />
+      )}
 
       {pop && <JobPopover project={project} job={pop.job} x={pop.x} y={pop.y} teamIds={teamIds} onClose={() => setPop(null)} />}
     </div>
@@ -391,6 +435,74 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
             </button>
           </footer>
         </form>
+      </div>
+    </>
+  );
+}
+
+type MenuItem = { label: string; onClick: () => void; danger?: boolean };
+
+/** Right-click menu with optional colour palette row. */
+function ContextMenu({ x, y, items, colors, onClose }: { x: number; y: number; items: MenuItem[]; colors?: { value: string; onPick: (c: string) => void }; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: x, top: y });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setPos({ left: Math.min(x, window.innerWidth - el.offsetWidth - 8), top: Math.min(y, window.innerHeight - el.offsetHeight - 8) });
+  }, [x, y]);
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
+
+  return (
+    <>
+      <div
+        className="pop-backdrop"
+        onPointerDown={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
+      <div ref={ref} className="ctx-menu" style={pos} role="menu">
+        {colors && (
+          <div className="ctx-colors" role="radiogroup" aria-label="Farbe">
+            {JOB_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={colors.value === c}
+                aria-label={c}
+                className={colors.value === c ? "on" : ""}
+                style={{ background: c }}
+                onClick={() => {
+                  colors.onPick(c);
+                  onClose();
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {items.map((it) => (
+          <button
+            key={it.label}
+            type="button"
+            role="menuitem"
+            className={it.danger ? "danger" : ""}
+            onClick={() => {
+              onClose();
+              it.onClick();
+            }}
+          >
+            {it.label}
+          </button>
+        ))}
       </div>
     </>
   );

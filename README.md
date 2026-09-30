@@ -18,7 +18,7 @@ HR (Personal, Abwesenheiten)
 | Rolle | Startseite | Module |
 | --- | --- | --- |
 | **Projektleitung** | Kennzahlen, Auslastung, Fristen | Projekte (Einsatzplanung je Projekt, Ressourcenplanung), TeamGrid, Personal |
-| **Bauleitung** | Meine Baustellen (Karten) | TeamGrid: **Plan** (Aufgaben mit Farbpalette per Klick auf den Tag), Struktur (Bereiche → Punkte, Klick öffnet), Fotos, Mängel, Tagesberichte, Team |
+| **Bauleitung** | Meine Baustellen (Karten) | TeamGrid-Menü je Baustelle: **Plan** (Aufgaben per Klick/Rechtsklick, Farbpalette, duplizieren), **Struktur** (Bereiche → Punkte, Klick öffnet), **Fotos** (Galerie je Bereich, Export ZIP/PDF), **Mängel** (Kamera zuerst), **Tagesberichte** (PDF mit KW, Aufgaben, Struktur-Fortschritt, Fotos), Team |
 | **Monteur** | Heute zu tun, die nächsten Tage | Meine Baustellen (Struktur, Fotos, Mängel) |
 | **HR** | Kennzahlen | Personal (Mitarbeiter, Abwesenheiten) |
 
@@ -36,6 +36,8 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 | `src/components/site.tsx` | SiteManager: Struktur-Baum, Seitenfenster, Fotos, Lightbox |
 | `src/components/site-gantt.tsx` | Baustellen-Plan mit Aufgaben und Farbpalette |
 | `src/components/my-work.tsx` | Startseite Monteur |
+| `src/components/issue-sheet.tsx` | Mängel-Karte (Kamera zuerst am Handy) |
+| `src/app/(print)/*` | Druck-/PDF-Ansichten: Tagesbericht, Fotobericht |
 | `src/components/sites-overview.tsx` | Baustellen-Karten Bauleitung |
 | `src/components/gantt.tsx` | Gantt für den Terminplan |
 | `src/components/editors.tsx` | Formulare für alle Datensätze |

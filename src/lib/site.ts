@@ -81,3 +81,11 @@ export function nodeOptions(nodes: SiteNode[], projectId: string, exclude?: stri
   walk("", 0);
   return out;
 }
+
+/** Last two levels of a path – compact enough for tables and captions. */
+export function shortPath(nodes: SiteNode[], id: string) {
+  return pathOf(nodes, id)
+    .slice(-2)
+    .map((n) => n.title)
+    .join(" › ");
+}

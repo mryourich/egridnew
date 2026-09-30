@@ -7,13 +7,15 @@ import * as L from "@/lib/labels";
 import { childrenOf, levelName, nodeProgress, nodeStatus, pathLabel, pathOf, subtreeIds } from "@/lib/site";
 import { employeeName, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Photo, Project, SiteNode } from "@/lib/types";
+import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
 import { Badge, downscale, Empty, Progress, SearchInput } from "./ui";
 
 /* ---------------------------------------------------------------- Foto hinzufügen */
 
-export function PhotoAddButton({ projectId, nodeId, label = "Foto", className = "btn" }: { projectId: string; nodeId: string; label?: string; className?: string }) {
-  const { save, notify } = useStore();
+export function PhotoAddButton({ projectId, nodeId, label = "Foto", className = "btn", camera = true }: { projectId: string; nodeId: string; label?: string; className?: string; camera?: boolean }) {
+  const { data, save, notify } = useStore();
+  const nodeTitle = data.siteNodes.find((n) => n.id === nodeId)?.title ?? "Foto";
   const input = useRef<HTMLInputElement>(null);
 
   const add = async (files: FileList | null) => {
@@ -23,7 +25,8 @@ export function PhotoAddButton({ projectId, nodeId, label = "Foto", className = 
       const dataUrl = await downscale(file, 1024);
       const now = new Date();
       const takenAt = `${today()}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      save("photos", { id: uid("f"), projectId, nodeId, dataUrl, caption: file.name.replace(/\.[^.]+$/, ""), takenAt, authorId: "e2" }, "Foto hinzugefügt");
+      const caption = /^(image|img|photo|dsc|pxl)[_-]?\d*/i.test(file.name) ? nodeTitle : file.name.replace(/\.[^.]+$/, "");
+      save("photos", { id: uid("f"), projectId, nodeId, dataUrl, caption, takenAt, authorId: data.currentUserId }, "Foto hinzugefügt");
     }
     notify(list.length > 1 ? `${list.length} Fotos gespeichert` : "Foto gespeichert");
     if (input.current) input.current.value = "";
@@ -34,7 +37,11 @@ export function PhotoAddButton({ projectId, nodeId, label = "Foto", className = 
       <button type="button" className={className} onClick={() => input.current?.click()}>
         <Camera size={15} /> {label}
       </button>
-      <input ref={input} type="file" accept="image/*" multiple hidden onChange={(e) => add(e.target.files)} />
+      {camera ? (
+        <input ref={input} type="file" accept="image/*" capture="environment" hidden onChange={(e) => add(e.target.files)} />
+      ) : (
+        <input ref={input} type="file" accept="image/*" multiple hidden onChange={(e) => add(e.target.files)} />
+      )}
     </>
   );
 }
@@ -481,9 +488,7 @@ function NodeDrawer({
               <h3>
                 Mängel <span className="tab-count">{issues.filter((i) => i.status !== "erledigt").length}</span>
               </h3>
-              <button type="button" className="btn btn-sm" onClick={() => openEditor({ kind: "issue", item: { projectId: project.id, nodeId: node.id, location: node.title } })}>
-                <AlertTriangle size={13} /> Mangel
-              </button>
+              <IssueButton projectId={project.id} nodeId={node.id} location={node.title} className="btn btn-sm" />
             </header>
             {issues.length ? (
               <ul className="compact-list">
@@ -523,65 +528,175 @@ function NodeDrawer({
   );
 }
 
-/* ---------------------------------------------------------------- Fotodokumentation */
+/* ---------------------------------------------------------------- Fotogalerie */
 
-export function PhotoDocumentation({ project }: { project: Project }) {
-  const { data } = useStore();
+function dataUrlToBytes(url: string): Uint8Array | string {
+  const [meta, body] = url.split(",", 2);
+  if (meta.includes(";base64")) {
+    const bin = atob(body);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+  return decodeURIComponent(body);
+}
+
+function safe(name: string) {
+  return name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 80) || "Foto";
+}
+
+/** Gallery by area: pick an area in the tree, select photos, export as ZIP or PDF. */
+export function PhotoGallery({ project }: { project: Project }) {
+  const { data, notify } = useStore();
   const nodes = data.siteNodes.filter((n) => n.projectId === project.id);
-  const [area, setArea] = useState("");
+  const all = data.photos.filter((p) => p.projectId === project.id);
+  const [area, setArea] = useState<string>("all");
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<number | null>(null);
-  const areaIds = area ? new Set(subtreeIds(nodes, area)) : null;
-  const photos = data.photos
-    .filter((p) => p.projectId === project.id && (!areaIds || areaIds.has(p.nodeId)))
-    .sort((a, b) => b.takenAt.localeCompare(a.takenAt));
+  const [busy, setBusy] = useState(false);
 
-  // Group by day, newest first – the way a site diary is read.
-  const groups = new Map<string, Photo[]>();
-  for (const p of photos) groups.set(p.takenAt.slice(0, 10), [...(groups.get(p.takenAt.slice(0, 10)) ?? []), p]);
-  const flat = [...groups.values()].flat();
+  const ids = area === "all" ? null : area === "none" ? new Set<string>() : new Set(subtreeIds(nodes, area));
+  const photos = all
+    .filter((p) => (area === "all" ? true : area === "none" ? !p.nodeId || !nodes.some((n) => n.id === p.nodeId) : ids!.has(p.nodeId)))
+    .sort((a, b) => b.takenAt.localeCompare(a.takenAt));
+  const countFor = (id: string) => {
+    const sub = new Set(subtreeIds(nodes, id));
+    return all.filter((p) => sub.has(p.nodeId)).length;
+  };
+  const chosen = photos.filter((p) => !selecting || picked.has(p.id));
+  const areaName = area === "all" ? "Alle Fotos" : area === "none" ? "Ohne Bereich" : nodes.find((n) => n.id === area)?.title ?? "";
+
+  const toggle = (id: string) =>
+    setPicked((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+
+  const exportZip = async () => {
+    if (!chosen.length) return;
+    setBusy(true);
+    try {
+      const { default: JSZip } = await import("jszip");
+      const zip = new JSZip();
+      const used = new Map<string, number>();
+      for (const p of chosen) {
+        const where = data.siteNodes.find((n) => n.id === p.nodeId)?.title ?? "Ohne Bereich";
+        const ext = p.dataUrl.startsWith("data:image/svg") ? "svg" : p.dataUrl.startsWith("data:image/png") ? "png" : "jpg";
+        const base = `${safe(where)}/${p.takenAt.slice(0, 10)} ${safe(p.caption)}`;
+        const n = (used.get(base) ?? 0) + 1;
+        used.set(base, n);
+        zip.file(`${base}${n > 1 ? ` (${n})` : ""}.${ext}`, dataUrlToBytes(p.dataUrl));
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${project.code} Fotos ${safe(areaName)}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      notify(`${chosen.length} Fotos exportiert`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportPdf = () => {
+    if (!chosen.length) return;
+    window.open(`/fotobericht/${project.id}?ids=${chosen.map((p) => p.id).join(",")}&titel=${encodeURIComponent(areaName)}`, "_blank");
+  };
+
+  const walk = (parentId: string, depth: number): React.ReactNode =>
+    childrenOf(nodes, parentId).map((n) => {
+      const c = countFor(n.id);
+      return (
+        <li key={n.id}>
+          <button type="button" className={area === n.id ? "on" : ""} style={{ paddingLeft: 10 + depth * 14 }} onClick={() => setArea(n.id)}>
+            <span>{n.title}</span>
+            {c > 0 && <em>{c}</em>}
+          </button>
+          {nodes.some((k) => k.parentId === n.id) && depth < 2 && <ul>{walk(n.id, depth + 1)}</ul>}
+        </li>
+      );
+    });
 
   return (
-    <div className="stack">
-      <div className="toolbar">
-        <select className="select-sm" value={area} onChange={(e) => setArea(e.target.value)}>
-          <option value="">Alle Bereiche</option>
-          {childrenOf(nodes, "").map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.title}
-            </option>
-          ))}
-        </select>
-        <span className="muted">{photos.length === 1 ? "1 Foto" : `${photos.length} Fotos`}</span>
-        <span className="spacer" />
-        <PhotoAddButton projectId={project.id} nodeId={area} className="btn btn-primary" label="Fotos hinzufügen" />
-      </div>
-      {photos.length === 0 ? (
-        <Empty>
-          <ImagePlus size={18} /> Noch keine Fotos.
-        </Empty>
-      ) : (
-        [...groups.entries()].map(([day, list]) => (
-          <section key={day} className="photo-day">
-            <h3>
-              {fmt(day)} <span className="muted">· {list.length === 1 ? "1 Foto" : `${list.length} Fotos`}</span>
-            </h3>
-            <div className="photo-grid">
-              {list.map((p) => (
-                <button key={p.id} type="button" className="photo-card" onClick={() => setOpen(flat.indexOf(p))} title={p.nodeId ? pathLabel(data.siteNodes, p.nodeId) : ""}>
-                  <img src={p.dataUrl} alt={p.caption} loading="lazy" />
-                  <span>
-                    <strong>{p.caption || "Foto"}</strong>
-                    <small>
-                      {p.takenAt.slice(11, 16)} · {data.siteNodes.find((n) => n.id === p.nodeId)?.title ?? "Ohne Bereich"}
-                    </small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        ))
-      )}
-      {open !== null && <PhotoLightbox photos={flat} index={open} onClose={() => setOpen(null)} />}
+    <div className="gallery">
+      <aside className="card gallery-tree">
+        <ul>
+          <li>
+            <button type="button" className={area === "all" ? "on" : ""} onClick={() => setArea("all")}>
+              <span>Alle Fotos</span>
+              <em>{all.length}</em>
+            </button>
+          </li>
+          {walk("", 0)}
+          <li>
+            <button type="button" className={area === "none" ? "on" : ""} onClick={() => setArea("none")}>
+              <span>Ohne Bereich</span>
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <section className="gallery-main">
+        <div className="toolbar">
+          <h2 className="gallery-title">
+            {areaName} <span className="muted">· {photos.length}</span>
+          </h2>
+          <span className="spacer" />
+          {selecting ? (
+            <>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPicked(new Set(photos.map((p) => p.id)))}>
+                Alle
+              </button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPicked(new Set())}>
+                Keine
+              </button>
+              <span className="muted small">{picked.size} ausgewählt</span>
+            </>
+          ) : null}
+          <button type="button" className={`btn btn-sm ${selecting ? "active-toggle" : ""}`} onClick={() => setSelecting((v) => !v)}>
+            {selecting ? "Fertig" : "Auswählen"}
+          </button>
+          <button type="button" className="btn btn-sm" disabled={!chosen.length || busy} onClick={exportZip}>
+            <Download size={14} /> ZIP
+          </button>
+          <button type="button" className="btn btn-sm" disabled={!chosen.length} onClick={exportPdf}>
+            <Download size={14} /> PDF
+          </button>
+          <PhotoAddButton projectId={project.id} nodeId={area === "all" || area === "none" ? "" : area} className="btn btn-sm" label="Hochladen" camera={false} />
+          <PhotoAddButton projectId={project.id} nodeId={area === "all" || area === "none" ? "" : area} className="btn btn-sm btn-primary" label="Kamera" />
+        </div>
+        {photos.length === 0 ? (
+          <Empty>
+            <ImagePlus size={18} /> Keine Fotos in „{areaName}“.
+          </Empty>
+        ) : (
+          <div className="gallery-grid">
+            {photos.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`g-item ${selecting ? "selecting" : ""} ${picked.has(p.id) ? "picked" : ""}`}
+                onClick={() => (selecting ? toggle(p.id) : setOpen(i))}
+                title={p.nodeId ? pathLabel(data.siteNodes, p.nodeId) : p.caption}
+              >
+                <img src={p.dataUrl} alt={p.caption} loading="lazy" />
+                {selecting && <i className="g-check">{picked.has(p.id) ? "✓" : ""}</i>}
+                <span className="g-cap">
+                  <strong>{p.caption || "Foto"}</strong>
+                  <small>
+                    {fmtShort(p.takenAt.slice(0, 10))} {p.takenAt.slice(11, 16)} · {data.siteNodes.find((n) => n.id === p.nodeId)?.title ?? "ohne Bereich"}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+      {open !== null && <PhotoLightbox photos={photos} index={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }

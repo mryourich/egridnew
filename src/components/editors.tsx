@@ -4,7 +4,8 @@ import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { uid, useStore } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
-import type { CollectionKey, Data, Item } from "@/lib/types";
+import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
+import { IssueSheet } from "./issue-sheet";
 import { EntityForm, Modal, type Field } from "./ui";
 
 type EditorKind = "node" | "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence";
@@ -256,6 +257,11 @@ function fromQualText(text: string) {
 }
 
 export function Editor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
+  if (target.kind === "issue") return <IssueSheet issue={(target.item ?? {}) as Partial<Issue>} onClose={onClose} />;
+  return <GenericEditor target={target} onClose={onClose} />;
+}
+
+function GenericEditor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
   const { data, save, remove, notify } = useStore();
   const def = defs[target.kind];
   const isNew = !target.item?.id;
