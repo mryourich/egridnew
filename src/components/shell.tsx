@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { findConflicts, StoreProvider, useStore } from "@/lib/store";
+import { currentUser, findConflicts, StoreProvider, useStore } from "@/lib/store";
 import { Editor, type EditorTarget } from "./editors";
 import { Avatar } from "./ui";
 
@@ -32,22 +32,20 @@ function Frame({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<EditorTarget | null>(null);
 
   const conflicts = findConflicts(data).size;
-  const openIssues = data.issues.filter((i) => i.status !== "erledigt").length;
-  const user = data.employees.find((e) => e.id === "e2");
+  const user = currentUser(data);
 
   const modules: Module[] = [
     { href: "/dashboard", label: "Start", match: ["/dashboard"] },
     {
-      href: "/teamgrid",
-      label: "TeamGrid",
-      match: ["/teamgrid", "/planung", "/meldungen"],
+      href: "/projekte",
+      label: "Projekte",
+      match: ["/projekte", "/ressourcenplanung"],
       sub: [
-        { href: "/teamgrid", label: "Baustellen" },
-        { href: "/planung", label: "Einsatzplanung", badge: conflicts },
-        { href: "/meldungen", label: "Mängel", badge: openIssues }
+        { href: "/projekte", label: "Projekte" },
+        { href: "/ressourcenplanung", label: "Ressourcenplanung", badge: conflicts }
       ]
     },
-    { href: "/projekte", label: "Projekte", match: ["/projekte"] },
+    { href: "/teamgrid", label: "TeamGrid", match: ["/teamgrid"] },
     { href: "/ressourcen", label: "Ressourcen", match: ["/ressourcen"] }
   ];
 
@@ -71,15 +69,7 @@ function Frame({ children }: { children: ReactNode }) {
           <Link href="/einstellungen" className="topbar-icon" aria-label="Einstellungen" title="Einstellungen">
             <Settings size={18} />
           </Link>
-          {user && (
-            <span className="topbar-user" title={`${user.name} · ${user.role}`}>
-              <Avatar name={user.name} size={28} />
-              <span>
-                <strong>{user.name}</strong>
-                <small>{user.role}</small>
-              </span>
-            </span>
-          )}
+          <UserSwitch />
         </header>
 
         <nav className="modulebar" aria-label="Module">
@@ -125,10 +115,9 @@ function QuickCreate({ onPick }: { onPick: (t: EditorTarget) => void }) {
   }, [open]);
 
   const items: { label: string; kind: EditorTarget["kind"] }[] = [
-    { label: "Mangel", kind: "issue" },
-    { label: "Tagesbericht", kind: "report" },
+    { label: "Projekt", kind: "project" },
     { label: "Einplanung", kind: "assignment" },
-    { label: "Projekt", kind: "project" }
+    { label: "Abwesenheit", kind: "absence" }
   ];
 
   return (
@@ -150,6 +139,55 @@ function QuickCreate({ onPick }: { onPick: (t: EditorTarget) => void }) {
               {i.label}
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Demo sign-in: switch the user to see what each role sees (real login comes with Supabase). */
+function UserSwitch() {
+  const { data, setCurrentUser, notify } = useStore();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const user = currentUser(data);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  if (!user) return null;
+  return (
+    <div className="quick-create" ref={ref}>
+      <button type="button" className="topbar-user" onClick={() => setOpen((o) => !o)} title="Benutzer wechseln (Demo)">
+        <Avatar name={user.name} size={28} />
+        <span>
+          <strong>{user.name}</strong>
+          <small>{user.role}</small>
+        </span>
+      </button>
+      {open && (
+        <div className="menu user-menu">
+          <small className="menu-title">Angemeldet als (Demo)</small>
+          {data.employees
+            .filter((e) => e.active)
+            .map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                className={e.id === user.id ? "on" : ""}
+                onClick={() => {
+                  setCurrentUser(e.id);
+                  setOpen(false);
+                  notify(`Angemeldet als ${e.name}`);
+                }}
+              >
+                {e.name} <small>{e.role}</small>
+              </button>
+            ))}
         </div>
       )}
     </div>

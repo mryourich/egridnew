@@ -50,6 +50,7 @@ const defs: Record<EditorKind, Def> = {
       { key: "location", label: "Ort" },
       { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true },
       { key: "managerId", label: "Projektleitung", type: "select", options: employeeOptions(data) },
+      { key: "siteManagerId", label: "Bauleitung", type: "select", options: employeeOptions(data) },
       { key: "start", label: "Start", type: "date", required: true },
       { key: "end", label: "Ende", type: "date", required: true },
       { key: "budget", label: "Budget (€)", type: "number", min: 0 },
@@ -62,7 +63,8 @@ const defs: Record<EditorKind, Def> = {
       client: "",
       location: "",
       status: "planung",
-      managerId: "",
+      managerId: data.currentUserId,
+      siteManagerId: "",
       start: today(),
       end: addDays(today(), 30),
       budget: 0,
@@ -180,6 +182,7 @@ const defs: Record<EditorKind, Def> = {
     fields: () => [
       { key: "name", label: "Name", required: true },
       { key: "role", label: "Funktion" },
+      { key: "department", label: "Abteilung" },
       { key: "team", label: "Team / Partie" },
       { key: "hourlyRate", label: "Stundensatz (€)", type: "number", min: 0 },
       { key: "phone", label: "Telefon", type: "tel" },
@@ -187,7 +190,7 @@ const defs: Record<EditorKind, Def> = {
       { key: "qualificationsText", label: "Qualifikationen (je Zeile: Name; gültig bis JJJJ-MM-TT)", type: "textarea", placeholder: "SCC**; 2027-05-31" },
       { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (planbar)" }
     ],
-    defaults: () => ({ name: "", role: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
+    defaults: () => ({ name: "", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
     describe: (v) => `Mitarbeiter ${v.name}`
   },
   vehicle: {
