@@ -200,22 +200,6 @@ export function ResourcePlanner({
     return { left: s * dw, width: (e - s + 1) * dw };
   };
 
-  // Header groups.
-  const months: { label: string; span: number }[] = [];
-  const weeks: { label: string; span: number }[] = [];
-  for (const d of dayList) {
-    const m = monthLabel(d, true);
-    if (months.at(-1)?.label === m) months.at(-1)!.span++;
-    else months.push({ label: m, span: 1 });
-    const w = String(isoWeek(d));
-    if (weeks.at(-1)?.label === w && weekday(d) !== 1) weeks.at(-1)!.span++;
-    else weeks.push({ label: w, span: 1 });
-  }
-
-  const special = dayList
-    .map((d, i) => ({ d, i, holiday: holidayName(d), weekend: isWeekend(d), today: d === t }))
-    .filter((x) => x.holiday || x.weekend || x.today);
-
   const timelineW = days * dw;
   const toggle = (id: string) =>
     setCollapsed((c) => {
@@ -239,44 +223,11 @@ export function ResourcePlanner({
                 </button>
               )}
             </div>
-            <div className="pl-head-time" style={{ width: timelineW }}>
-              <div className="pl-hrow pl-months">
-                {months.map((m, i) => (
-                  <span key={i} style={{ width: m.span * dw }}>
-                    {m.span * dw > 60 ? m.label : ""}
-                  </span>
-                ))}
-              </div>
-              <div className="pl-hrow pl-weeks">
-                {weeks.map((w, i) => (
-                  <span key={i} style={{ width: w.span * dw }} title={`Kalenderwoche ${w.label}`}>
-                    {w.span * dw >= 22 ? w.label : ""}
-                  </span>
-                ))}
-              </div>
-              <div className="pl-hrow pl-days">
-                {dayList.map((d) => (
-                  <span key={d} className={`${isWeekend(d) ? "we" : ""} ${holidayName(d) ? "hol" : ""} ${d === t ? "today" : ""}`} title={`${weekdayShort(d)} ${fmt(d)}${holidayName(d) ? ` · ${holidayName(d)}` : ""}`}>
-                    {dw >= 15 ? d.slice(8) : ""}
-                  </span>
-                ))}
-              </div>
-              <div className="pl-hrow pl-wd">
-                {dayList.map((d) => (
-                  <span key={d} className={`${isWeekend(d) ? "we" : ""} ${holidayName(d) ? "hol" : ""} ${d === t ? "today" : ""}`}>
-                    {dw >= 15 ? weekdayShort(d) : weekdayShort(d)[0]}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <PlannerHeadTime dayList={dayList} dw={dw} />
           </div>
 
           <div className="pl-body">
-            <div className="pl-cols" style={{ left: NO_W + nameW, width: timelineW }}>
-              {special.map((x) => (
-                <span key={x.d} className={x.holiday ? "hol" : x.today ? "today" : "we"} style={{ left: x.i * dw, width: dw }} title={x.holiday} />
-              ))}
-            </div>
+            <PlannerCols dayList={dayList} dw={dw} left={NO_W + nameW} />
 
             {rows.length === 0 && <div className="pl-empty">{emptyText}</div>}
 
@@ -414,4 +365,66 @@ export function usePlannerRange(initialZoom: Zoom = "normal") {
   );
 
   return { from, days: z.days, dayWidth: z.dw, controls };
+}
+
+/** Month / calendar week / day / weekday header rows. */
+export function PlannerHeadTime({ dayList, dw }: { dayList: ISODate[]; dw: number }) {
+  const t = today();
+  const months: { label: string; span: number }[] = [];
+  const weeks: { label: string; span: number }[] = [];
+  for (const d of dayList) {
+    const m = monthLabel(d, true);
+    if (months.at(-1)?.label === m) months.at(-1)!.span++;
+    else months.push({ label: m, span: 1 });
+    const w = String(isoWeek(d));
+    if (weeks.at(-1)?.label === w && weekday(d) !== 1) weeks.at(-1)!.span++;
+    else weeks.push({ label: w, span: 1 });
+  }
+  const cls = (d: ISODate) => `${isWeekend(d) ? "we" : ""} ${holidayName(d) ? "hol" : ""} ${d === t ? "today" : ""}`;
+  return (
+    <div className="pl-head-time" style={{ width: dayList.length * dw }}>
+      <div className="pl-hrow pl-months">
+        {months.map((m, i) => (
+          <span key={i} style={{ width: m.span * dw }}>
+            {m.span * dw > 60 ? m.label : ""}
+          </span>
+        ))}
+      </div>
+      <div className="pl-hrow pl-weeks">
+        {weeks.map((w, i) => (
+          <span key={i} style={{ width: w.span * dw }} title={`Kalenderwoche ${w.label}`}>
+            {w.span * dw >= 22 ? `KW ${w.label}` : ""}
+          </span>
+        ))}
+      </div>
+      <div className="pl-hrow pl-days">
+        {dayList.map((d) => (
+          <span key={d} className={cls(d)} title={`${weekdayShort(d)} ${fmt(d)}${holidayName(d) ? ` · ${holidayName(d)}` : ""}`}>
+            {dw >= 15 ? d.slice(8) : ""}
+          </span>
+        ))}
+      </div>
+      <div className="pl-hrow pl-wd">
+        {dayList.map((d) => (
+          <span key={d} className={cls(d)}>
+            {dw >= 15 ? weekdayShort(d) : weekdayShort(d)[0]}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Full-height weekend, holiday and today columns behind the rows. */
+export function PlannerCols({ dayList, dw, left }: { dayList: ISODate[]; dw: number; left: number }) {
+  const t = today();
+  return (
+    <div className="pl-cols" style={{ left, width: dayList.length * dw }}>
+      {dayList.map((d, i) => {
+        const hol = holidayName(d);
+        if (!hol && !isWeekend(d) && d !== t) return null;
+        return <span key={d} className={hol ? "hol" : d === t ? "today" : "we"} style={{ left: i * dw, width: dw }} title={hol} />;
+      })}
+    </div>
+  );
 }

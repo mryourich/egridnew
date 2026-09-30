@@ -82,7 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["assignments", "tasks", "issues", "materials", "reports", "documents", "siteNodes", "photos"] as const) {
+        for (const k of ["assignments", "tasks", "issues", "materials", "reports", "documents", "siteNodes", "photos", "jobs"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
       }
@@ -96,10 +96,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.siteNodes = d.siteNodes.filter((n) => !ids.has(n.id));
         next.photos = d.photos.filter((p) => !ids.has(p.nodeId));
         next.issues = d.issues.map((i) => (i.nodeId && ids.has(i.nodeId) ? { ...i, nodeId: "" } : i));
+        next.jobs = d.jobs.map((j) => (j.nodeId && ids.has(j.nodeId) ? { ...j, nodeId: "" } : j));
       }
       if (key === "employees") {
         next.assignments = next.assignments.filter((a) => !(a.resourceType === "employee" && a.resourceId === id));
         next.absences = next.absences.filter((a) => a.employeeId !== id);
+        next.jobs = next.jobs.filter((j) => j.employeeId !== id);
       }
       if (key === "vehicles" || key === "equipment") {
         const type = key === "vehicles" ? "vehicle" : "equipment";
@@ -201,4 +203,22 @@ export function myProjects(data: Data, userId = data.currentUserId) {
       p.status !== "abgeschlossen" &&
       (p.siteManagerId === userId || p.managerId === userId || data.assignments.some((a) => a.projectId === p.id && a.resourceType === "employee" && a.resourceId === userId))
   );
+}
+
+export type Role = "pl" | "bl" | "hr" | "monteur";
+
+export const roleLabel: Record<Role, string> = {
+  pl: "Projektleitung",
+  bl: "Bauleitung",
+  hr: "Personal (HR)",
+  monteur: "Monteur"
+};
+
+/** Role derived from the job title until real roles come with the login. */
+export function roleOf(e: { role: string } | undefined): Role {
+  const r = (e?.role ?? "").toLowerCase();
+  if (r.includes("projektleit")) return "pl";
+  if (r.includes("bauleit")) return "bl";
+  if (r.includes("hr") || r.includes("personal")) return "hr";
+  return "monteur";
 }

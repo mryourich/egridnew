@@ -7,7 +7,7 @@ function demoPhoto(label: string, hue: number) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 /** Demo data relative to today, so the planner always shows a realistic current week. */
 export function createSeed(): Data {
@@ -52,7 +52,8 @@ export function createSeed(): Data {
       { id: "e11", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
       { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
       { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
-      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
+      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true },
+      { id: "e15", name: "Claudia Wagner", role: "Personalverwaltung (HR)", department: "Verwaltung", team: "Personal", phone: "+43 660 4455667", email: "claudia@example.at", hourlyRate: 48, qualifications: [], active: true }
     ],
     vehicles: [
       { id: "v1", plate: "VB-123AB", name: "VW Crafter", type: "Transporter", seats: 3, nextService: d(9), status: "verfuegbar" },
@@ -127,6 +128,18 @@ export function createSeed(): Data {
       { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "", nodeId: "n16" },
       { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: "", nodeId: "n24" },
       { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "", nodeId: "n21" }
+    ],
+    jobs: [
+      { id: "j1", projectId: "p2", employeeId: "e8", title: "Kabelzug Abschnitt B", color: "#2563eb", start: d(0), end: d(3), nodeId: "n6", note: "", done: false },
+      { id: "j2", projectId: "p2", employeeId: "e8", title: "Befestigung prüfen", color: "#dc2626", start: d(4), end: d(4), nodeId: "n7", note: "Mangel beheben", done: false },
+      { id: "j3", projectId: "p2", employeeId: "e6", title: "Trasse Abschnitt A fertig", color: "#16a34a", start: d(-3), end: d(1), nodeId: "n3", note: "", done: true },
+      { id: "j4", projectId: "p2", employeeId: "e6", title: "Durchgang abdichten", color: "#ea580c", start: d(2), end: d(4), nodeId: "n8", note: "", done: false },
+      { id: "j5", projectId: "p2", employeeId: "e12", title: "Verteiler E2 setzen", color: "#7c3aed", start: d(1), end: d(5), nodeId: "n11", note: "", done: false },
+      { id: "j6", projectId: "p2", employeeId: "e14", title: "Kabelzug Hauptachse", color: "#0891b2", start: d(-2), end: d(8), nodeId: "", note: "", done: false },
+      { id: "j7", projectId: "p2", employeeId: "e4", title: "Leuchten Abschnitt A", color: "#ca8a04", start: d(7), end: d(11), nodeId: "n14", note: "", done: false },
+      { id: "j8", projectId: "p2", employeeId: "e13", title: "Notbeleuchtung", color: "#db2777", start: d(8), end: d(15), nodeId: "n15", note: "", done: false },
+      { id: "j9", projectId: "p3", employeeId: "e5", title: "Wallboxen Reihe 1–4", color: "#2563eb", start: d(0), end: d(6), nodeId: "n25", note: "", done: false },
+      { id: "j10", projectId: "p3", employeeId: "e7", title: "Kabelbefestigung", color: "#16a34a", start: d(0), end: d(4), nodeId: "n26", note: "", done: false }
     ],
     siteNodes: [
       node("n1", "p2", "", "Elektroinstallation Tunnelabschnitt Nord", "in_arbeit", "e2", "", "Kabelwege, Verteiler und Erstprüfung."),
