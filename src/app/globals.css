@@ -8457,3 +8457,404 @@ button.avatar-stack {
 .sg-addgroup input {
   min-width: 0;
 }
+
+/* ================================================================ v10: B2B business look – square, flat, dense */
+:root {
+  --bg: #eceff3;
+  --surface: #ffffff;
+  --surface-2: #f5f6f8;
+  --border: #d6dbe2;
+  --border-strong: #bfc6d1;
+  --text: #17202e;
+  --text-2: #3a4556;
+  --muted: #687385;
+  --primary: #1b57b8;
+  --primary-2: #154895;
+  --primary-soft: #e7eef9;
+  --navy: #18212f;
+  --navy-2: #18212f;
+  --radius: 2px;
+  --radius-sm: 2px;
+  --shadow: none;
+  --shadow-lg: 0 8px 24px rgba(16, 24, 40, 0.18);
+}
+html,
+body {
+  background: var(--bg) !important;
+}
+body:not(:has(.lp)) *,
+body:not(:has(.lp)) *::before,
+body:not(:has(.lp)) *::after {
+  border-radius: 2px !important;
+}
+/* only real round things stay round */
+body:not(:has(.lp)) :is(.avatar, .avatar-img, .avatar-stack .avatar, .avatar-stack .later, .boot-spinner, .dl-dot, .kdot, .lb-close, .lb-nav, .note-colors button, .pc-action, .ring, .ring i, .sb-dot, .sg-free-ic, .timeline li::before, .mat-col > header strong::before) {
+  border-radius: 50% !important;
+}
+body:not(:has(.lp)) .timeline li::before,
+body:not(:has(.lp)) .mat-col > header strong::before {
+  border-radius: 50% !important;
+}
+
+/* flat surfaces: hairline borders instead of shadows */
+.card,
+.kpi,
+.site-card,
+.site-hero,
+.dash-panel,
+.sb-col,
+.mat-col,
+.mat-card,
+.op-areas,
+.issue,
+.pool-card,
+.file-list li,
+.toolbar .search,
+.planner,
+.note {
+  box-shadow: none !important;
+}
+.card,
+.kpi,
+.site-card,
+.site-hero {
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+}
+.site-card:hover,
+a.site-card:hover {
+  transform: none !important;
+  border-color: var(--border-strong) !important;
+}
+.site-card::before {
+  display: none !important;
+}
+.modal,
+.job-pop,
+.menu,
+.ctx-menu,
+.preview,
+.drawer {
+  box-shadow: var(--shadow-lg) !important;
+}
+.modal-backdrop,
+.sheet-backdrop,
+.preview-backdrop {
+  backdrop-filter: none !important;
+  background: rgba(16, 24, 40, 0.45) !important;
+}
+
+/* typography: compact, businesslike */
+body {
+  font-size: 13.5px;
+}
+.page-header h1,
+.hero h1 {
+  font-size: 20px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.01em !important;
+}
+.hero p,
+.page-header p {
+  font-size: 13px;
+}
+.card-header h2,
+.card h2 {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.card-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.card {
+  padding: 14px 16px;
+}
+.card.card-flush {
+  padding: 0;
+}
+.card.card-flush > .card-header {
+  padding: 12px 16px 8px;
+  margin: 0;
+}
+
+/* buttons and inputs */
+.btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.btn-sm {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.btn-primary {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+.btn-primary:hover {
+  background: var(--primary-2) !important;
+  border-color: var(--primary-2) !important;
+}
+input,
+select,
+textarea {
+  box-shadow: none !important;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 35%, transparent) !important;
+  outline-offset: 0;
+}
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* sidebar: solid, square selection with an accent bar */
+.side {
+  background: var(--navy) !important;
+  border-right: 1px solid #0e141d;
+}
+.side-nav a,
+.sp-head,
+.sp-sections a {
+  border-radius: 0 !important;
+}
+.side-nav a.active,
+.sp-sections a.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 3px 0 0 #4d8dff !important;
+}
+.side-nav a.active::before {
+  display: none !important;
+}
+.mtop {
+  background: var(--navy) !important;
+}
+
+/* project header: flat with a colour bar */
+.site-hero {
+  background: var(--surface) !important;
+  box-shadow: inset 4px 0 0 var(--c, var(--primary)) !important;
+}
+.site-hero h1 {
+  font-size: 19px !important;
+}
+
+/* KPI tiles */
+.kpi {
+  padding: 10px 12px;
+  gap: 10px;
+}
+.kpi-icon {
+  width: 30px;
+  height: 30px;
+}
+.kpi-value {
+  font-size: 22px !important;
+}
+.kpi-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* tables and lists */
+.dp-th,
+.op-th,
+.log-table th {
+  background: #f1f3f6 !important;
+}
+.dp-row {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+.dp-name img,
+.dp-name > i {
+  width: 30px;
+  height: 30px;
+}
+.dp-name > i {
+  background: var(--c) !important;
+}
+.dp-bar,
+.sh-progress span,
+.sc-progress > div {
+  height: 6px;
+  background: #e1e5eb !important;
+}
+.dl-item {
+  padding: 7px 4px;
+}
+.dl-date,
+.dl-qty,
+.dl-sev {
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.dl-date.late,
+.dl-sev.sev-kritisch,
+.dl-sev.sev-hoch {
+  border-color: #f2c4c4;
+}
+.ov-nums a {
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.ov-client-img {
+  border-color: var(--border-strong) !important;
+}
+
+/* plan */
+.sg-grp-left {
+  box-shadow: inset 3px 0 0 var(--primary) !important;
+}
+.sg-job {
+  box-shadow: none !important;
+}
+
+/* protocol + trail */
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.log-table th,
+.log-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.log-table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.log-table td:first-child {
+  width: 150px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.log-table td:nth-child(2) {
+  width: 170px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.log-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.log-more {
+  margin-top: 10px;
+}
+.ov-log {
+  overflow-x: auto;
+}
+.trail {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.trail li {
+  display: grid;
+  grid-template-columns: 14px minmax(70px, auto) 1fr auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.trail li svg {
+  color: var(--muted);
+}
+.trail time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.trail-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.trail-compact b {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.mat-card .trail {
+  padding: 6px 0 2px;
+  border-top: 1px dashed var(--border);
+}
+.mat-locked {
+  color: var(--muted);
+  font-size: 12px;
+}
+.sheet-trail {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+}
+.sheet-trail > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.op-title .trail-compact {
+  flex-basis: 100%;
+}
+
+/* project cards: client banner */
+.sc-banner {
+  display: grid;
+  place-items: center;
+  height: 84px;
+  margin: -18px -18px 4px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sc-banner.has {
+  background: #fff;
+}
+.sc-banner img {
+  max-width: 70%;
+  max-height: 64px;
+  object-fit: contain;
+}
+@media (max-width: 640px) {
+  .log-table td:first-child {
+    width: auto;
+    white-space: normal;
+  }
+  .log-table td:nth-child(2) {
+    width: auto;
+  }
+}

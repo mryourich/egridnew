@@ -7,7 +7,7 @@ import { fmt, fmtShort, today, weekdayLong } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { ago, projectStats } from "@/lib/overview";
 import { shortPath } from "@/lib/site";
-import { currentUser, employeeName, isManager, myProjects, useStore } from "@/lib/store";
+import { currentUser, employeeName, fmtStamp, isManager, myProjects, useStore } from "@/lib/store";
 import type { Data, Project } from "@/lib/types";
 import { useEditor } from "./shell";
 import { Empty, Kpi } from "./ui";
@@ -224,8 +224,9 @@ export function Dashboard() {
               <i className="dl-dot" style={{ background: byId.get(a.projectId)?.color }} />
               <span>
                 <strong>{a.text}</strong>
-                <small>
-                  {byId.get(a.projectId)?.name} · {ago(a.at)}
+                <small title={ago(a.at)}>
+                  {a.by ? `${employeeName(data, a.by)} · ` : ""}
+                  {fmtStamp(a.at)} · {byId.get(a.projectId)?.name}
                 </small>
               </span>
             </Link>

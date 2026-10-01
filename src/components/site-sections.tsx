@@ -8,6 +8,7 @@ import { shortPath } from "@/lib/site";
 import { employeeName, isManager, projectTeam, roleLabel, roleOf, useStore } from "@/lib/store";
 import type { IssueStatus, Project, RegieReport } from "@/lib/types";
 import { RegieList, RegieSheet } from "./regie";
+import { ISSUE_LABELS, Trail } from "./trail";
 import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
 import { EmpAvatar } from "./person";
@@ -92,6 +93,7 @@ export function DefectsSection({ projectId }: { projectId: string }) {
                     {i.nodeId ? shortPath(data.siteNodes, i.nodeId) : i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
                     <span className={overdue ? "text-red" : ""}>Frist {fmt(i.due)}</span>
                   </small>
+                  <Trail item={i} labels={ISSUE_LABELS} created="Gemeldet" compact />
                   {i.description && <p>{i.description}</p>}
                   {i.status === "erledigt" && (i.fixPhoto || i.fixNote || i.fixedAt) && (
                     <p className="issue-fix">
