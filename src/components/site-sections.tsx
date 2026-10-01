@@ -1,15 +1,16 @@
 "use client";
 
-import { AlertTriangle, Camera, CheckCircle2, FileText, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, FileText, Minus, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { addDays, fmt, fmtShort, inRange, isoWeek, today, weekdayShort, workdaysBetween } from "@/lib/date";
+import { fmt, inRange, isoWeek, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { shortPath } from "@/lib/site";
-import { employeeName, isManager, useStore } from "@/lib/store";
+import { employeeName, isManager, projectTeam, roleLabel, roleOf, useStore } from "@/lib/store";
 import type { IssueStatus, Project } from "@/lib/types";
 import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
-import { Avatar, Badge, Empty, SearchInput, Segmented } from "./ui";
+import { EmpAvatar } from "./person";
+import { Badge, Empty, SearchInput, Segmented } from "./ui";
 
 const of = <T extends { projectId: string }>(list: T[], id: string) => list.filter((x) => x.projectId === id);
 
@@ -173,7 +174,6 @@ export function ReportsSection({ project }: { project: Project }) {
               <div className="rc-body">
                 <div className="rc-meta">
                   <strong>{fmt(r.date)}</strong>
-                  <span className="chip-static">{L.weather[r.weather].label}, {r.temperature} °C</span>
                   <span className="chip-static">{r.crew} Personen</span>
                   <span className="chip-static">{r.hours} h</span>
                   <span className="muted small">von {employeeName(data, r.authorId)}</span>
@@ -183,6 +183,13 @@ export function ReportsSection({ project }: { project: Project }) {
                   <p className="report-incident">
                     <AlertTriangle size={14} /> {r.incidents}
                   </p>
+                )}
+                {r.photos.length > 0 && (
+                  <div className="rc-photos">
+                    {r.photos.map((src, i) => (
+                      <img key={i} src={src} alt="" />
+                    ))}
+                  </div>
                 )}
               </div>
               <div className="rc-actions">
@@ -203,97 +210,75 @@ export function ReportsSection({ project }: { project: Project }) {
 
 /* ---------------------------------------------------------------- Team */
 
-/** Who works on the site: one row per planned stint. */
+/** Team of a project: invited people on top, everybody else as a pool to pick from – one click invites. */
 export function TeamSection({ project }: { project: Project }) {
-  const { data, remove } = useStore();
-  const openEditor = useEditor();
-  const readOnly = !isManager(data);
+  const { data, save, notify } = useStore();
+  const manager = isManager(data);
+  const [query, setQuery] = useState("");
   const t = today();
-  const list = of(data.assignments, project.id)
-    .filter((a) => a.resourceType === "employee")
-    .sort((a, b) => (a.end < t ? 1 : 0) - (b.end < t ? 1 : 0) || a.start.localeCompare(b.start));
-  const people = new Set(list.map((a) => a.resourceId)).size;
-  const onSite = new Set(list.filter((a) => inRange(t, a.start, a.end)).map((a) => a.resourceId)).size;
-  const personDays = list.reduce((s, a) => s + workdaysBetween(a.start, a.end), 0);
+  const q = query.toLowerCase();
+  const team = projectTeam(data, project);
+  const pool = data.employees.filter((e) => e.active && !team.some((m) => m.id === e.id) && (!q || `${e.name} ${e.role} ${e.team}`.toLowerCase().includes(q)));
+  const absent = (id: string) => data.absences.find((a) => a.employeeId === id && inRange(t, a.start, a.end));
+  const today_ = (id: string) => data.jobs.find((j) => j.projectId === project.id && j.employeeId === id && inRange(t, j.start, j.end));
+
+  const invite = (id: string) => {
+    const e = data.employees.find((x) => x.id === id);
+    save("projects", { ...project, members: [...project.members, id] }, `${e?.name} zu ${project.name} eingeladen`);
+    notify(`${e?.name} ist jetzt im Projekt`);
+  };
+  const removeMember = (id: string) => {
+    const e = data.employees.find((x) => x.id === id);
+    if (!window.confirm(`${e?.name} aus dem Projekt nehmen? Die Person sieht das Projekt dann nicht mehr.`)) return;
+    save("projects", { ...project, members: project.members.filter((m) => m !== id) }, `${e?.name} aus ${project.name} entfernt`);
+  };
+
+  const card = (id: string, inProject: boolean) => {
+    const e = data.employees.find((x) => x.id === id)!;
+    const ab = absent(id);
+    const job = today_(id);
+    const owner = id === project.createdBy;
+    return (
+      <button
+        key={id}
+        type="button"
+        className={`pool-card ${inProject ? "in" : ""}`}
+        disabled={!manager || owner}
+        title={owner ? "Hat das Projekt angelegt" : inProject ? "Klicken = aus dem Projekt nehmen" : "Klicken = ins Projekt einladen"}
+        onClick={() => (inProject ? removeMember(id) : invite(id))}
+      >
+        <EmpAvatar id={id} size={52} />
+        <strong>{e.name}</strong>
+        <small>{e.role || roleLabel[roleOf(e)]}</small>
+        {inProject && (ab ? <em className="pc-tag red">{L.absenceType[ab.type].label}</em> : job ? <em className="pc-tag">{job.title}</em> : <em className="pc-tag muted">heute ohne Aufgabe</em>)}
+        {owner && <em className="pc-owner">Ersteller</em>}
+        {manager && !owner && <i className="pc-action">{inProject ? <Minus size={14} /> : <Plus size={14} />}</i>}
+      </button>
+    );
+  };
 
   return (
-    <section className="card card-flush">
-      <header className="card-header">
-        <h2>
-          Team auf der Baustelle <span className="tab-count">{people}</span>
-        </h2>
-        <span className="muted small">
-          heute vor Ort: <strong>{onSite}</strong> · {personDays} Personentage
-        </span>
-        {!readOnly && (
-          <button className="btn btn-sm btn-primary" type="button" onClick={() => openEditor({ kind: "assignment", item: { resourceType: "employee", projectId: project.id, start: project.start > t ? project.start : t, end: addDays(project.start > t ? project.start : t, 4) } })}>
-            <Plus size={14} /> Person einplanen
-          </button>
-        )}
-      </header>
-      {list.length === 0 ? (
-        <Empty>Noch niemand auf dieser Baustelle.{readOnly ? "" : " Mit „Person einplanen“ teilst du dein Team ein."}</Empty>
-      ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Funktion</th>
-                <th>Von</th>
-                <th>Bis</th>
-                <th className="num">Arbeitstage</th>
-                <th>Status</th>
-                <th>Notiz</th>
-                {!readOnly && <th />}
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((a) => {
-                const e = data.employees.find((x) => x.id === a.resourceId);
-                const absent = data.absences.find((ab) => ab.employeeId === a.resourceId && ab.start <= a.end && ab.end >= a.start);
-                return (
-                  <tr key={a.id} className={`${readOnly ? "" : "clickable"} ${a.end < t ? "inactive" : ""}`} onClick={() => !readOnly && openEditor({ kind: "assignment", item: a })}>
-                    <td>
-                      <span className="cell-person">
-                        <Avatar name={e?.name ?? "?"} size={22} /> <strong>{e?.name ?? "–"}</strong>
-                      </span>
-                    </td>
-                    <td>{e?.role}</td>
-                    <td className="nowrap">{fmt(a.start)}</td>
-                    <td className="nowrap">{fmt(a.end)}</td>
-                    <td className="num">{workdaysBetween(a.start, a.end)}</td>
-                    <td>
-                      {inRange(t, a.start, a.end) ? <Badge tone="green">Vor Ort</Badge> : a.start > t ? <Badge tone="blue">Geplant</Badge> : <Badge tone="gray">Beendet</Badge>}
-                      {absent && (
-                        <Badge tone="red">
-                          {L.absenceType[absent.type].label} {fmtShort(absent.start)}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="muted">{a.note}</td>
-                    {!readOnly && (
-                      <td className="num">
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          title="Von der Baustelle entfernen"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            if (window.confirm(`${e?.name ?? "Person"} von der Baustelle entfernen?`)) remove("assignments", a.id, `${e?.name} aus ${project.code} entfernt`);
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+    <div className="stack">
+      <section className="card">
+        <header className="card-header">
+          <h2>
+            Im Projekt <span className="tab-count">{team.length}</span>
+          </h2>
+          <span className="muted small">Nur diese Personen sehen das Projekt.</span>
+        </header>
+        <div className="pool-grid">{team.map((e) => card(e.id, true))}</div>
+      </section>
+      {manager && (
+        <section className="card">
+          <header className="card-header">
+            <h2>
+              Mitarbeiter-Pool <span className="tab-count">{pool.length}</span>
+            </h2>
+            <SearchInput value={query} onChange={setQuery} placeholder="Name, Funktion…" />
+          </header>
+          {pool.length ? <div className="pool-grid">{pool.map((e) => card(e.id, false))}</div> : <Empty>{q ? "Niemand gefunden." : "Alle Mitarbeiter sind schon im Projekt. Neue legst du unter „Team“ an."}</Empty>}
+        </section>
       )}
-    </section>
+    </div>
   );
 }

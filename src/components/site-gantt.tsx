@@ -5,11 +5,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { canDelete, uid, useStore } from "@/lib/store";
+import { canDelete, isMember, projectTeam, uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
-import { useEditor } from "./shell";
-import { Avatar } from "./ui";
+import { useRouter } from "next/navigation";
+import { EmpAvatar } from "./person";
 
 /** Palette in the layout of classic planning boards: 6 rows × 5 columns. */
 export const PALETTE = [
@@ -75,11 +75,8 @@ type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half
  */
 export function SiteGantt({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
-  const openEditor = useEditor();
-  const addPerson = () => {
-    const start = project.start > today() ? project.start : today();
-    openEditor({ kind: "assignment", item: { resourceType: "employee", projectId: project.id, start, end: project.end > start ? project.end : addDays(start, 4) } });
-  };
+  const router = useRouter();
+  const addPerson = () => router.push(`/projekte/${project.id}/team`);
   const { from, days, dayWidth: dw, controls } = usePlannerRange("detail");
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -100,9 +97,8 @@ export function SiteGantt({ project }: { project: Project }) {
   const to = addDays(from, days - 1);
   const dayList = useMemo(() => Array.from({ length: days }, (_, i) => addDays(from, i)), [from, days]);
 
-  const presence = data.assignments.filter((a) => a.projectId === project.id && a.resourceType === "employee");
-  const teamIds = [...new Set(presence.map((a) => a.resourceId))];
-  const team = data.employees.filter((e) => teamIds.includes(e.id));
+  const team = projectTeam(data, project);
+  const teamIds = team.map((e) => e.id);
   const jobs = data.jobs.filter((j) => j.projectId === project.id);
 
   const previewJob = (j: Job): Job => {
@@ -292,7 +288,7 @@ export function SiteGantt({ project }: { project: Project }) {
                 <em>
                   {team.length} Personen · {todayJobs.length} Aufgaben heute
                 </em>
-                <button type="button" className="sg-add-person" onClick={addPerson} title="Person auf diese Baustelle einteilen">
+                <button type="button" className="sg-add-person" onClick={addPerson} title="Leute ins Projekt einladen">
                   <UserPlus size={13} /> Person
                 </button>
               </div>
@@ -302,9 +298,9 @@ export function SiteGantt({ project }: { project: Project }) {
               <PlannerCols dayList={dayList} dw={dw} left={nameW} />
               {team.length === 0 && (
                 <div className="pl-empty">
-                  Noch niemand auf dieser Baustelle.{" "}
+                  Noch niemand im Projekt.{" "}
                   <button type="button" className="link-btn" onClick={addPerson}>
-                    Person einteilen
+                    Leute einladen
                   </button>
                 </div>
               )}
@@ -329,8 +325,8 @@ export function SiteGantt({ project }: { project: Project }) {
                   lane.set(j.id, under ? (lane.get(under.id) ?? 0) : 0);
                 }
                 const lanes = Math.max(1, ends.length);
-                const here = presence.filter((a) => a.resourceId === emp.id);
-                const elsewhere = data.assignments.filter((a) => a.resourceType === "employee" && a.resourceId === emp.id && a.projectId !== project.id && a.end >= from && a.start <= to);
+                // work on other (private) projects only shows as "busy", without details
+                const elsewhere = data.jobs.filter((j) => j.employeeId === emp.id && j.projectId !== project.id && !j.symbol && j.end >= from && j.start <= to);
                 const abs = data.absences.map(previewAbs).filter((a) => a.employeeId === emp.id && a.end >= from && a.start <= to);
                 const dayBox = (start: ISODate, end: ISODate) => {
                   const s = Math.max(0, diffDays(from, start));
@@ -340,7 +336,7 @@ export function SiteGantt({ project }: { project: Project }) {
                 return (
                   <div key={emp.id} className={`pl-row sg-row ${drag && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
                     <div className="pl-left sg-left">
-                      <Avatar name={emp.name} size={24} />
+                      <EmpAvatar id={emp.id} size={24} />
                       <span>
                         <strong>{emp.name}</strong>
                         <small>{emp.role}</small>
@@ -355,18 +351,9 @@ export function SiteGantt({ project }: { project: Project }) {
                         setMenu({ x: e.clientX, y: e.clientY, emp: emp.id, half: Math.floor((e.clientX - rect.left) / hw) });
                       }}
                     >
-                      {here.map((a) => {
-                        const b = dayBox(a.start, a.end);
-                        return b.width > 0 ? <div key={a.id} className="sg-presence" style={{ left: b.left, width: b.width }} title={`Auf der Baustelle ${fmt(a.start)} – ${fmt(a.end)}`} /> : null;
-                      })}
                       {elsewhere.map((a) => {
                         const b = dayBox(a.start, a.end);
-                        const p = data.projects.find((x) => x.id === a.projectId);
-                        return b.width > 0 ? (
-                          <div key={a.id} className="sg-elsewhere" style={{ left: b.left, width: b.width }} title={`Woanders: ${p?.name ?? a.label ?? ""}`}>
-                            {b.width > 70 && <span>{p ? p.code : a.label}</span>}
-                          </div>
-                        ) : null;
+                        return b.width > 0 ? <div key={a.id} className="sg-elsewhere" style={{ left: b.left, width: b.width }} title="Auf einem anderen Projekt eingeplant" /> : null;
                       })}
                       {abs.map((a) => {
                         const b = dayBox(a.start, a.end);
@@ -439,10 +426,7 @@ export function SiteGantt({ project }: { project: Project }) {
 
       <div className="sg-legend">
         <span>
-          <i className="sg-presence" /> auf dieser Baustelle eingeteilt
-        </span>
-        <span>
-          <i className="sg-elsewhere" /> auf anderer Baustelle
+          <i className="sg-elsewhere" /> auf einem anderen Projekt eingeplant
         </span>
         <span>
           <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand – verschiebbar
@@ -678,7 +662,7 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
 
   const set = (patch: Partial<Job>) => setV((o) => ({ ...o, ...patch }));
   const person = data.employees.find((e) => e.id === v.employeeId);
-  const onSite = data.assignments.some((a) => a.projectId === project.id && a.resourceId === v.employeeId && overlaps(a.start, a.end, v.start, v.end));
+  const onSite = isMember(project, v.employeeId);
   const absence = data.absences.find((a) => a.employeeId === v.employeeId && overlaps(a.start, a.end, v.start, v.end));
 
   const submit = () => {
@@ -767,7 +751,7 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
           {(!onSite || absence) && (
             <p className="job-warn">
               <AlertTriangle size={13} />
-              {absence ? `${person?.name} ist ${L.absenceType[absence.type].label.toLowerCase()} (${fmtShort(absence.start)}–${fmtShort(absence.end)}).` : `${person?.name} ist in diesem Zeitraum nicht auf dieser Baustelle eingeteilt – unter „Team“ einteilen.`}
+              {absence ? `${person?.name} ist ${L.absenceType[absence.type].label.toLowerCase()} (${fmtShort(absence.start)}–${fmtShort(absence.end)}).` : `${person?.name} ist in diesem Zeitraum nicht im Projekt – unter „Team“ einladen.`}
             </p>
           )}
           <footer>

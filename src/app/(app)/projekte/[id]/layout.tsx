@@ -1,29 +1,27 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
-import { IssueButton } from "@/components/issue-sheet";
+import { EmpAvatar } from "@/components/person";
 import { useEditor } from "@/components/shell";
-import { PhotoAddButton } from "@/components/site";
-import { Avatar, Empty } from "@/components/ui";
-import { ClipboardList, Pencil } from "lucide-react";
+import { Empty } from "@/components/ui";
 import { inRange, today } from "@/lib/date";
 import { siteProgress } from "@/lib/site";
-import { currentUser, employeeName, myProjects, roleOf, useStore } from "@/lib/store";
+import { employeeName, isManager, myProjects, projectTeam, useStore } from "@/lib/store";
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>();
   const { data } = useStore();
   const openEditor = useEditor();
-  const role = roleOf(currentUser(data));
   const project = data.projects.find((p) => p.id === id);
 
   if (!project || !myProjects(data, data.currentUserId, true).some((p) => p.id === project.id)) {
     return (
       <div className="page">
         <Empty>
-          {project ? "Diese Baustelle ist dir nicht zugeteilt." : "Baustelle nicht gefunden."} <Link href="/baustellen">Zu meinen Baustellen</Link>
+          {project ? "Dieses Projekt ist privat – du bist nicht eingeladen." : "Projekt nicht gefunden."} <Link href="/projekte">Zu meinen Projekten</Link>
         </Empty>
       </div>
     );
@@ -31,18 +29,20 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
 
   const t = today();
   const progress = siteProgress(data, project.id);
-  const teamToday = [...new Set(data.assignments.filter((a) => a.projectId === project.id && a.resourceType === "employee" && inRange(t, a.start, a.end)).map((a) => a.resourceId))];
+  const team = projectTeam(data, project);
+  const busyToday = team.filter((e) => data.jobs.some((j) => j.projectId === project.id && j.employeeId === e.id && inRange(t, j.start, j.end)));
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       <section className="site-hero compact" style={{ "--c": project.color } as CSSProperties}>
+        {project.image && <img className="sh-image" src={project.image} alt="" />}
         <div className="sh-main">
           <span className="sc-code">{project.code}</span>
           <h1>{project.name}</h1>
           <p className="muted">
             {[project.client, project.location].filter(Boolean).join(" · ")}
             {project.siteManagerId ? ` · Bauleitung ${employeeName(data, project.siteManagerId)}` : ""}
-            {role !== "monteur" && (
+            {isManager(data) && (
               <button type="button" className="link-btn sh-edit" onClick={() => openEditor({ kind: "project", item: project })}>
                 <Pencil size={12} /> Bearbeiten
               </button>
@@ -50,27 +50,20 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           </p>
         </div>
         <div className="sh-inline">
-          <span className="avatar-stack" title={teamToday.map((x) => employeeName(data, x)).join(", ")}>
-            {teamToday.slice(0, 6).map((pid) => (
-              <Avatar key={pid} name={employeeName(data, pid)} size={26} />
+          <Link href={`/projekte/${project.id}/team`} className="avatar-stack" title={team.map((e) => e.name).join(", ")}>
+            {team.slice(0, 6).map((e) => (
+              <EmpAvatar key={e.id} id={e.id} size={26} />
             ))}
-            <small>{teamToday.length} heute vor Ort</small>
-          </span>
+            <small>
+              {team.length} im Team · {busyToday.length} heute eingeplant
+            </small>
+          </Link>
           <span className="sh-progress">
             <span>
               <i style={{ width: `${progress}%` }} />
             </span>
             <strong>{progress} %</strong>
           </span>
-        </div>
-        <div className="sh-actions">
-          <PhotoAddButton projectId={project.id} nodeId="" label="Foto" camera />
-          <IssueButton projectId={project.id} />
-          {role !== "monteur" && (
-            <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "report", item: { projectId: project.id } })}>
-              <ClipboardList size={15} /> Tagesbericht
-            </button>
-          )}
         </div>
       </section>
       {children}

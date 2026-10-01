@@ -1,4 +1,4 @@
-import type { Data, NodeStatus, SiteNode } from "./types";
+import type { Data, NodeStatus, Photo, SiteNode } from "./types";
 
 export const nodeStatus: Record<NodeStatus, { label: string; tone: "gray" | "blue" | "green" }> = {
   offen: { label: "Offen", tone: "gray" },
@@ -88,4 +88,30 @@ export function shortPath(nodes: SiteNode[], id: string) {
     .slice(-2)
     .map((n) => n.title)
     .join(" › ");
+}
+
+/** Areas group points; a node without children counts as a point unless it was created as an area. */
+export function isArea(nodes: SiteNode[], n: SiteNode) {
+  return n.kind ? n.kind === "area" : nodes.some((k) => k.parentId === n.id);
+}
+
+/** Points below an area (any depth), in display order. */
+export function pointsUnder(nodes: SiteNode[], areaId: string) {
+  const out: SiteNode[] = [];
+  const walk = (parentId: string) => {
+    for (const n of childrenOf(nodes, parentId)) {
+      if (isArea(nodes, n)) walk(n.id);
+      else out.push(n);
+    }
+  };
+  walk(areaId);
+  return out;
+}
+
+/** "Bereich - Unterpunkt - 001": the area path plus a running number per point. */
+export function photoName(nodes: SiteNode[], photos: Photo[], photo: Photo) {
+  const path = photo.nodeId ? pathOf(nodes, photo.nodeId).map((n) => n.title) : [];
+  const siblings = photos.filter((p) => p.projectId === photo.projectId && p.nodeId === photo.nodeId).sort((a, b) => a.takenAt.localeCompare(b.takenAt) || a.id.localeCompare(b.id));
+  const no = String(siblings.findIndex((p) => p.id === photo.id) + 1).padStart(3, "0");
+  return [...(path.length ? path : ["Ohne Bereich"]), no].join(" - ");
 }

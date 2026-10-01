@@ -24,7 +24,7 @@ export function MyWork() {
   const t = today();
   const mine = data.jobs.filter((j) => j.employeeId === me?.id);
   const todayJobs = mine.filter((j) => inRange(t, j.start, j.end)).sort((a, b) => Number(a.done) - Number(b.done));
-  const where = data.assignments.filter((a) => a.resourceType === "employee" && a.resourceId === me?.id && inRange(t, a.start, a.end));
+  const where = data.projects.filter((p) => todayJobs.some((j) => j.projectId === p.id));
   const absence = data.absences.find((a) => a.employeeId === me?.id && inRange(t, a.start, a.end));
   const sites = myProjects(data);
   const rank = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
@@ -56,16 +56,11 @@ export function MyWork() {
               <>
                 {" "}
                 · heute auf{" "}
-                {where.map((a) => {
-                  const p = data.projects.find((x) => x.id === a.projectId);
-                  return p ? (
-                    <Link key={a.id} href={`/baustellen/${p.id}`} className="hero-site">
-                      <MapPin size={13} /> {p.name}
-                    </Link>
-                  ) : (
-                    <strong key={a.id}>{a.label}</strong>
-                  );
-                })}
+                {where.map((p) => (
+                  <Link key={p.id} href={`/projekte/${p.id}`} className="hero-site">
+                    <MapPin size={13} /> {p.name}
+                  </Link>
+                ))}
               </>
             )}
           </p>
@@ -95,7 +90,7 @@ export function MyWork() {
                     <strong>{j.title}</strong>
                     <small>
                       {p && (
-                        <Link href={`/baustellen/${p.id}`}>
+                        <Link href={`/projekte/${p.id}`}>
                           <Dot color={p.color} /> {p.name}
                         </Link>
                       )}
@@ -174,13 +169,13 @@ export function MyWork() {
 
       <section className="card">
         <header className="card-header">
-          <h2>Meine Baustellen</h2>
+          <h2>Meine Projekte</h2>
         </header>
         {sites.length ? (
           <ul className="compact-list">
             {sites.map((p) => (
               <li key={p.id}>
-                <Link href={`/baustellen/${p.id}`}>
+                <Link href={`/projekte/${p.id}`}>
                   <Dot color={p.color} />
                   <strong>{p.name}</strong>
                   <span className="muted">{p.location}</span>
@@ -189,10 +184,10 @@ export function MyWork() {
             ))}
           </ul>
         ) : (
-          <Empty>Keine Baustellen zugeteilt.</Empty>
+          <Empty>Du bist noch in keinem Projekt.</Empty>
         )}
         <p className="hint">
-          <Camera size={12} /> Fotos und Mängel kannst du direkt auf der Baustelle unter „Struktur“ erfassen.
+          <Camera size={12} /> Fotos und Mängel erfasst du im Projekt unter „Struktur“ direkt beim Punkt.
         </p>
       </section>
     </div>

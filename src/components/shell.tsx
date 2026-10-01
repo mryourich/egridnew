@@ -1,6 +1,6 @@
 "use client";
 
-import { HardHat, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { FolderKanban, Home, LogOut, Settings, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,10 +34,10 @@ function Frame({ children }: { children: ReactNode }) {
 
   const role = roleOf(currentUser(data));
 
-  const all: (Module & { icon: typeof HardHat; roles: Role[] })[] = [
-    { href: "/dashboard", label: "Heute", icon: ListChecks, match: ["/dashboard"], roles: ["monteur"] },
-    { href: "/baustellen", label: "Baustellen", icon: HardHat, match: ["/baustellen"], roles: ["pl", "bl", "monteur"] },
-    { href: "/team", label: "Team", icon: Users, match: ["/team"], roles: ["pl", "bl"] }
+  const all: (Module & { icon: typeof Home; roles: Role[] })[] = [
+    { href: "/dashboard", label: role === "monteur" ? "Heute" : "Start", icon: Home, match: ["/dashboard"], roles: ["pl", "bl", "mk", "monteur"] },
+    { href: "/projekte", label: "Projekte", icon: FolderKanban, match: ["/projekte"], roles: ["pl", "bl", "mk", "monteur"] },
+    { href: "/team", label: "Team", icon: Users, match: ["/team"], roles: ["pl", "bl", "mk"] }
   ];
   const modules = all.filter((m) => m.roles.includes(role));
 
@@ -65,7 +65,7 @@ function Frame({ children }: { children: ReactNode }) {
             <span className="topbar-company">{data.company.name}</span>
             <UserSwitch />
           </header>
-          {current?.href === "/baustellen" && <SiteBar role={role} />}
+          {current?.href === "/projekte" && <SiteBar role={role} />}
           {current?.sub && (
             <nav className="subbar" aria-label={current.label}>
               {current.sub.map((s) => (
@@ -105,7 +105,7 @@ function UserSwitch() {
   return (
     <div className="quick-create" ref={ref}>
       <button type="button" className="topbar-user" onClick={() => setOpen((o) => !o)} title="Benutzer wechseln (Demo)">
-        <Avatar name={user.name} size={28} />
+        <Avatar name={user.name} photo={user.photo} size={28} />
         <span>
           <strong>{user.name}</strong>
           <small>{user.role}</small>
@@ -114,7 +114,7 @@ function UserSwitch() {
       {open && (
         <div className="menu user-menu">
           <div className="user-card">
-            <Avatar name={user.name} size={36} />
+            <Avatar name={user.name} photo={user.photo} size={36} />
             <span>
               <strong>{user.name}</strong>
               <small>
@@ -129,7 +129,7 @@ function UserSwitch() {
             <LogOut size={12} /> Anmelden als (Demo)
           </small>
           {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Team“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
-          {(["bl", "monteur"] as Role[])
+          {(["pl", "bl", "mk", "monteur"] as Role[])
             .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
             .map((r) => (
             <div key={r} className="menu-group">
@@ -170,12 +170,12 @@ function SiteBar({ role }: { role: Role }) {
 
   if (!site) {
     return (
-      <nav className="subbar" aria-label="Baustellen">
-        <Link href="/baustellen" className={pathname === "/baustellen" ? "active" : ""}>
+      <nav className="subbar" aria-label="Projekte">
+        <Link href="/projekte" className={pathname === "/projekte" ? "active" : ""}>
           Übersicht
         </Link>
         {sites.map((p) => (
-          <Link key={p.id} href={`/baustellen/${p.id}`}>
+          <Link key={p.id} href={`/projekte/${p.id}`}>
             <i className="dot" style={{ background: p.color }} /> {p.name}
           </Link>
         ))}
@@ -198,8 +198,8 @@ function SiteBar({ role }: { role: Role }) {
         className="site-picker"
         value={site.id}
         style={{ borderColor: site.color }}
-        onChange={(e) => router.push(`/baustellen/${e.target.value}/${section ?? ""}`)}
-        aria-label="Baustelle wechseln"
+        onChange={(e) => router.push(`/projekte/${e.target.value}/${section ?? ""}`)}
+        aria-label="Projekt wechseln"
       >
         {sites.map((p) => (
           <option key={p.id} value={p.id}>
@@ -210,7 +210,7 @@ function SiteBar({ role }: { role: Role }) {
       {siteSections
         .filter((s) => s.roles.includes(role))
         .map((s) => (
-          <Link key={s.key} href={`/baustellen/${site.id}/${s.key}`} className={section === s.key ? "active" : ""}>
+          <Link key={s.key} href={`/projekte/${site.id}/${s.key}`} className={section === s.key ? "active" : ""}>
             {s.label}
             {counts[s.key] ? <em>{counts[s.key]}</em> : null}
           </Link>

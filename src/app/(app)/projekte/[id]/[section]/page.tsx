@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DefectsSection, ReportsSection, TeamSection } from "@/components/site-sections";
-import { PhotoGallery, SiteStructure } from "@/components/site";
+import { PhotoGallery } from "@/components/site";
+import { SiteStructure } from "@/components/structure";
 import { SiteGantt } from "@/components/site-gantt";
 import { Empty } from "@/components/ui";
 import { siteSections, type SiteSection } from "@/lib/sections";
@@ -19,7 +20,7 @@ export default function SiteSectionPage() {
   if (!def || !def.roles.includes(role)) {
     return (
       <Empty>
-        Dieser Bereich ist für deine Rolle nicht verfügbar. <Link href={`/baustellen/${id}`}>Zur Baustelle</Link>
+        Dieser Bereich ist für deine Rolle nicht verfügbar. <Link href={`/projekte/${id}`}>Zum Projekt</Link>
       </Empty>
     );
   }

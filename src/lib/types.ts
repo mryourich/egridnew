@@ -13,12 +13,17 @@ export type Project = {
   color: string;
   start: ISODate;
   end: ISODate;
-  /** Projektleitung – reserved for later. */
+  /** Projektleitung (shown on reports). */
   managerId: string;
-  /** Bauleitung – runs the site. */
+  /** Bauleitung (shown on reports). */
   siteManagerId: string;
-  budget: number;
   description: string;
+  /** Who created the project – it is private to them and the invited members. */
+  createdBy: string;
+  /** Invited people; only they (and the creator) see the project. */
+  members: string[];
+  /** Picture of the client or the site (data URL). */
+  image?: string;
 };
 
 export type Qualification = {
@@ -26,8 +31,8 @@ export type Qualification = {
   validUntil: ISODate;
 };
 
-/** What a user may see and do. Site management runs the site, workers do the work; "pl" is reserved for project management later. */
-export type AccessRole = "pl" | "bl" | "monteur";
+/** What a user may do: project management, site management, assembly coordination or worker. */
+export type AccessRole = "pl" | "bl" | "mk" | "monteur";
 
 export type Employee = {
   id: string;
@@ -42,23 +47,8 @@ export type Employee = {
   hourlyRate: number;
   qualifications: Qualification[];
   active: boolean;
-};
-
-export type ResourceType = "employee";
-
-export type Assignment = {
-  id: string;
-  resourceType: ResourceType;
-  resourceId: string;
-  /** Empty for a free entry (e.g. "Büro", "Schulung") that belongs to no project. */
-  projectId: string;
-  start: ISODate;
-  end: ISODate;
-  note: string;
-  /** Text of a free entry. */
-  label?: string;
-  /** Colour of a free entry. */
-  color?: string;
+  /** Profile picture (data URL). */
+  photo?: string;
 };
 
 export type AbsenceType = "urlaub" | "krank" | "schulung" | "sonstiges";
@@ -109,6 +99,8 @@ export type SiteNode = {
   assigneeId: string;
   due: ISODate;
   order: number;
+  /** "area" groups points (left tree), "point" is a checkable item. Derived from children when missing. */
+  kind?: "area" | "point";
 };
 
 export type Photo = {
@@ -147,19 +139,89 @@ export type Issue = {
   fixedBy?: string;
 };
 
-export type Weather = "sonnig" | "bewoelkt" | "regen" | "schnee" | "frost";
-
 export type DailyReport = {
   id: string;
   projectId: string;
   date: ISODate;
-  weather: Weather;
-  temperature: number;
   crew: number;
   hours: number;
   work: string;
   incidents: string;
   authorId: string;
+  /** Photos of the day (data URLs). */
+  photos: string[];
+};
+
+/** Extra work billed separately ("Regieschein"), signed by the client. */
+export type RegieReport = {
+  id: string;
+  projectId: string;
+  no: number;
+  date: ISODate;
+  /** Who ordered the extra work on the client side. */
+  orderedBy: string;
+  description: string;
+  workers: { employeeId: string; hours: number }[];
+  materials: { artNo: string; name: string; qty: number; unit: string }[];
+  authorId: string;
+  /** Client signature (data URL) and name. */
+  signature: string;
+  signedBy: string;
+};
+
+export type MaterialStatus = "offen" | "bestellt" | "angekommen";
+
+export type Material = {
+  id: string;
+  projectId: string;
+  artNo: string;
+  name: string;
+  qty: number;
+  unit: string;
+  status: MaterialStatus;
+  createdAt: ISODate;
+};
+
+/** Remembered article (from any entry with an article number). */
+export type Article = {
+  id: string;
+  artNo: string;
+  name: string;
+  unit: string;
+};
+
+/** Private sticky note on the notes board. */
+export type Note = {
+  id: string;
+  ownerId: string;
+  title: string;
+  text: string;
+  color: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  createdAt: ISODate;
+};
+
+/** Folder of a project's document store; projectId "" = general company documents. */
+export type DocFolder = {
+  id: string;
+  projectId: string;
+  parentId: string;
+  name: string;
+};
+
+export type DocFile = {
+  id: string;
+  projectId: string;
+  folderId: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl: string;
+  addedAt: ISODate;
+  addedBy: string;
 };
 
 export type ActivityEntry = {
@@ -184,13 +246,18 @@ export type Data = {
   currentUserId: string;
   projects: Project[];
   employees: Employee[];
-  assignments: Assignment[];
   absences: Absence[];
   issues: Issue[];
   siteNodes: SiteNode[];
   jobs: Job[];
   photos: Photo[];
   reports: DailyReport[];
+  regie: RegieReport[];
+  materials: Material[];
+  articles: Article[];
+  notes: Note[];
+  folders: DocFolder[];
+  files: DocFile[];
   activity: ActivityEntry[];
 };
 

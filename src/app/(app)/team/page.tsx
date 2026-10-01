@@ -6,8 +6,9 @@ import { useEditor } from "@/components/shell";
 import { Avatar, Badge, Dot, Empty, PageHeader, Progress, SearchInput, Tabs } from "@/components/ui";
 import { addDays, diffDays, fmt, inRange, isWeekend, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { useStore, roleOf, roleLabel } from "@/lib/store";
-import type { Data, ResourceType } from "@/lib/types";
+import { myProjects, useStore, roleOf, roleLabel } from "@/lib/store";
+import { EmpAvatar } from "@/components/person";
+import type { Data } from "@/lib/types";
 
 type Tab = "employees" | "absences";
 
@@ -16,20 +17,21 @@ function dueTone(date: string): L.Tone {
   return d < 0 ? "red" : d <= 30 ? "amber" : "gray";
 }
 
-function currentProject(data: Data, type: ResourceType, id: string) {
+/** What the person does today – only from projects the viewer can see. */
+function todayOf(data: Data, id: string) {
   const t = today();
-  const a = data.assignments.find((x) => x.resourceType === type && x.resourceId === id && inRange(t, x.start, x.end));
-  return a ? data.projects.find((p) => p.id === a.projectId) : undefined;
+  const mine = new Set(myProjects(data).map((p) => p.id));
+  return data.jobs.find((j) => j.employeeId === id && mine.has(j.projectId) && !j.symbol && inRange(t, j.start, j.end));
 }
 
-/** Share of the next 10 working days on which the resource is booked. */
-function load(data: Data, type: ResourceType, id: string) {
+/** Share of the next 10 working days with planned work. */
+function load(data: Data, id: string) {
   let days = 0;
   let booked = 0;
   for (let d = today(); days < 10; d = addDays(d, 1)) {
     if (isWeekend(d)) continue;
     days++;
-    if (data.assignments.some((a) => a.resourceType === type && a.resourceId === id && inRange(d, a.start, a.end))) booked++;
+    if (data.jobs.some((j) => j.employeeId === id && !j.symbol && inRange(d, j.start, j.end))) booked++;
   }
   return Math.round((booked / days) * 100);
 }
@@ -49,7 +51,7 @@ export default function TeamPage() {
     <div className="page">
       <PageHeader
         title="Team"
-        subtitle="Wer auf deinen Baustellen arbeitet – mit Rechten, Urlaub und Krankenstand"
+        subtitle="Alle Mitarbeiter mit Profilbild, Rechten, Urlaub und Krankenstand – eingeladen wird im Projekt unter „Team“"
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: kind[tab] })}>
             <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : "Abwesenheit"}
@@ -78,21 +80,22 @@ export default function TeamPage() {
                 <th>Kontakt</th>
                 <th>Qualifikationen</th>
                 <th>Heute</th>
-                <th className="w-progress">Eingeteilt 2 Wo.</th>
+                <th className="w-progress">Verplant 2 Wo.</th>
               </tr>
             </thead>
             <tbody>
               {data.employees
                 .filter((e) => match(`${e.name} ${e.role} ${e.team}`))
                 .map((e) => {
-                  const p = currentProject(data, "employee", e.id);
+                  const job = todayOf(data, e.id);
+                  const p = job ? data.projects.find((x) => x.id === job.projectId) : undefined;
                   const absent = data.absences.find((a) => a.employeeId === e.id && inRange(t, a.start, a.end));
-                  const l = load(data, "employee", e.id);
+                  const l = load(data, e.id);
                   return (
                     <tr key={e.id} className={`clickable ${e.active ? "" : "inactive"}`} onClick={() => openEditor({ kind: "employee", item: e })}>
                       <td>
                         <span className="cell-person">
-                          <Avatar name={e.name} size={26} />
+                          <EmpAvatar id={e.id} size={30} />
                           <span>
                             <strong>{e.name}</strong>
                             <small>{e.role}</small>
@@ -127,8 +130,8 @@ export default function TeamPage() {
                         ) : absent ? (
                           <Badge tone={L.absenceType[absent.type].tone}>{L.absenceType[absent.type].label}</Badge>
                         ) : p ? (
-                          <span className="cell-person">
-                            <Dot color={p.color} /> {p.code}
+                          <span className="cell-person" title={job?.title}>
+                            <Dot color={p.color} /> {p.code} · {job?.title}
                           </span>
                         ) : (
                           <Badge tone="green">frei</Badge>

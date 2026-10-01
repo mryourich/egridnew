@@ -41,9 +41,9 @@ export default function SettingsPage() {
   };
 
   const counts = [
-    ["Baustellen", data.projects.length],
+    ["Projekte", data.projects.length],
     ["Mitarbeiter", data.employees.length],
-    ["Einteilungen", data.assignments.length],
+    ["Material", data.materials.length],
     ["Aufgaben", data.jobs.length],
     ["Mängel", data.issues.length],
     ["Fotos", data.photos.length],
