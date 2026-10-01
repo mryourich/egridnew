@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "VYSNpro", template: "%s · VYSNpro" },
+  title: { default: "VYSNERTECH", template: "%s · VYSNERTECH" },
   description: "Baustellenmanagement für Bauleitung und Monteure: Plan, Mängel, Fotos und Tagesberichte.",
-  icons: { icon: "/brand/vysnpro-icon.png" }
+  icons: { icon: "/brand/vysner-icon.png", apple: "/brand/vysner-tile.png" }
 };
 
 export const viewport: Viewport = {
