@@ -6623,7 +6623,7 @@ body {
   }
 }
 
-/* ================================================================ v7: VYSNERTECH look – dark sidebar */
+/* ================================================================ v7: VYSNER look – dark sidebar */
 :root {
   --bg: #f3f5f9;
   --navy: #0a1430;
@@ -7292,11 +7292,6 @@ body {
   width: auto;
   filter: brightness(0) invert(1);
 }
-.brand-tech {
-  height: 15px;
-  width: auto;
-  filter: brightness(1.25) saturate(1.2);
-}
 .mtop .brand-tile {
   width: 32px;
   height: 32px;
@@ -7305,8 +7300,7 @@ body {
 .mtop .brand-tile img {
   width: 25px;
 }
-.mtop .brand-word,
-.mtop .brand-tech {
+.mtop .brand-word {
   height: 13px;
 }
 
@@ -7792,8 +7786,7 @@ b {
     font-size: 24px;
   }
 }
-.side .brand-word,
-.side .brand-tech {
+.side .brand-word {
   height: 12.5px;
 }
 .side .brand-tile {
@@ -7813,14 +7806,6 @@ b {
   align-items: center;
   gap: 5px;
 }
-.side .brand-tech {
-  height: 11.5px;
-  filter: none;
-}
-.mtop .brand-tech {
-  height: 12px;
-  filter: none;
-}
 .brand-tile {
   overflow: hidden;
 }
@@ -7828,10 +7813,7 @@ b {
   width: 28px;
 }
 .side .brand-word {
-  height: 11px;
-}
-.side .brand-tech {
-  height: 10.2px;
+  height: 14px;
 }
 .side .brand-words {
   gap: 4px;

@@ -3,7 +3,7 @@ import "@fontsource-variable/inter";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "VYSNERTECH", template: "%s · VYSNERTECH" },
+  title: { default: "VYSNER", template: "%s · VYSNER" },
   description: "Baustellenmanagement für Bauleitung und Monteure: Plan, Mängel, Fotos und Tagesberichte.",
   icons: { icon: "/brand/vysner-icon.png", apple: "/brand/vysner-tile.png" }
 };

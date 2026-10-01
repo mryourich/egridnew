@@ -79,7 +79,7 @@ export function MaterialSection({ project }: { project: Project }) {
         <button type="submit" className="btn btn-primary" disabled={!name.trim()}>
           <Plus size={15} /> Hinzufügen
         </button>
-        <p className="mat-hint">Artikel mit Art.-Nr. merkt sich VYSNERTECH – beim nächsten Mal genügt die Nummer.</p>
+        <p className="mat-hint">Artikel mit Art.-Nr. merkt sich VYSNER – beim nächsten Mal genügt die Nummer.</p>
       </form>
 
       <div className="toolbar">

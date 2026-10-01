@@ -92,7 +92,7 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
       { key: "name", label: "Name", required: true },
       {
         key: "access",
-        label: "Rechte in VYSNERTECH",
+        label: "Rechte in VYSNER",
         type: "select",
         required: true,
         options: [

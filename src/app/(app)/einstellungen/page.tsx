@@ -22,7 +22,7 @@ export default function SettingsPage() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `vysnertech-sicherung-${today()}.json`;
+    a.download = `vysner-sicherung-${today()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -36,7 +36,7 @@ export default function SettingsPage() {
       replaceAll(parsed);
       notify("Sicherung eingespielt");
     } catch {
-      notify("Datei ist keine gültige VYSNERTECH-Sicherung");
+      notify("Datei ist keine gültige VYSNER-Sicherung");
     }
   };
 

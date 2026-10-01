@@ -47,13 +47,12 @@ function Frame({ children }: { children: ReactNode }) {
     <EditorContext.Provider value={setTarget}>
       <div className="shell">
         <aside className="side" aria-label="Navigation">
-          <Link href="/dashboard" className="side-brand" aria-label="VYSNERTECH Start">
+          <Link href="/dashboard" className="side-brand" aria-label="VYSNER Start">
             <span className="brand-tile">
               <img src="/brand/vysner-mark-small.png" alt="" />
             </span>
             <span className="brand-words">
               <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
-              <img className="brand-tech" src="/brand/tech-word.png" alt="TECH" />
             </span>
           </Link>
           <nav className="side-nav" aria-label="Module">
@@ -73,13 +72,12 @@ function Frame({ children }: { children: ReactNode }) {
 
         <div className="main">
           <header className="mtop">
-            <Link href="/dashboard" className="side-brand" aria-label="VYSNERTECH Start">
+            <Link href="/dashboard" className="side-brand" aria-label="VYSNER Start">
               <span className="brand-tile">
                 <img src="/brand/vysner-mark-small.png" alt="" />
               </span>
               <span className="brand-words">
                 <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
-                <img className="brand-tech" src="/brand/tech-word.png" alt="TECH" />
               </span>
             </Link>
             <span className="spacer" />

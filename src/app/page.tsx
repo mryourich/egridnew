@@ -20,7 +20,7 @@ import {
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "VYSNERTECH – Baustellen im Griff" },
+  title: { absolute: "VYSNER – Baustellen im Griff" },
   description: "Das Baustellen-Tool für Bauleiter und Monteure: Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren und Tagesberichte als PDF."
 };
 
@@ -40,7 +40,7 @@ const features = [
     img: "/landing/plan.jpg",
     w: 2040,
     h: 990,
-    alt: "Baustellenplan in VYSNERTECH"
+    alt: "Baustellenplan in VYSNER"
   },
   {
     kicker: "Mängel",
@@ -50,7 +50,7 @@ const features = [
     img: "/landing/maengel.jpg",
     w: 2040,
     h: 990,
-    alt: "Mängelliste in VYSNERTECH"
+    alt: "Mängelliste in VYSNER"
   },
   {
     kicker: "Struktur",
@@ -60,7 +60,7 @@ const features = [
     img: "/landing/struktur.jpg",
     w: 2040,
     h: 990,
-    alt: "Baustellenstruktur in VYSNERTECH"
+    alt: "Baustellenstruktur in VYSNER"
   },
   {
     kicker: "Berichte",
@@ -89,8 +89,8 @@ export default function Landing() {
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
-          <Link href="/" className="lp-logo" aria-label="VYSNERTECH">
-            <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={216} height={31} priority />
+          <Link href="/" className="lp-logo" aria-label="VYSNER">
+            <Image src="/brand/vysner-logo.png" alt="VYSNER" width={160} height={32} priority />
           </Link>
           <nav className="lp-links" aria-label="Seite">
             <a href="#ablauf">Ablauf</a>
@@ -256,7 +256,7 @@ export default function Landing() {
           <div className="lp-head">
             <span className="lp-kicker">Umfang</span>
             <h2>Alles, was auf die Baustelle gehört. Nicht mehr.</h2>
-            <p>VYSNERTECH ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
+            <p>VYSNER ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
           </div>
           <div className="lp-module-grid lp-module-grid-3">
             {parts.map((m) => (
@@ -328,7 +328,7 @@ export default function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
-          <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={168} height={24} />
+          <Image src="/brand/vysner-logo.png" alt="VYSNER" width={125} height={25} />
           <span>Baustellen im Griff.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
