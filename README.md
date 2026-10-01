@@ -5,39 +5,44 @@ Fotos dokumentieren und Tagesberichte als PDF – im Büro und am Handy.
 
 ## Aufbau
 
-Mehrere Firmen (Mandanten), jede mit eigenen Daten. Zwei Rollen:
+Mehrere Firmen (Mandanten). **Projekte sind privat**: nur wer ein Projekt anlegt und wer eingeladen wird, sieht es.
 
-| Rolle | Start | Darf |
-| --- | --- | --- |
-| **Bauleitung** | Baustellen (Karten) | Baustellen anlegen, Team verwalten und einteilen, alles bearbeiten und löschen |
-| **Monteur** | „Heute“: Aufgaben, eigene Mängel, nächste Tage | erfassen, abhaken, Mängel als behoben melden – aber nichts löschen |
+| Rolle | Darf |
+| --- | --- |
+| **Projektleitung / Bauleitung / Montagekoordination** | Projekte anlegen, Leute einladen, Team verwalten, alles bearbeiten und löschen |
+| **Monteur** | erfassen, abhaken, Mängel als behoben melden – aber nichts löschen |
 
-Je Baustelle: **Plan** (Aufgaben per Klick/Rechtsklick in halben Tagen, Farbpalette, Symbole, Urlaub verschiebbar),
-**Struktur** (Bereiche → Punkte zum Abhaken), **Fotos** (Galerie je Bereich, ZIP/PDF), **Mängel** (Kamera zuerst,
-Frist, Zuständigkeit, Behebung mit Nachher-Foto, Mängelbericht als PDF), **Tagesberichte** (PDF mit KW) und **Team**.
+Menü: **Start** (wer ist auf welchem Projekt, wer nicht zugeordnet), **Projekte**, **Notizen** (private Sticky Notes),
+**Dokumente** (allgemeine Ablage: Anleitungen, Montagevorgaben, Messprotokolle), **Team** (Mitarbeiter mit Profilbild, Rechten, Abwesenheiten).
 
-Die Projektleitung (mehrere Baustellen und Bauleiter planen) folgt als nächster Schritt.
+Je Projekt:
+- **Plan** – Gruppen, Tag/Woche/Monat/Quartal, Suche/Filter, Überlastungs-Warnung; Bedienung wie Windows:
+  Klick = auswählen, Doppelklick = umbenennen bzw. neuer Balken, Rechtsklick = Menü, Entf, F2, Strg+C/V/D, Pfeiltasten
+- **Struktur** – Open Points: Bereichsbaum links, Punkte rechts, Foto und Mangel je Punkt, erledigte unten
+- **Fotos** – automatisch benannt (Bereich - Unterpunkt - 001), ZIP mit Ordnerstruktur, PDF
+- **Mängel** – Kamera zuerst, Behebung mit Nachher-Foto, Mängelbericht als PDF
+- **Material** – Offen / Bestellt / Angekommen, Artikel per Art.-Nr. gemerkt
+- **Berichte** – Tagesberichte mit Fotos, Regiescheine mit Unterschrift des Auftraggebers (PDF)
+- **Dokumente** – Ordner (Pläne, LV, Protokolle …)
+- **Team** – Mitarbeiter-Pool: Klick auf das Profilbild lädt ein
 
-**Start:** Die App beginnt leer mit einem Bauleitungs-Zugang. Unter *Team* Mitarbeiter mit Rechten anlegen,
-unter *Baustellen* die erste Baustelle anlegen und Leute einteilen. Oben rechts auf den Namen klicken, um in eine
-andere Rolle zu wechseln (Demo bis zum echten Login). `/demo` lädt eine Demo-Firma, `/demo?start=leer` startet leer.
-
-Die Daten liegen im Moment im Browser (localStorage). Supabase (Login, Mandanten, Datenbank, Foto-Speicher) ist der nächste Schritt.
+`/demo` lädt eine Demo-Firma, `/demo?start=leer` startet leer. Die Daten liegen im Moment im Browser (localStorage);
+Supabase (Login, Mandanten, Datenbank, Datei-Speicher) ist der nächste Schritt.
 
 Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CSS (`src/app/globals.css`, Website: `src/app/landing.css`).
 
 | Pfad | Inhalt |
 | --- | --- |
 | `src/app/page.tsx` | Website (vysnpro.com) |
-| `src/app/(app)/*` | App: dashboard, baustellen, baustellen/[id]/[abschnitt], team, einstellungen, demo |
-| `src/app/(print)/*` | PDF-Ansichten: Tagesbericht, Fotobericht, Mängelbericht |
-| `src/components/site-gantt.tsx` | Baustellenplan |
-| `src/components/site.tsx` | Struktur, Fotos, Lightbox |
-| `src/components/site-sections.tsx` | Mängel, Tagesberichte, Team je Baustelle |
-| `src/components/issue-sheet.tsx` | Mängel-Karte mit Behebung |
-| `src/components/my-work.tsx` | „Heute“ für Monteure |
-| `src/components/sites-overview.tsx` | Baustellen-Karten |
-| `src/components/editors.tsx` | Formulare |
+| `src/app/(app)/*` | App: dashboard, projekte, projekte/[id]/[abschnitt], notizen, dokumente, team, einstellungen, demo |
+| `src/app/(print)/*` | PDFs: Tagesbericht, Regieschein, Fotobericht, Mängelbericht |
+| `src/components/site-gantt.tsx` · `planner.tsx` | Plan |
+| `src/components/structure.tsx` | Struktur (Open Points) |
+| `src/components/site.tsx` | Fotos, Galerie, Lightbox |
+| `src/components/site-sections.tsx` | Mängel, Berichte, Team je Projekt |
+| `src/components/regie.tsx` · `report-sheet.tsx` | Regieschein, Tagesbericht |
+| `src/components/material.tsx` · `documents.tsx` | Material, Dokumentenablage |
+| `src/components/start-board.tsx` · `my-work.tsx` | Start (Büro) und „Heute“ (Monteur) |
 | `src/lib/store.tsx` · `seed.ts` · `site.ts` | Datenspeicher, Demo-Daten, Baum-Hilfen |
 
 ## Lokal starten

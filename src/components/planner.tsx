@@ -8,14 +8,15 @@ import type { ISODate } from "@/lib/types";
 /** Shared time axis for the site plan: zoom levels, header rows and the day grid. */
 
 const ZOOMS = {
-  detail: { label: "Detail", dw: 30, days: 42, step: 14 },
-  normal: { label: "Normal", dw: 19, days: 91, step: 28 },
-  overview: { label: "Übersicht", dw: 10, days: 182, step: 56 }
+  tag: { label: "Tag", dw: 56, days: 28, step: 7 },
+  woche: { label: "Woche", dw: 30, days: 56, step: 14 },
+  monat: { label: "Monat", dw: 15, days: 112, step: 28 },
+  quartal: { label: "Quartal", dw: 7, days: 196, step: 56 }
 } as const;
 type Zoom = keyof typeof ZOOMS;
 
 /** Date range, zoom and the matching toolbar controls shared by all planner views. */
-export function usePlannerRange(initialZoom: Zoom = "normal") {
+export function usePlannerRange(initialZoom: Zoom = "woche") {
   const [zoom, setZoom] = useState<Zoom>(initialZoom);
   const [from, setFrom] = useState(() => addDays(startOfWeek(today()), -14));
   const z = ZOOMS[zoom];
@@ -43,7 +44,7 @@ export function usePlannerRange(initialZoom: Zoom = "normal") {
     </>
   );
 
-  return { from, days: z.days, dayWidth: z.dw, controls };
+  return { from, days: z.days, dayWidth: z.dw, zoom, controls };
 }
 
 /** Month / calendar week / day / weekday header rows. */
@@ -86,7 +87,7 @@ export function PlannerHeadTime({ dayList, dw }: { dayList: ISODate[]; dw: numbe
       <div className="pl-hrow pl-wd">
         {dayList.map((d) => (
           <span key={d} className={cls(d)}>
-            {dw >= 15 ? weekdayShort(d) : weekdayShort(d)[0]}
+            {dw >= 15 ? weekdayShort(d) : dw >= 10 ? weekdayShort(d)[0] : ""}
           </span>
         ))}
       </div>
