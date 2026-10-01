@@ -195,7 +195,7 @@ export function SiteStructure({ project }: { project: Project }) {
       <section className="op-main">
         <header className="op-head">
           <div>
-            <span className="op-kicker">Open Points</span>
+            <span className="op-kicker">Checkliste</span>
             <h2>{selected ? selected.title : "Alle Punkte"}</h2>
             {selected && pathOf(nodes, selected.id).length > 1 && (
               <small className="muted">
