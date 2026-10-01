@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import { EmpAvatar } from "@/components/person";
-import { useEditor } from "@/components/shell";
+import { ProjectTabs, useEditor } from "@/components/shell";
 import { Empty } from "@/components/ui";
 import { inRange, today } from "@/lib/date";
 import { siteProgress } from "@/lib/site";
@@ -66,6 +66,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           </span>
         </div>
       </section>
+      <ProjectTabs projectId={project.id} />
       {children}
     </div>
   );
