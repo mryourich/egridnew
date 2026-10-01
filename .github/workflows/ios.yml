@@ -1,0 +1,104 @@
+name: iOS-App
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Bauen, Screenshots, IPA
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode-Projekt erzeugen
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -version
+
+      - name: Für den Simulator bauen
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild build \
+            -project VYSNER.xcodeproj -scheme VYSNER -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim \
+            CODE_SIGNING_ALLOWED=NO | tee build/sim.log | grep -E "error|warning: unre|BUILD" || true
+          test -d build/sim/Build/Products/Debug-iphonesimulator/VYSNER.app
+
+      - name: Im Simulator starten und Screenshots machen
+        run: |
+          set -e
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          phones = [x for r in sorted(d, reverse=True) if 'iOS' in r for x in d[r] if x['name'].startswith('iPhone')]
+          best = [x for x in phones if x['name'] in ('iPhone 16 Pro', 'iPhone 16', 'iPhone 15 Pro')]
+          print((best or phones)[0]['udid'])
+          ")
+          echo "Gerät: $DEVICE"
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl status_bar "$DEVICE" override --time 9:41 --batteryState charged --batteryLevel 100 || true
+          xcrun simctl install "$DEVICE" build/sim/Build/Products/Debug-iphonesimulator/VYSNER.app
+          mkdir -p screenshots
+          shot() {
+            name=$1; shift
+            xcrun simctl terminate "$DEVICE" com.vysner.app 2>/dev/null || true
+            xcrun simctl launch "$DEVICE" com.vysner.app "$@"
+            sleep 6
+            xcrun simctl io "$DEVICE" screenshot "screenshots/$name.png"
+          }
+          shot 1-anmelden
+          shot 2-start -demoUser e2 -startTab start
+          shot 3-aufgaben -demoUser e8 -startTab aufgaben
+          shot 4-projekte -demoUser e2 -startTab projekte
+          shot 5-uebersicht -demoUser e2 -startTab projekte -openProject p2 -openSection uebersicht
+          shot 6-struktur -demoUser e2 -startTab projekte -openProject p2 -openSection struktur
+          shot 7-maengel -demoUser e2 -startTab projekte -openProject p2 -openSection maengel
+          shot 8-fotos -demoUser e2 -startTab projekte -openProject p2 -openSection fotos
+          ls -la screenshots
+
+      - name: Unsignierte IPA (für Sideloadly / AltStore)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project VYSNER.xcodeproj -scheme VYSNER -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/device \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | grep -E "error|BUILD" || true
+          mkdir -p ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/VYSNER.app ipa/Payload/
+          (cd ipa && zip -qr ../VYSNER-unsigned.ipa Payload)
+          ls -la VYSNER-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: ios/screenshots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VYSNER-unsigned-ipa
+          path: ios/VYSNER-unsigned.ipa
+
+      - name: Build-Log bei Fehler
+        if: failure()
+        run: grep -E "error:" build/sim.log | head -60 || true
