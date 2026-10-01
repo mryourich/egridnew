@@ -4201,7 +4201,7 @@ body {
   border-bottom: 2px solid #111827;
 }
 .doc-logo {
-  height: 22px;
+  height: 34px;
   width: auto;
 }
 .doc-company {
@@ -6623,7 +6623,7 @@ body {
   }
 }
 
-/* ================================================================ v7: VYSNpro look – dark sidebar */
+/* ================================================================ v7: VYSNERTECH look – dark sidebar */
 :root {
   --bg: #f3f5f9;
   --navy: #0a1430;
@@ -7261,4 +7261,51 @@ body {
   .tabbar {
     display: none !important;
   }
+}
+
+/* ------------------------------------------------------------ VYSNER brand */
+.side-brand {
+  gap: 10px;
+  padding: 2px 6px;
+}
+.brand-tile {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 16px -8px rgba(0, 194, 255, 0.7);
+}
+.brand-tile img {
+  width: 30px;
+  height: auto;
+}
+.brand-words {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.brand-word {
+  height: 15px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+.brand-tech {
+  height: 15px;
+  width: auto;
+  filter: brightness(1.25) saturate(1.2);
+}
+.mtop .brand-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+.mtop .brand-tile img {
+  width: 25px;
+}
+.mtop .brand-word,
+.mtop .brand-tech {
+  height: 13px;
 }

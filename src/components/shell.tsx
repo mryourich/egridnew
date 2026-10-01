@@ -1,7 +1,6 @@
 "use client";
 
 import { AlertTriangle, CalendarRange, Camera, ClipboardList, FileText, FolderKanban, FolderOpen, Home, ListChecks, LogOut, Package, Settings, StickyNote, Users } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -48,10 +47,13 @@ function Frame({ children }: { children: ReactNode }) {
     <EditorContext.Provider value={setTarget}>
       <div className="shell">
         <aside className="side" aria-label="Navigation">
-          <Link href="/dashboard" className="side-brand" aria-label="VYSNpro Start">
-            <Image src="/brand/vysnpro-icon.png" alt="" width={30} height={30} priority />
-            <span>
-              VYSN<b>PRO</b>
+          <Link href="/dashboard" className="side-brand" aria-label="VYSNERTECH Start">
+            <span className="brand-tile">
+              <img src="/brand/vysner-mark-small.png" alt="" />
+            </span>
+            <span className="brand-words">
+              <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
+              <img className="brand-tech" src="/brand/tech-word.png" alt="TECH" />
             </span>
           </Link>
           <nav className="side-nav" aria-label="Module">
@@ -71,10 +73,13 @@ function Frame({ children }: { children: ReactNode }) {
 
         <div className="main">
           <header className="mtop">
-            <Link href="/dashboard" className="side-brand" aria-label="VYSNpro Start">
-              <Image src="/brand/vysnpro-icon.png" alt="" width={26} height={26} priority />
-              <span>
-                VYSN<b>PRO</b>
+            <Link href="/dashboard" className="side-brand" aria-label="VYSNERTECH Start">
+              <span className="brand-tile">
+                <img src="/brand/vysner-mark-small.png" alt="" />
+              </span>
+              <span className="brand-words">
+                <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
+                <img className="brand-tech" src="/brand/tech-word.png" alt="TECH" />
               </span>
             </Link>
             <span className="spacer" />

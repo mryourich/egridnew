@@ -20,7 +20,7 @@ import {
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "VYSNpro – Baustellen im Griff" },
+  title: { absolute: "VYSNERTECH – Baustellen im Griff" },
   description: "Das Baustellen-Tool für Bauleiter und Monteure: Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren und Tagesberichte als PDF."
 };
 
@@ -40,7 +40,7 @@ const features = [
     img: "/landing/plan.jpg",
     w: 2040,
     h: 990,
-    alt: "Baustellenplan in VYSNpro"
+    alt: "Baustellenplan in VYSNERTECH"
   },
   {
     kicker: "Mängel",
@@ -50,7 +50,7 @@ const features = [
     img: "/landing/maengel.jpg",
     w: 2040,
     h: 990,
-    alt: "Mängelliste in VYSNpro"
+    alt: "Mängelliste in VYSNERTECH"
   },
   {
     kicker: "Struktur",
@@ -60,7 +60,7 @@ const features = [
     img: "/landing/struktur.jpg",
     w: 2040,
     h: 990,
-    alt: "Baustellenstruktur in VYSNpro"
+    alt: "Baustellenstruktur in VYSNERTECH"
   },
   {
     kicker: "Berichte",
@@ -89,8 +89,8 @@ export default function Landing() {
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
-          <Link href="/" className="lp-logo" aria-label="VYSNpro">
-            <Image src="/brand/vysnpro-logo-wide.png" alt="VYSNpro" width={167} height={24} priority />
+          <Link href="/" className="lp-logo" aria-label="VYSNERTECH">
+            <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={184} height={38} priority />
           </Link>
           <nav className="lp-links" aria-label="Seite">
             <a href="#ablauf">Ablauf</a>
@@ -256,7 +256,7 @@ export default function Landing() {
           <div className="lp-head">
             <span className="lp-kicker">Umfang</span>
             <h2>Alles, was auf die Baustelle gehört. Nicht mehr.</h2>
-            <p>VYSNpro ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
+            <p>VYSNERTECH ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
           </div>
           <div className="lp-module-grid lp-module-grid-3">
             {parts.map((m) => (
@@ -328,12 +328,12 @@ export default function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
-          <Image src="/brand/vysnpro-logo-wide.png" alt="VYSNpro" width={139} height={20} />
+          <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={150} height={31} />
           <span>Baustellen im Griff.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
           <Link href="/dashboard">Anmelden</Link>
-          <span>© {new Date().getFullYear()} VYSNpro</span>
+          <span>© {new Date().getFullYear()} VYSNER</span>
         </div>
       </footer>
     </div>
