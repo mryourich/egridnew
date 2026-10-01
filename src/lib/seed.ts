@@ -70,9 +70,9 @@ export function createSeed(): Data {
     currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
-      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e9", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17"] },
-      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e9", siteManagerId: "e2", description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C.", createdBy: "e2", members: ["e4", "e6", "e8", "e12", "e13", "e14", "e1", "e9", "e17"] },
-      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e9", siteManagerId: "e1", description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement.", createdBy: "e1", members: ["e5", "e6", "e7", "e11", "e12", "e2", "e9"] },
+      { id: "p1", image: "/demo/band.jpg", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e9", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17"] },
+      { id: "p2", image: "/demo/tunnel.jpg", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e9", siteManagerId: "e2", description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C.", createdBy: "e2", members: ["e4", "e6", "e8", "e12", "e13", "e14", "e1", "e9", "e17"] },
+      { id: "p3", image: "/demo/foto5.jpg", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e9", siteManagerId: "e1", description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement.", createdBy: "e1", members: ["e5", "e6", "e7", "e11", "e12", "e2", "e9"] },
       { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", description: "Neubau NS-Hauptverteilung inkl. Kompensation.", createdBy: "e10", members: ["e9", "e3", "e4"] }
     ],
     employees: [
@@ -100,11 +100,11 @@ export function createSeed(): Data {
       { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" }
     ],
     issues: [
-      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: demoPhoto("Konsole lose", 15), nodeId: "n7" },
-      { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "", nodeId: "n1" },
+      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "/demo/foto3.jpg", nodeId: "n7" },
+      { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "/demo/foto8.jpg", nodeId: "n1" },
       { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "", nodeId: "n16" },
       { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: demoPhoto("UV-P1 ohne Beschriftung", 40), nodeId: "n24", fixPhoto: demoPhoto("UV-P1 beschriftet", 140), fixNote: "Alle Stromkreise beschriftet, Plan in der Tür.", fixedAt: d(-1), fixedBy: "e5" },
-      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: demoPhoto("Feld 2 – Erdung", 0), nodeId: "n21" }
+      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "/demo/foto2.jpg", nodeId: "n21" }
     ],
     jobs: [
       { id: "j1", projectId: "p2", employeeId: "e8", title: "Kabelzug Abschnitt B", color: "#2563eb", start: d(0), end: d(3), nodeId: "n6", note: "", done: false },
@@ -149,11 +149,15 @@ export function createSeed(): Data {
       node("n28", "p3", "n27", "Zählerschrank Reihe 4", "offen", "e5", d(18))
     ],
     photos: [
-      { id: "f1", projectId: "p2", nodeId: "n6", dataUrl: demoPhoto("Abschnitt B – Begehung", 205), caption: "Querverbindung vor Montage", takenAt: `${d(-2)}T09:12`, authorId: "e2" },
-      { id: "f2", projectId: "p2", nodeId: "n5", dataUrl: demoPhoto("Trasse Abschnitt A", 190), caption: "Trasse fertig montiert", takenAt: `${d(-6)}T14:40`, authorId: "e6" },
-      { id: "f3", projectId: "p2", nodeId: "n8", dataUrl: demoPhoto("Durchgang", 25), caption: "Durchgang vor Abdichtung", takenAt: `${d(-1)}T11:05`, authorId: "e4" },
-      { id: "f4", projectId: "p1", nodeId: "n17", dataUrl: demoPhoto("Feld 1 – Schalter", 150), caption: "Leistungsschalter gesetzt", takenAt: `${d(-3)}T15:20`, authorId: "e3" },
-      { id: "f5", projectId: "p3", nodeId: "n24", dataUrl: demoPhoto("UV-P1", 265), caption: "UV-P1 verdrahtet", takenAt: `${d(-2)}T10:30`, authorId: "e5" }
+      { id: "f1", projectId: "p2", nodeId: "n6", dataUrl: "/demo/foto1.jpg", caption: "Querverbindung vor Montage", takenAt: `${d(-2)}T09:12`, authorId: "e2" },
+      { id: "f2", projectId: "p2", nodeId: "n5", dataUrl: "/demo/foto2.jpg", caption: "Trasse fertig montiert", takenAt: `${d(-6)}T14:40`, authorId: "e6" },
+      { id: "f3", projectId: "p2", nodeId: "n8", dataUrl: "/demo/foto3.jpg", caption: "Durchgang vor Abdichtung", takenAt: `${d(-1)}T11:05`, authorId: "e4" },
+      { id: "f4", projectId: "p1", nodeId: "n17", dataUrl: "/demo/foto4.jpg", caption: "Leistungsschalter gesetzt", takenAt: `${d(-3)}T15:20`, authorId: "e3" },
+      { id: "f5", projectId: "p3", nodeId: "n24", dataUrl: "/demo/foto5.jpg", caption: "UV-P1 verdrahtet", takenAt: `${d(-2)}T10:30`, authorId: "e5" },
+      { id: "f6", projectId: "p2", nodeId: "n5", dataUrl: "/demo/tunnel.jpg", caption: "Übersicht Röhre Nord", takenAt: `${d(-1)}T07:45`, authorId: "e2" },
+      { id: "f7", projectId: "p2", nodeId: "n6", dataUrl: "/demo/foto7.jpg", caption: "Abschnitt B", takenAt: `${d(0)}T08:10`, authorId: "e8" },
+      { id: "f8", projectId: "p2", nodeId: "n6", dataUrl: "/demo/foto8.jpg", caption: "Abschnitt B", takenAt: `${d(0)}T08:12`, authorId: "e8" },
+      { id: "f9", projectId: "p2", nodeId: "n5", dataUrl: "/demo/foto9.jpg", caption: "Trasse", takenAt: `${d(0)}T09:30`, authorId: "e4" }
     ],
     reports: [
       { id: "r1", projectId: "p2", date: d(-1), crew: 5, hours: 42, work: "Trassen Abschnitt B km 1,0–1,3 montiert, Kabelzug vorbereitet.", incidents: "Zufahrt Nord ab 14 Uhr gesperrt.", authorId: "e2", photos: [demoPhoto("Trasse km 1,2", 200), demoPhoto("Kabeltrommeln", 30)] },
@@ -228,6 +232,9 @@ function withDemoTrail(data: Data): Data {
     leasingCompany: e.id === "e6" || e.id === "e8" ? "Trenkwalder Personaldienste" : undefined
   }));
   const todayIso = new Date().toISOString().slice(0, 10);
+  // Mario (the demo login) has a few points assigned – they show under "Meine Aufgaben"
+  const mineIds = data.siteNodes.filter((n) => n.status !== "erledigt" && !data.siteNodes.some((k) => k.parentId === n.id)).slice(0, 3).map((n) => n.id);
+  data.siteNodes = data.siteNodes.map((n, i) => (mineIds.includes(n.id) ? { ...n, assigneeId: "e1", due: n.due || next(todayIso, 1 + i) } : n));
   // some days off last week: Urlaub, Krank, Zeitausgleich
   const now = new Date(`${todayIso}T12:00:00`);
   const lastMon = next(todayIso, -((now.getDay() + 6) % 7) - 7);

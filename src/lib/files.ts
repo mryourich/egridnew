@@ -1,3 +1,9 @@
+/** Bytes of a stored file: data URL inline, anything else (e.g. demo pictures) is fetched. */
+export async function fileBytes(url: string): Promise<Uint8Array | string> {
+  if (url.startsWith("data:")) return dataUrlToBytes(url);
+  return new Uint8Array(await (await fetch(url)).arrayBuffer());
+}
+
 /** Bytes of a data URL (base64 or URL-encoded). */
 export function dataUrlToBytes(url: string): Uint8Array | string {
   const [meta, body] = url.split(",", 2);

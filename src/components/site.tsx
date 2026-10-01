@@ -1,6 +1,6 @@
 "use client";
 
-import { dataUrlToBytes, safeName } from "@/lib/files";
+import { fileBytes, safeName } from "@/lib/files";
 import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
@@ -184,8 +184,8 @@ export function PhotoGallery({ project }: { project: Project }) {
       for (const p of chosen) {
         // folders follow the structure: Bereich/Unterpunkt/…/Bereich - Unterpunkt - 001.jpg
         const folders = p.nodeId ? pathOf(data.siteNodes, p.nodeId).map((n) => safeName(n.title)) : ["Ohne Bereich"];
-        const ext = p.dataUrl.startsWith("data:image/svg") ? "svg" : p.dataUrl.startsWith("data:image/png") ? "png" : "jpg";
-        zip.file(`${folders.join("/")}/${safeName(photoName(data.siteNodes, data.photos, p))}.${ext}`, dataUrlToBytes(p.dataUrl));
+        const ext = p.dataUrl.startsWith("data:image/svg") ? "svg" : p.dataUrl.startsWith("data:image/png") || p.dataUrl.endsWith(".png") ? "png" : "jpg";
+        zip.file(`${folders.join("/")}/${safeName(photoName(data.siteNodes, data.photos, p))}.${ext}`, await fileBytes(p.dataUrl));
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
