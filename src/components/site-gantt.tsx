@@ -1,12 +1,12 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronRight, Diamond, Palette, Pencil, Star, Trash2, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Copy, Diamond, Palette, Pencil, Plus, Star, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { canDelete, isMember, projectTeam, uid, useStore } from "@/lib/store";
-import type { Absence, AbsenceType, ISODate, Job, Project } from "@/lib/types";
+import { canDelete, isManager, isMember, projectTeam, uid, useStore } from "@/lib/store";
+import type { Absence, AbsenceType, Employee, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
 import { useRouter } from "next/navigation";
 import { EmpAvatar } from "./person";
@@ -48,8 +48,9 @@ export function textOn(hex: string) {
 }
 
 /** One lane = one grid row; bars fill it completely. */
-const LANE = 32;
-const NAME_W = 220;
+const LANE = 30;
+const GROUP_H = 28;
+const NEW_COLOR = "#2e75b6";
 
 /* Half-day helpers: position = day * 2 (+1 for afternoon). */
 function jobHalves(from: ISODate, j: Pick<Job, "start" | "end" | "startPm" | "endAm">) {
@@ -63,30 +64,39 @@ function fromHalves(from: ISODate, s: number, e: number) {
 }
 
 type Drag =
-  | { kind: "job"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dh: number; emp: string }
+  | { kind: "job"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dh: number; emp: string; add: boolean }
   | { kind: "abs"; id: string; mode: "move" | "start" | "end"; x0: number; y0: number; moved: boolean; dd: number; emp: string };
 
 type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half?: number };
 
 /**
- * Site schedule for the site manager in the style of classic planning boards:
- * left mouse = move / resize in half days, click on a bar = rename,
- * right mouse = small menu to insert bars or symbols with a colour palette.
+ * Project plan in the style of classic planning boards, operated like Windows:
+ * click = select, drag = move / resize in half days, double click = rename (or new bar on empty space),
+ * right click = menu, Del / F2 / Ctrl+C / Ctrl+V / Ctrl+D / arrow keys on the selection.
  */
 export function SiteGantt({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
   const router = useRouter();
   const addPerson = () => router.push(`/projekte/${project.id}/team`);
-  const { from, days, dayWidth: dw, controls } = usePlannerRange("detail");
+  const { from, days, dayWidth: dw, controls } = usePlannerRange("woche");
+  const manager = isManager(data);
+  const [sel, setSel] = useState<string[]>([]);
+  const [clip, setClip] = useState<Job[]>([]);
+  const hover = useRef<{ emp: string; half: number } | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [person, setPerson] = useState("");
+  const [status, setStatus] = useState<"alle" | "offen" | "erledigt">("alle");
+  const [newGroup, setNewGroup] = useState("");
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [details, setDetails] = useState<{ job: Partial<Job>; x: number; y: number } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const longPress = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
-  const [nameW, setNameW] = useState(NAME_W);
+  const [nameW, setNameW] = useState(400);
   useEffect(() => {
-    const fit = () => setNameW(window.innerWidth < 640 ? 132 : NAME_W);
+    const fit = () => setNameW(window.innerWidth < 640 ? 132 : window.innerWidth < 1100 ? 230 : 400);
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
@@ -100,6 +110,56 @@ export function SiteGantt({ project }: { project: Project }) {
   const team = projectTeam(data, project);
   const teamIds = team.map((e) => e.id);
   const jobs = data.jobs.filter((j) => j.projectId === project.id);
+  const q = query.trim().toLowerCase();
+  const visibleJob = (j: Job) => status === "alle" || (status === "erledigt" ? j.done : !j.done);
+
+  // Groups: the project's own groups, otherwise the people's teams ("Partie").
+  const ownGroups = project.groups ?? [];
+  const groupOf = (e: Employee) => (ownGroups.length ? (project.memberGroup?.[e.id] && ownGroups.some((g) => g.id === project.memberGroup![e.id]) ? project.memberGroup![e.id] : "") : `team:${e.team || "Team"}`);
+  const groups: { id: string; name: string }[] = ownGroups.length
+    ? [...ownGroups, { id: "", name: "Ohne Gruppe" }]
+    : [...new Set(team.map((e) => e.team || "Team"))].map((n) => ({ id: `team:${n}`, name: n }));
+  const shown = team.filter((e) => !person || e.id === person);
+  type Row = { kind: "group"; id: string; name: string; count: number } | { kind: "emp"; emp: Employee };
+  const rows: Row[] = [];
+  for (const g of groups) {
+    const members = shown.filter((e) => groupOf(e) === g.id);
+    if (!members.length) continue;
+    rows.push({ kind: "group", id: g.id || "none", name: g.name, count: members.length });
+    if (!collapsed.has(g.id || "none")) for (const e of members) rows.push({ kind: "emp", emp: e });
+  }
+
+  // Overload: two or more bars on the same day for one person (any project).
+  const overload = useMemo(() => {
+    const out: { name: string; date: string }[] = [];
+    for (const e of team) {
+      const mine = data.jobs.filter((j) => j.employeeId === e.id && !j.symbol && j.end >= from && j.start <= addDays(from, days - 1));
+      for (let i = 0; i < days && mine.length > 1; i++) {
+        const d = addDays(from, i);
+        if (mine.filter((j) => j.start <= d && d <= j.end).length > 1) {
+          out.push({ name: e.name, date: d });
+          break;
+        }
+      }
+    }
+    return out;
+  }, [data.jobs, team, from, days]);
+
+  const saveGroups = (groupsNext: { id: string; name: string }[], memberGroup: Record<string, string>) => save("projects", { ...project, groups: groupsNext, memberGroup });
+  const addGroup = () => {
+    const name = newGroup.trim();
+    if (!name) return;
+    let gs = ownGroups;
+    let mg = { ...(project.memberGroup ?? {}) };
+    if (!gs.length) {
+      // first own group: keep today's grouping by turning the teams into groups
+      gs = groups.map((g) => ({ id: uid("g"), name: g.name }));
+      for (const e of team) mg[e.id] = gs[groups.findIndex((g) => g.id === groupOf(e))]?.id ?? "";
+    }
+    saveGroups([...gs, { id: uid("g"), name }], mg);
+    setNewGroup("");
+  };
+  const moveToGroup = (empId: string, groupId: string) => saveGroups(ownGroups, { ...(project.memberGroup ?? {}), [empId]: groupId });
 
   const previewJob = (j: Job): Job => {
     if (!drag || drag.kind !== "job" || drag.id !== j.id) return j;
@@ -165,7 +225,8 @@ export function SiteGantt({ project }: { project: Project }) {
         const j = jobs.find((x) => x.id === d.id);
         if (!j) return;
         if (!d.moved) {
-          setEditing(j.id);
+          // Windows: click selects, Ctrl/Shift+click adds to the selection
+          setSel((cur) => (d.add ? (cur.includes(j.id) ? cur.filter((x) => x !== j.id) : [...cur, j.id]) : [j.id]));
           return;
         }
         const p = previewJobWith(j, d);
@@ -215,7 +276,7 @@ export function SiteGantt({ project }: { project: Project }) {
     if (e.button !== 0 || editing === j.id) return;
     e.stopPropagation();
     e.preventDefault();
-    const d: Drag = { kind: "job", id: j.id, mode: j.symbol ? "move" : mode, x0: e.clientX, y0: e.clientY, moved: false, dh: 0, emp: j.employeeId };
+    const d: Drag = { kind: "job", id: j.id, mode: j.symbol ? "move" : mode, x0: e.clientX, y0: e.clientY, moved: false, dh: 0, emp: j.employeeId, add: e.ctrlKey || e.metaKey || e.shiftKey };
     dragRef.current = d;
     setDrag(d);
   };
@@ -242,19 +303,107 @@ export function SiteGantt({ project }: { project: Project }) {
     save("jobs", { id: uid("j"), projectId: project.id, employeeId: emp, title: "", color: "#f59e0b", ...fromHalves(from, half, half + 1), nodeId: "", note: "", done: false, symbol: true, icon }, "Symbol eingefügt");
   };
 
+  const shift = (list: Job[], halves: number) => {
+    for (const j of list) {
+      const { s: a, e: b } = jobHalves(from, j);
+      save("jobs", { ...j, ...fromHalves(from, a + halves, b + halves) });
+    }
+  };
+
+  // Keyboard on the selection – ignored while typing in a field.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      const el = e.target instanceof HTMLElement ? e.target : null;
+      if (el?.closest("input, textarea, select, [contenteditable]") || document.querySelector(".modal, .sheet-backdrop, .drawer, .job-pop")) return;
+      const picked = jobs.filter((j) => sel.includes(j.id));
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (e.key === "Escape") setSel([]);
+      else if ((e.key === "Delete" || e.key === "Backspace") && picked.length && canDelete(data)) {
+        e.preventDefault();
+        picked.forEach((j) => remove("jobs", j.id, `Aufgabe „${j.title}“ gelöscht`));
+        notify(picked.length > 1 ? `${picked.length} gelöscht` : "Gelöscht");
+        setSel([]);
+      } else if (e.key === "F2" && picked.length) {
+        e.preventDefault();
+        setEditing(picked[0].id);
+      } else if (ctrl && e.key.toLowerCase() === "c" && picked.length) {
+        setClip(picked);
+        notify(picked.length > 1 ? `${picked.length} kopiert` : "Kopiert");
+      } else if (ctrl && e.key.toLowerCase() === "v" && clip.length) {
+        e.preventDefault();
+        const first = Math.min(...clip.map((j) => jobHalves(from, j).s));
+        const target = hover.current;
+        const ids: string[] = [];
+        for (const j of clip) {
+          const { s: a, e: b } = jobHalves(from, j);
+          const off = target ? target.half - first : b - a;
+          const id = uid("j");
+          ids.push(id);
+          save("jobs", { ...j, id, employeeId: target && clip.length === 1 ? target.emp : j.employeeId, ...fromHalves(from, a + off, b + off), done: false });
+        }
+        setSel(ids);
+        notify("Eingefügt");
+      } else if (ctrl && e.key.toLowerCase() === "d" && picked.length) {
+        e.preventDefault();
+        const ids: string[] = [];
+        for (const j of picked) {
+          const { s: a, e: b } = jobHalves(from, j);
+          const id = uid("j");
+          ids.push(id);
+          save("jobs", { ...j, id, ...fromHalves(from, b, b + (b - a)), done: false });
+        }
+        setSel(ids);
+        notify("Dupliziert");
+      } else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && picked.length) {
+        e.preventDefault();
+        shift(picked, (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 2 : 1));
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
+
   const timelineW = days * dw;
   const todayJobs = jobs.filter((j) => j.start <= t && j.end >= t && !j.symbol);
 
   return (
     <div className="stack">
-      <div className="toolbar">
+      <div className="toolbar sg-toolbar">
         {controls}
         <span className="spacer" />
-        <span className="hint desktop-only">Ziehen = verschieben (halbe Tage) · Klick auf Balken = umbenennen · Rechtsklick = einfügen, Farbe</span>
-        <span className="hint touch-only">Lange drücken = Menü (einfügen, Farbe) · Balken ziehen = verschieben</span>
+        <SearchField value={query} onChange={setQuery} />
+        <select className="sg-filter" value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Person">
+          <option value="">Alle Personen</option>
+          {team.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name}
+            </option>
+          ))}
+        </select>
+        <select className="sg-filter" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status">
+          <option value="alle">Alle Status</option>
+          <option value="offen">Offen</option>
+          <option value="erledigt">Erledigt</option>
+        </select>
       </div>
+      {(overload.length > 0 || sel.length > 0) && (
+        <div className="sg-status">
+          {overload.slice(0, 3).map((o) => (
+            <span key={o.name} className="sg-warn">
+              <AlertTriangle size={13} /> {o.name} ist am {fmt(o.date)} überlastet.
+            </span>
+          ))}
+          {overload.length > 3 && <span className="sg-warn">+{overload.length - 3} weitere</span>}
+          <span className="spacer" />
+          {sel.length > 0 && (
+            <span className="sg-selinfo desktop-only">
+              {sel.length} ausgewählt · <kbd>Entf</kbd> löschen · <kbd>F2</kbd> umbenennen · <kbd>Strg</kbd>+<kbd>C</kbd>/<kbd>V</kbd> kopieren · <kbd>Strg</kbd>+<kbd>D</kbd> duplizieren · <kbd>←</kbd>/<kbd>→</kbd> verschieben
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className="planner site-gantt" style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${nameW}px` } as CSSProperties}>
+      <div className={`planner site-gantt ${nameW >= 400 ? "cols-3" : nameW >= 230 ? "cols-2" : "cols-1"}`} style={{ "--dw": `${dw}px`, "--no": "0px", "--nm": `${nameW}px` } as CSSProperties}>
         <div
           className="planner-scroll"
           ref={scrollRef}
@@ -284,18 +433,38 @@ export function SiteGantt({ project }: { project: Project }) {
           <div className="planner-inner" style={{ width: nameW + timelineW }}>
             <div className="pl-head">
               <div className="pl-corner sg-corner">
-                <span>Team</span>
-                <em>
-                  {team.length} Personen · {todayJobs.length} Aufgaben heute
-                </em>
-                <button type="button" className="sg-add-person" onClick={addPerson} title="Leute ins Projekt einladen">
-                  <UserPlus size={13} /> Person
-                </button>
+                <div className="sg-cols">
+                  <span>Mitarbeiter</span>
+                  <span>Rolle</span>
+                  <span>Team</span>
+                </div>
+                {manager ? (
+                  <form
+                    className="sg-addgroup"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      addGroup();
+                    }}
+                  >
+                    <input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="Gruppe hinzufügen" aria-label="Neue Gruppe" />
+                    <button type="submit" className="btn btn-sm" disabled={!newGroup.trim()}>
+                      <Plus size={13} /> Gruppe
+                    </button>
+                    <button type="button" className="btn btn-sm btn-ghost" onClick={addPerson} title="Leute ins Projekt einladen">
+                      <UserPlus size={13} />
+                    </button>
+                  </form>
+                ) : (
+                  <em>
+                    {team.length} Personen · {todayJobs.length} Aufgaben heute
+                  </em>
+                )}
               </div>
               <PlannerHeadTime dayList={dayList} dw={dw} />
             </div>
             <div className="pl-body">
               <PlannerCols dayList={dayList} dw={dw} left={nameW} />
+              {team.length > 0 && rows.length === 0 && <div className="pl-empty">Niemand passt zum Filter.</div>}
               {team.length === 0 && (
                 <div className="pl-empty">
                   Noch niemand im Projekt.{" "}
@@ -304,10 +473,35 @@ export function SiteGantt({ project }: { project: Project }) {
                   </button>
                 </div>
               )}
-              {team.map((emp) => {
+              {rows.map((row) => {
+                if (row.kind === "group") {
+                  const closed = collapsed.has(row.id);
+                  return (
+                    <div key={`g-${row.id}`} className="pl-row sg-grp" style={{ height: GROUP_H }}>
+                      <button
+                        type="button"
+                        className="pl-left sg-grp-left"
+                        onClick={() =>
+                          setCollapsed((c) => {
+                            const n = new Set(c);
+                            if (n.has(row.id)) n.delete(row.id);
+                            else n.add(row.id);
+                            return n;
+                          })
+                        }
+                      >
+                        {closed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                        <strong>{row.name}</strong>
+                        <small>{row.count} Ressourcen</small>
+                      </button>
+                      <div className="pl-time sg-grp-band" style={{ width: timelineW }} />
+                    </div>
+                  );
+                }
+                const emp = row.emp;
                 const own = jobs
                   .map(previewJob)
-                  .filter((j) => j.employeeId === emp.id && j.end >= from && j.start <= to)
+                  .filter((j) => j.employeeId === emp.id && j.end >= from && j.start <= to && visibleJob(j))
                   .sort((a, b) => a.start.localeCompare(b.start) || Number(!!a.startPm) - Number(!!b.startPm));
                 const ends: number[] = [];
                 const lane = new Map<string, number>();
@@ -336,15 +530,41 @@ export function SiteGantt({ project }: { project: Project }) {
                 return (
                   <div key={emp.id} className={`pl-row sg-row ${drag && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
                     <div className="pl-left sg-left">
-                      <EmpAvatar id={emp.id} size={24} />
-                      <span>
-                        <strong>{emp.name}</strong>
-                        <small>{emp.role}</small>
+                      <span className="sg-name">
+                        <EmpAvatar id={emp.id} size={24} />
+                        <strong title={emp.name}>{emp.name}</strong>
                       </span>
+                      <small className="sg-role" title={emp.role}>
+                        {emp.role}
+                      </small>
+                      {manager && ownGroups.length ? (
+                        <select className="sg-group" value={groupOf(emp)} onChange={(e) => moveToGroup(emp.id, e.target.value)} aria-label="Gruppe">
+                          <option value="">–</option>
+                          {ownGroups.map((g) => (
+                            <option key={g.id} value={g.id}>
+                              {g.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <small className="sg-group-text">{groups.find((g) => g.id === groupOf(emp))?.name}</small>
+                      )}
                     </div>
                     <div
                       className="pl-time"
                       style={{ width: timelineW }}
+                      onPointerMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        hover.current = { emp: emp.id, half: Math.floor((e.clientX - rect.left) / hw) };
+                      }}
+                      onPointerDown={(e) => {
+                        if (e.target === e.currentTarget && e.button === 0) setSel([]);
+                      }}
+                      onDoubleClick={(e) => {
+                        if (e.target !== e.currentTarget || !manager) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        insert(emp.id, Math.floor((e.clientX - rect.left) / hw), NEW_COLOR, false);
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -387,7 +607,15 @@ export function SiteGantt({ project }: { project: Project }) {
                         };
                         if (j.symbol) {
                           return (
-                            <div key={j.id} className="sg-symbol" style={{ left: s * hw + hw - 8, top: top + (LANE - 18) / 2, "--c": j.color } as CSSProperties} title={`${j.title} · ${fmt(j.start)}`} onPointerDown={(ev) => beginJob(ev, j, "move")} onContextMenu={onCtx}>
+                            <div
+                              key={j.id}
+                              className={`sg-symbol ${sel.includes(j.id) ? "sel" : ""} ${q && !j.title.toLowerCase().includes(q) ? "dim" : ""}`}
+                              style={{ left: s * hw + hw - 8, top: top + (LANE - 18) / 2, "--c": j.color } as CSSProperties}
+                              title={`${j.title} · ${fmt(j.start)}`}
+                              onPointerDown={(ev) => beginJob(ev, j, "move")}
+                              onDoubleClick={() => setEditing(j.id)}
+                              onContextMenu={onCtx}
+                            >
                               {j.icon ? <span className="sg-emoji">{j.icon}</span> : <Star size={16} fill={j.color} color="#1f2937" strokeWidth={1.2} />}
                               {editing === j.id ? <RenameInput job={j} onDone={() => setEditing(null)} /> : j.title ? <span>{j.title}</span> : null}
                             </div>
@@ -396,10 +624,11 @@ export function SiteGantt({ project }: { project: Project }) {
                         return (
                           <div
                             key={j.id}
-                            className={`sg-job ${j.done ? "done" : ""} ${drag?.kind === "job" && drag.id === j.id ? "active" : ""} ${editing === j.id ? "editing" : ""}`}
+                            className={`sg-job ${j.done ? "done" : ""} ${drag?.kind === "job" && drag.id === j.id ? "active" : ""} ${editing === j.id ? "editing" : ""} ${sel.includes(j.id) ? "sel" : ""} ${q && !j.title.toLowerCase().includes(q) ? "dim" : ""}`}
                             style={{ left: s * hw, width: Math.max(8, (e - s) * hw), top: top + 1, height: LANE - 1, background: j.color, color: textOn(j.color) } as CSSProperties}
                             title={`${j.title}\n${fmt(j.start)}${j.startPm ? " (ab Mittag)" : ""} – ${fmt(j.end)}${j.endAm ? " (bis Mittag)" : ""}${j.note ? `\n${j.note}` : ""}`}
                             onPointerDown={(ev) => beginJob(ev, j, "move")}
+                            onDoubleClick={() => setEditing(j.id)}
                             onContextMenu={onCtx}
                           >
                             {editing === j.id ? (
@@ -425,6 +654,8 @@ export function SiteGantt({ project }: { project: Project }) {
       </div>
 
       <div className="sg-legend">
+        <span className="desktop-only">Klick = auswählen · Doppelklick = umbenennen / neuer Balken · Rechtsklick = Menü · Ziehen = verschieben</span>
+        <span className="touch-only">Lange drücken = Menü · Balken ziehen = verschieben</span>
         <span>
           <i className="sg-elsewhere" /> auf einem anderen Projekt eingeplant
         </span>
@@ -461,7 +692,8 @@ export function SiteGantt({ project }: { project: Project }) {
                       notify("Dupliziert");
                     }
                   },
-                  { icon: <Trash2 size={16} />, label: "Löschen", danger: true, onClick: () => remove("jobs", menu.job!.id, `Aufgabe „${menu.job!.title}“ gelöscht`) }
+                  { icon: <Copy size={16} />, label: "Kopieren (Strg+C)", onClick: () => (setClip([menu.job!]), setSel([menu.job!.id]), notify("Kopiert")) },
+                  ...(canDelete(data) ? [{ icon: <Trash2 size={16} />, label: "Löschen (Entf)", danger: true, onClick: () => remove("jobs", menu.job!.id, `Aufgabe „${menu.job!.title}“ gelöscht`) }] : [])
                 ]
               : menu.abs
                 ? [
@@ -474,7 +706,11 @@ export function SiteGantt({ project }: { project: Project }) {
                   ]
                 : [
                     { icon: <InsertBarIcon />, label: "Neuen Zeitbalken einfügen", colors: (c) => insert(menu.emp!, menu.half!, c, false) },
-                    { icon: <Star size={17} strokeWidth={1.6} />, label: "Neues Symbol einfügen", icons: (ic) => insert(menu.emp!, menu.half!, "#f59e0b", true, ic) }
+                    { icon: <Star size={17} strokeWidth={1.6} />, label: "Neues Symbol einfügen", icons: (ic) => insert(menu.emp!, menu.half!, "#f59e0b", true, ic) },
+                    ...(clip.length ? [{ icon: <Copy size={16} />, label: `Einfügen (Strg+V)`, onClick: () => {
+                      hover.current = { emp: menu.emp!, half: menu.half! };
+                      window.dispatchEvent(new KeyboardEvent("keydown", { key: "v", ctrlKey: true }));
+                    } }] : [])
                   ]
           }
         />
@@ -787,3 +1023,7 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
   );
 }
 
+
+function SearchField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return <input className="sg-search" type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Aufgabe suchen…" aria-label="Aufgabe suchen" />;
+}

@@ -24,6 +24,9 @@ export type Project = {
   members: string[];
   /** Picture of the client or the site (data URL). */
   image?: string;
+  /** Plan groups (e.g. "Takt 1") and which member sits in which group. */
+  groups?: { id: string; name: string }[];
+  memberGroup?: Record<string, string>;
 };
 
 export type Qualification = {
