@@ -5,13 +5,14 @@ import { useParams } from "next/navigation";
 import { DefectsSection, ReportsSection } from "@/components/site-sections";
 import { ProjectOverview } from "@/components/project-overview";
 import { TimesSection } from "@/components/times";
+import { PlansSection } from "@/components/plans";
 import { DocBrowser } from "@/components/documents";
 import { MaterialSection } from "@/components/material";
 import { PhotoGallery } from "@/components/site";
 import { SiteStructure } from "@/components/structure";
 import { SiteGantt } from "@/components/site-gantt";
 import { Empty } from "@/components/ui";
-import { siteSections, type SiteSection } from "@/lib/sections";
+import { sectionsFor, type SiteSection } from "@/lib/sections";
 import { currentUser, roleOf, useStore } from "@/lib/store";
 
 export default function SiteSectionPage() {
@@ -19,12 +20,12 @@ export default function SiteSectionPage() {
   const { data } = useStore();
   const role = roleOf(currentUser(data));
   const project = data.projects.find((p) => p.id === id);
-  const def = siteSections.find((s) => s.key === section);
+  const def = sectionsFor(data, role).find((s) => s.key === section);
   if (!project) return null;
   if (!def || !def.roles.includes(role)) {
     return (
       <Empty>
-        Dieser Bereich ist für deine Rolle nicht verfügbar. <Link href={`/projekte/${id}`}>Zum Projekt</Link>
+        Dieser Bereich ist für deine Rolle oder eure Lizenz nicht verfügbar. <Link href={`/projekte/${id}`}>Zum Projekt</Link>
       </Empty>
     );
   }
@@ -44,6 +45,8 @@ export default function SiteSectionPage() {
       return <MaterialSection project={project} />;
     case "dokumente":
       return <DocBrowser projectId={project.id} />;
+    case "plaene":
+      return <PlansSection project={project} />;
     case "zeiten":
       return <TimesSection project={project} />;
     case "uebersicht":

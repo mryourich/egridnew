@@ -6,7 +6,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { addDays, fmt, fmtShort, inRange, startOfWeek, today, weekdayLong, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { ago, projectStats } from "@/lib/overview";
-import { siteSections } from "@/lib/sections";
+import { hasModule, sectionsFor } from "@/lib/sections";
 import { currentUser, employeeName, isManager, myProjects, projectTeam, roleOf, useStore } from "@/lib/store";
 import { myTasks } from "@/lib/tasks";
 import type { Data, Project } from "@/lib/types";
@@ -202,8 +202,7 @@ export function Dashboard() {
                 </span>
               </header>
               <nav className="fp-tabs">
-                {siteSections
-                  .filter((s) => s.roles.includes(role))
+                {sectionsFor(data, role)
                   .slice(0, 7)
                   .map((s) => (
                     <Link key={s.key} href={`/projekte/${featured.p.id}/${s.key}`} className={s.key === "uebersicht" ? "on" : ""}>
@@ -322,7 +321,7 @@ export function Dashboard() {
             </section>
           )}
 
-          {featured && <WeekPlan project={featured.p} />}
+          {featured && hasModule(data, "grid") && <WeekPlan project={featured.p} />}
 
           {featured && (
             <section className="card d-team">

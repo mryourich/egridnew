@@ -123,6 +123,25 @@ function DefectReport() {
 
       <DocSection title={`Offene Mängel (${open.length})`}>{open.length ? open.map((i, n) => item(i, n + 1)) : <p className="doc-text">Keine offenen Mängel.</p>}</DocSection>
       {!onlyOpen && fixed.length > 0 && <DocSection title={`Behobene Mängel (${fixed.length})`}>{fixed.map((i, n) => item(i, open.length + n + 1))}</DocSection>}
+      {data.plans
+        .filter((pl) => pl.projectId === project.id)
+        .map((pl) => {
+          const listed = [...open, ...(onlyOpen ? [] : fixed)];
+          const pins = listed.filter((i) => i.plan?.planId === pl.id);
+          if (!pins.length) return null;
+          return (
+            <DocSection key={pl.id} title={`Plan: ${pl.name}`}>
+              <div className="doc-plan">
+                <img src={pl.dataUrl} alt={pl.name} />
+                {pins.map((i) => (
+                  <span key={i.id} className={`doc-pin sev-${i.severity} ${i.status === "erledigt" ? "done" : ""}`} style={{ left: `${i.plan!.x * 100}%`, top: `${i.plan!.y * 100}%` }}>
+                    {listed.indexOf(i) + 1}
+                  </span>
+                ))}
+              </div>
+            </DocSection>
+          );
+        })}
     </DocFrame>
   );
 }

@@ -101,7 +101,9 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
           { value: "monteur", label: "Monteur – erfassen und abhaken, nichts löschen" },
           { value: "mk", label: "Montagekoordination – Projekte anlegen und verwalten" },
           { value: "bl", label: "Bauleitung – Projekte anlegen und verwalten" },
-          { value: "pl", label: "Projektleitung – Projekte anlegen und verwalten" }
+          { value: "pl", label: "Projektleitung – Projekte anlegen und verwalten" },
+          { value: "buero", label: "Büro – alle Baustellen lesen, Regieberichte freigeben, Export" },
+          { value: "admin", label: "Admin – alles der Firma, Benutzer und Stammdaten" }
         ]
       },
       { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },

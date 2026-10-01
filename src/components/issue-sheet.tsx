@@ -77,6 +77,7 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
     createdAt: issue.createdAt ?? today(),
     photo: issue.photo ?? "",
     nodeId: issue.nodeId ?? "",
+    plan: issue.plan,
     fixPhoto: issue.fixPhoto ?? "",
     fixNote: issue.fixNote ?? "",
     fixedAt: issue.fixedAt,
@@ -87,6 +88,7 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
   const me = currentUser(data);
   const set = (patch: Partial<Issue>) => setV((o) => ({ ...o, ...patch }));
   const project = data.projects.find((p) => p.id === v.projectId);
+  const planOf = v.plan ? data.plans.find((p) => p.id === v.plan!.planId) : undefined;
 
   useEffect(() => {
     if (photo) setV((o) => ({ ...o, photo }));
@@ -173,6 +175,14 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
               </button>
             ))}
           </div>
+
+          {v.plan && planOf && (
+            <div className="issue-plan" title={planOf.name}>
+              <img src={planOf.dataUrl} alt={planOf.name} />
+              <i style={{ left: `${v.plan.x * 100}%`, top: `${v.plan.y * 100}%` }} />
+              <span>Auf dem Plan: {planOf.name}</span>
+            </div>
+          )}
 
           <div className="job-grid">
             <label className="full">

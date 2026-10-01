@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { DocFrame, DocSection } from "@/components/doc";
 import { fmt, isoWeek, weekdayLong } from "@/lib/date";
-import { employeeName, useStore } from "@/lib/store";
+import { employeeName, fmtStamp, useStore } from "@/lib/store";
 
 export default function RegieDoc() {
   const { id } = useParams<{ id: string }>();
@@ -113,6 +113,11 @@ export default function RegieDoc() {
         </DocSection>
       )}
 
+      {r.approvedAt && (
+        <p className="doc-text doc-approved">
+          Freigegeben von {employeeName(data, r.approvedBy ?? "")} am {fmtStamp(r.approvedAt)}
+        </p>
+      )}
       <div className="doc-sign tall">
         <div>
           <span />
