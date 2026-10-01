@@ -46,8 +46,8 @@ function text(v: unknown): string {
     const o = v as { richText?: { text: string }[]; text?: string; result?: unknown; formula?: string };
     if (o.richText) return o.richText.map((r) => r.text).join("");
     if (o.text) return String(o.text);
-    if (o.formula) return `=${o.formula}`;
     if (o.result != null) return String(o.result);
+    if (o.formula) return `=${o.formula}`;
     if (v instanceof Date) return v.toISOString().slice(0, 10);
   }
   return String(v);
@@ -137,6 +137,23 @@ function put(ws: Worksheet, address: string, value: string | number, key: string
 
 /** Fills the customer's template; returns the file and how many days did not fit. */
 export async function fillTemplate(dataUrl: string, mapping: TemplateMapping, sd: SheetData) {
+  const { wb, cut } = await fillWorkbook(dataUrl, mapping, sd);
+  return { blob: await toBlob(wb), cut };
+}
+
+/** The filled template as a grid for the screen and the PDF – looks like the Excel form. */
+export async function filledSheetView(dataUrl: string, mapping: TemplateMapping, sd: SheetData) {
+  const { wb } = await fillWorkbook(dataUrl, mapping, sd);
+  return sheetView(wb.getWorksheet(mapping.sheet) ?? wb.worksheets[0]);
+}
+
+/** The empty template as a grid (for checking the mapping). */
+export async function templateView(dataUrl: string, sheet?: string) {
+  const wb = await loadWorkbook(dataUrl);
+  return sheetView((sheet && wb.getWorksheet(sheet)) || wb.worksheets[0]);
+}
+
+async function fillWorkbook(dataUrl: string, mapping: TemplateMapping, sd: SheetData) {
   const wb = await loadWorkbook(dataUrl);
   const ws = wb.getWorksheet(mapping.sheet) ?? wb.worksheets[0];
   const hv = headerValues(sd);
@@ -162,7 +179,104 @@ export async function fillTemplate(dataUrl: string, mapping: TemplateMapping, sd
       PH.lastIndex = 0;
     })
   );
-  return { blob: await toBlob(wb), cut };
+  return { wb, cut };
+}
+
+export type SheetCell = { text: string; colSpan: number; rowSpan: number; style: Record<string, string | number>; spill?: number };
+export type SheetView = { widths: number[]; rows: { height: number; cells: (SheetCell | null)[] }[] };
+
+function argb(c?: { argb?: string; theme?: number }) {
+  if (!c?.argb || c.argb.length < 6) return undefined;
+  return `#${c.argb.slice(-6)}`;
+}
+
+function borderCss(b?: { style?: string; color?: { argb?: string } }) {
+  if (!b?.style) return undefined;
+  const w = b.style === "thick" ? 2.5 : b.style === "medium" ? 1.6 : 1;
+  const kind = b.style === "dashed" || b.style === "dotted" ? b.style : b.style === "double" ? "double" : "solid";
+  return `${w}px ${kind} ${argb(b.color) ?? "#222"}`;
+}
+
+/** Converts a sheet into a grid: merged cells, widths, heights, fonts, fills, borders, alignment. */
+function sheetView(ws: Worksheet): SheetView {
+  let maxRow = 0;
+  let maxCol = 0;
+  ws.eachRow({ includeEmpty: false }, (row, r) =>
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      const hasBorder = cell.border && Object.values(cell.border).some((b) => b && (b as { style?: string }).style);
+      if (text(cell.value).trim() || hasBorder) {
+        maxRow = Math.max(maxRow, r);
+        maxCol = Math.max(maxCol, Number(cell.col));
+      }
+    })
+  );
+  const merges = ((ws as unknown as { model: { merges?: string[] } }).model.merges ?? []).map((m) => {
+    const [a, b] = m.split(":");
+    const ca = ws.getCell(a);
+    const cb = ws.getCell(b);
+    return { r1: Number(ca.row), c1: Number(ca.col), r2: Number(cb.row), c2: Number(cb.col) };
+  });
+  for (const m of merges) {
+    maxRow = Math.max(maxRow, m.r2);
+    maxCol = Math.max(maxCol, m.c2);
+  }
+  maxRow = Math.min(maxRow, 200);
+  maxCol = Math.min(maxCol, 26);
+  const covered = new Set<string>();
+  const widths = Array.from({ length: maxCol }, (_, i) => Math.round(((ws.getColumn(i + 1).width ?? 9) * 7 + 5)));
+  const rows: SheetView["rows"] = [];
+  for (let r = 1; r <= maxRow; r++) {
+    const row = ws.getRow(r);
+    const cells: (SheetCell | null)[] = [];
+    for (let c = 1; c <= maxCol; c++) {
+      if (covered.has(`${r}:${c}`)) {
+        cells.push(null);
+        continue;
+      }
+      const m = merges.find((x) => x.r1 === r && x.c1 === c);
+      if (m) for (let rr = m.r1; rr <= m.r2; rr++) for (let cc = m.c1; cc <= m.c2; cc++) if (rr !== r || cc !== c) covered.add(`${rr}:${cc}`);
+      const cell = row.getCell(c);
+      const f = cell.font ?? {};
+      const fill = cell.fill as { type?: string; fgColor?: { argb?: string } } | undefined;
+      const al = cell.alignment ?? {};
+      const b = cell.border ?? {};
+      const style: Record<string, string | number> = {};
+      if (f.bold) style.fontWeight = 700;
+      if (f.italic) style.fontStyle = "italic";
+      if (f.size) style.fontSize = `${f.size}pt`;
+      if (argb(f.color)) style.color = argb(f.color)!;
+      if (fill?.type === "pattern" && argb(fill.fgColor)) style.background = argb(fill.fgColor)!;
+      if (al.horizontal) style.textAlign = al.horizontal === "centerContinuous" ? "center" : al.horizontal;
+      if (al.vertical) style.verticalAlign = al.vertical === "middle" ? "middle" : al.vertical;
+      if (al.wrapText) style.whiteSpace = "pre-wrap";
+      const bt = borderCss(b.top as never);
+      const bl = borderCss(b.left as never);
+      const bb = borderCss((m ? ws.getCell(m.r2, c).border?.bottom : b.bottom) as never);
+      const br = borderCss((m ? ws.getCell(r, m.c2).border?.right : b.right) as never);
+      if (bt) style.borderTop = bt;
+      if (bl) style.borderLeft = bl;
+      if (bb) style.borderBottom = bb;
+      if (br) style.borderRight = br;
+      let t = text(cell.value);
+      if (typeof cell.value === "number" && !Number.isInteger(cell.value)) t = fmtHours(cell.value);
+      if (t.startsWith("=")) t = "";
+      cells.push({ text: t, colSpan: m ? m.c2 - m.c1 + 1 : 1, rowSpan: m ? m.r2 - m.r1 + 1 : 1, style });
+    }
+    // like Excel: left-aligned text runs on into empty cells to the right, up to the next filled one
+    cells.forEach((c, i) => {
+      if (!c?.text || c.style.whiteSpace || (c.style.textAlign && c.style.textAlign !== "left")) return;
+      const own = widths.slice(i, i + c.colSpan).reduce((a, b) => a + b, 0);
+      let extra = 0;
+      for (let k = i + c.colSpan; k < cells.length; k++) {
+        const n = cells[k];
+        if (n === null || n.text) break;
+        extra += widths[k];
+      }
+      if (extra) c.spill = (own + extra) / own;
+    });
+    rows.push({ height: Math.round((row.height ?? 15) * 1.33), cells });
+  }
+  return { widths, rows };
 }
 
 async function toBlob(wb: Workbook) {
@@ -175,20 +289,15 @@ export async function defaultWorkbook(sd: SheetData, s: TimesheetSettings) {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(s.title.slice(0, 31) || "Zeitschein", { pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1 } });
-  const cols: [TemplateColumnField, string, number][] = [
-    ["wochentag", "Tag", 6],
-    ["datum", "Datum", 12],
-    ["beginn", "Beginn", 9],
-    ["ende", "Ende", 9],
-    ...(s.showPause ? [["pause", "Pause (min)", 11] as [TemplateColumnField, string, number]] : []),
-    ["stunden", "Stunden", 10],
-    ...(s.showActivity ? [["taetigkeit", "Tätigkeit", 48] as [TemplateColumnField, string, number]] : [])
-  ];
+  const widths: Record<TemplateColumnField, number> = { wochentag: 6, datum: 12, beginn: 9, ende: 9, pause: 11, stunden: 10, taetigkeit: 48 };
+  const designed = s.columns?.length ? s.columns : (Object.keys(widths) as TemplateColumnField[]).map((key) => ({ key, label: COLUMN_FIELDS[key], on: key === "pause" ? s.showPause : key === "taetigkeit" ? s.showActivity : true }));
+  const cols: [TemplateColumnField, string, number][] = designed.filter((c) => c.on).map((c) => [c.key, c.label, widths[c.key]]);
+  if (!cols.some(([k]) => k === "stunden")) cols.push(["stunden", "Stunden", 10]);
   ws.columns = cols.map(([, , w]) => ({ width: w }));
   const last = String.fromCharCode(64 + cols.length);
   ws.mergeCells(`A1:${last}1`);
   ws.getCell("A1").value = `${s.title} – ${sd.kw}`;
-  ws.getCell("A1").font = { bold: true, size: 16 };
+  ws.getCell("A1").font = { bold: true, size: 16, color: { argb: `FF${(s.accent ?? "#111827").slice(1)}` } };
   const info: [string, string][] = [
     ["Mitarbeiter", `${sd.employee?.name ?? ""}${sd.employee?.staffNo ? ` (Nr. ${sd.employee.staffNo})` : ""}`],
     [sd.leasing ? "Verleiher" : "Firma", sd.leasing ? sd.verleiher : sd.firma],
@@ -207,8 +316,8 @@ export async function defaultWorkbook(sd: SheetData, s: TimesheetSettings) {
   cols.forEach(([, label], i) => {
     const c = ws.getRow(head).getCell(i + 1);
     c.value = label;
-    c.font = { bold: true };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7EEF9" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${(s.accent ?? "#1b57b8").slice(1)}` } };
+    c.font = { bold: true, color: { argb: "FFFFFFFF" } };
     c.border = border;
   });
   sd.rows.forEach((r, i) => {
@@ -222,8 +331,10 @@ export async function defaultWorkbook(sd: SheetData, s: TimesheetSettings) {
   });
   const sumRow = head + 1 + sd.rows.length;
   const hoursCol = cols.findIndex(([k]) => k === "stunden") + 1;
-  ws.getRow(sumRow).getCell(hoursCol - 1).value = "Summe";
-  ws.getRow(sumRow).getCell(hoursCol - 1).font = { bold: true };
+  if (hoursCol > 1) {
+    ws.getRow(sumRow).getCell(hoursCol - 1).value = "Summe";
+    ws.getRow(sumRow).getCell(hoursCol - 1).font = { bold: true };
+  }
   const sc = ws.getRow(sumRow).getCell(hoursCol);
   sc.value = sd.total;
   sc.numFmt = "0.00";

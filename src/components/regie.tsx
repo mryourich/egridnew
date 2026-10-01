@@ -1,5 +1,6 @@
 "use client";
 
+import { PhotoField } from "./photo-field";
 import { Eraser, FileText, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, isoWeek, today, weekdayShort } from "@/lib/date";
@@ -32,10 +33,18 @@ export function RegieList({ project, onOpen }: { project: Project; onOpen: (r: P
                 </strong>
                 <span className="chip-static">{hours} h</span>
                 <span className="chip-static">{r.materials.length} Material</span>
+                {(r.photos ?? []).length > 0 && <span className="chip-static">{r.photos!.length} Fotos</span>}
                 {r.signature ? <span className="chip-static chip-ok">unterschrieben{r.signedBy ? ` · ${r.signedBy}` : ""}</span> : <span className="chip-static chip-warn">nicht unterschrieben</span>}
               </div>
               <p className="prose">{r.description}</p>
               {r.orderedBy && <small className="muted">Beauftragt von {r.orderedBy}</small>}
+              {(r.photos ?? []).length > 0 && (
+                <div className="rc-thumbs">
+                  {r.photos!.slice(0, 5).map((src, i) => (
+                    <img key={i} src={src} alt="" />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="rc-actions" onClick={(e) => e.stopPropagation()}>
               <a className="btn btn-sm btn-primary" href={`/regieschein/${r.id}`} target="_blank" rel="noreferrer">
@@ -143,7 +152,8 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
     materials: regie.materials ?? [],
     authorId: regie.authorId ?? data.currentUserId,
     signature: regie.signature ?? "",
-    signedBy: regie.signedBy ?? ""
+    signedBy: regie.signedBy ?? "",
+    photos: regie.photos ?? []
   });
   const set = (patch: Partial<RegieReport>) => setV((o) => ({ ...o, ...patch }));
   const hours = v.workers.reduce((s, w) => s + (w.hours || 0), 0);
@@ -213,6 +223,8 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
               <textarea rows={4} autoFocus={isNew} value={v.description} onChange={(e) => set({ description: e.target.value })} placeholder="Was wurde zusätzlich gemacht und warum?" />
             </label>
           </div>
+
+          <PhotoField photos={v.photos ?? []} onChange={(photos) => set({ photos })} hint="z. B. vorher / nachher – die Fotos erscheinen im Regieschein-PDF." />
 
           <section className="detail-section">
             <header>
