@@ -125,7 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["issues", "reports", "regie", "materials", "times", "siteNodes", "photos", "jobs", "folders", "files"] as const) {
+        for (const k of ["issues", "reports", "regie", "materials", "times", "plans", "siteNodes", "photos", "jobs", "folders", "files"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
       }
@@ -202,7 +202,8 @@ export function currentUser(data: Data) {
 
 /** Projects are private: only the creator and invited members see them. Finished ones only on request. */
 export function myProjects(data: Data, userId = data.currentUserId, withDone = false) {
-  return data.projects.filter((p) => (withDone || p.status !== "abgeschlossen") && isMember(p, userId));
+  const all = seesAll(roleOf(data.employees.find((e) => e.id === userId)));
+  return data.projects.filter((p) => (withDone || p.status !== "abgeschlossen") && (all || isMember(p, userId)));
 }
 
 export function isMember(p: Project, userId: string) {
@@ -218,6 +219,8 @@ export function projectTeam(data: Data, p: Project) {
 export type Role = AccessRole;
 
 export const roleLabel: Record<Role, string> = {
+  admin: "Admin",
+  buero: "Büro",
   pl: "Projektleitung",
   bl: "Bauleitung",
   mk: "Montagekoordination",
@@ -231,12 +234,26 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
   if (r.includes("koordinat")) return "mk";
+  if (r.includes("geschäftsf") || r.includes("admin")) return "admin";
+  if (r.includes("büro") || r.includes("buero") || r.includes("office")) return "buero";
   return "monteur";
 }
 
 /** Workers may add and tick off, but never delete. */
 export function canDelete(data: Data) {
-  return roleOf(currentUser(data)) !== "monteur";
+  const r = roleOf(currentUser(data));
+  return r !== "monteur" && r !== "buero";
+}
+
+/** Admin and office see every project of the company. */
+export function seesAll(role: Role) {
+  return role === "admin" || role === "buero";
+}
+
+/** Who may release Regieberichte (and later hours). */
+export function canRelease(data: Data) {
+  const r = roleOf(currentUser(data));
+  return r === "admin" || r === "buero" || r === "pl";
 }
 
 /** People that can be put on a site. */
@@ -246,5 +263,6 @@ export function plannable(data: Data) {
 
 /** Everybody except workers may create projects, invite people and manage the team. */
 export function isManager(data: Data) {
-  return roleOf(currentUser(data)) !== "monteur";
+  const r = roleOf(currentUser(data));
+  return r !== "monteur" && r !== "buero";
 }

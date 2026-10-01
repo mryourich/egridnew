@@ -1,14 +1,15 @@
 "use client";
 
-import { AlertTriangle, Bell, CalendarRange, Camera, ClipboardList, Clock, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, ListTodo, LogOut, Package, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
+import { AlertTriangle, Bell, Map as MapIcon, CalendarRange, Camera, ClipboardList, Clock, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, ListTodo, LogOut, Package, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { siteSections } from "@/lib/sections";
+import { sectionsFor } from "@/lib/sections";
 import { shortPath } from "@/lib/site";
 import { currentUser, employeeName, fmtStamp, isManager, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
 import { myTasks } from "@/lib/tasks";
 import { Editor, type EditorTarget } from "./editors";
+import { OfflineSupport } from "./offline";
 import { Avatar } from "./ui";
 
 const EditorContext = createContext<(target: EditorTarget) => void>(() => {});
@@ -33,7 +34,7 @@ function Frame({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<EditorTarget | null>(null);
   const role = roleOf(currentUser(data));
   const tasks = myTasks(data).length;
-  const everyone: Role[] = ["pl", "bl", "mk", "monteur"];
+  const everyone: Role[] = ["admin", "pl", "bl", "mk", "buero", "monteur"];
 
   const modules: Module[] = (
     [
@@ -107,6 +108,7 @@ function Frame({ children }: { children: ReactNode }) {
 
         {target && <Editor target={target} onClose={() => setTarget(null)} />}
         {toast && <div className="toast">{toast}</div>}
+        <OfflineSupport />
       </div>
     </EditorContext.Provider>
   );
@@ -324,7 +326,7 @@ function UserSwitch({ up = false }: { up?: boolean }) {
             <LogOut size={12} /> Anmelden als (Demo)
           </small>
           {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Mitarbeiter verwalten“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
-          {(["pl", "bl", "mk", "monteur"] as Role[])
+          {(["admin", "pl", "bl", "mk", "buero", "monteur"] as Role[])
             .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
             .map((r) => (
             <div key={r} className="menu-group">
@@ -362,7 +364,8 @@ const SECTION_ICONS: Record<string, typeof Home> = {
   berichte: ClipboardList,
   dokumente: FolderOpen,
   uebersicht: LayoutDashboard,
-  zeiten: Clock
+  zeiten: Clock,
+  plaene: MapIcon
 };
 
 /** Sidebar: my projects with their picture. */
@@ -403,9 +406,7 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
   const section = pathname.split("/")[3];
   return (
     <nav className="proj-tabs" aria-label="Bereiche">
-      {siteSections
-        .filter((s) => s.roles.includes(role))
-        .map((s) => {
+      {sectionsFor(data, role).map((s) => {
           const Icon = SECTION_ICONS[s.key];
           return (
             <Link key={s.key} href={`/projekte/${projectId}/${s.key}`} className={section === s.key ? "active" : ""}>

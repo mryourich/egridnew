@@ -1,6 +1,7 @@
 "use client";
 
 import { fileBytes, safeName } from "@/lib/files";
+import { exifInfo } from "@/lib/exif";
 import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
@@ -19,9 +20,10 @@ export function PhotoAddButton({ projectId, nodeId, label = "Foto", className = 
     if (!files?.length) return;
     const list = Array.from(files);
     for (const file of list) {
-      const dataUrl = await downscale(file, 1024);
+      const [dataUrl, exif] = await Promise.all([downscale(file, 1024), exifInfo(file)]);
       const now = new Date();
-      const takenAt = `${today()}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      // capture time from the picture itself when the camera stored it
+      const takenAt = exif.takenAt ?? `${today()}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const caption = /^(image|img|photo|dsc|pxl)[_-]?\d*/i.test(file.name) ? "" : file.name.replace(/\.[^.]+$/, "");
       save("photos", { id: uid("f"), projectId, nodeId, dataUrl, caption, takenAt, authorId: data.currentUserId }, "Foto hinzugefügt");
     }

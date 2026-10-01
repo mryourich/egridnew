@@ -1,10 +1,10 @@
 "use client";
 
 import { PhotoField } from "./photo-field";
-import { Eraser, FileText, Plus, Trash2, X } from "lucide-react";
+import { CheckCircle2, Eraser, FileText, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, isoWeek, today, weekdayShort } from "@/lib/date";
-import { canDelete, employeeName, projectTeam, uid, useStore } from "@/lib/store";
+import { canDelete, canRelease, employeeName, fmtStamp, nowStamp, projectTeam, uid, useStore } from "@/lib/store";
 import type { Project, RegieReport } from "@/lib/types";
 import { EmpAvatar } from "./person";
 import { Empty, Portal } from "./ui";
@@ -12,7 +12,8 @@ import { Empty, Portal } from "./ui";
 /* ---------------------------------------------------------------- list */
 
 export function RegieList({ project, onOpen }: { project: Project; onOpen: (r: Partial<RegieReport>) => void }) {
-  const { data } = useStore();
+  const { data, save } = useStore();
+  const release = canRelease(data);
   const list = data.regie.filter((r) => r.projectId === project.id).sort((a, b) => b.no - a.no);
   if (!list.length) return <Empty>Noch keine Regiescheine. Zusatzarbeiten, die nicht im LV stehen, hier festhalten und vom Auftraggeber unterschreiben lassen.</Empty>;
   return (
@@ -35,6 +36,13 @@ export function RegieList({ project, onOpen }: { project: Project; onOpen: (r: P
                 <span className="chip-static">{r.materials.length} Material</span>
                 {(r.photos ?? []).length > 0 && <span className="chip-static">{r.photos!.length} Fotos</span>}
                 {r.signature ? <span className="chip-static chip-ok">unterschrieben{r.signedBy ? ` · ${r.signedBy}` : ""}</span> : <span className="chip-static chip-warn">nicht unterschrieben</span>}
+                {r.approvedAt ? (
+                  <span className="chip-static chip-ok" title={`${employeeName(data, r.approvedBy ?? "")} · ${fmtStamp(r.approvedAt)}`}>
+                    freigegeben · {employeeName(data, r.approvedBy ?? "")}
+                  </span>
+                ) : (
+                  <span className="chip-static">nicht freigegeben</span>
+                )}
               </div>
               <p className="prose">{r.description}</p>
               {r.orderedBy && <small className="muted">Beauftragt von {r.orderedBy}</small>}
@@ -47,6 +55,22 @@ export function RegieList({ project, onOpen }: { project: Project; onOpen: (r: P
               )}
             </div>
             <div className="rc-actions" onClick={(e) => e.stopPropagation()}>
+              {release && !r.approvedAt && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={!r.signature}
+                  title={r.signature ? "Regiebericht freigeben (für Abrechnung)" : "Erst nach der Unterschrift des Auftraggebers"}
+                  onClick={() => save("regie", { ...r, approvedBy: data.currentUserId, approvedAt: nowStamp() }, `Regieschein Nr. ${r.no} freigegeben`)}
+                >
+                  <CheckCircle2 size={14} /> Freigeben
+                </button>
+              )}
+              {release && r.approvedAt && (
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => window.confirm("Freigabe zurücknehmen?") && save("regie", { ...r, approvedBy: undefined, approvedAt: undefined }, `Freigabe Regieschein Nr. ${r.no} zurückgenommen`)}>
+                  Freigabe zurücknehmen
+                </button>
+              )}
               <a className="btn btn-sm btn-primary" href={`/regieschein/${r.id}`} target="_blank" rel="noreferrer">
                 <FileText size={14} /> PDF
               </a>

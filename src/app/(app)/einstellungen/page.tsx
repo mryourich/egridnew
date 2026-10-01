@@ -1,16 +1,18 @@
 "use client";
 
-import { Clock, Download, RotateCcw, Upload, Users } from "lucide-react";
+import { Download, RotateCcw, Upload, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
 import { today } from "@/lib/date";
-import { isManager, myProjects, useStore } from "@/lib/store";
-import type { Data } from "@/lib/types";
+import { hasModule, MODULES } from "@/lib/sections";
+import { currentUser, isManager, roleOf, useStore } from "@/lib/store";
+import type { Data, ModuleKey } from "@/lib/types";
 
 export default function SettingsPage() {
   const { data, setCompany, replaceAll, reset, notify } = useStore();
   const admin = isManager(data);
+  const isAdmin = roleOf(currentUser(data)) === "admin";
   const [name, setName] = useState(data.company.name);
   const [address, setAddress] = useState(data.company.address);
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function SettingsPage() {
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Einstellungen" subtitle="Mitarbeiter, Zeitscheine, Firmendaten und Datensicherung" />
+      <PageHeader title="Einstellungen" subtitle="Mitarbeiter, Firmendaten und Datensicherung" />
       <div className="stack">
         {admin && (
           <Card title="Mitarbeiter">
@@ -64,13 +66,40 @@ export default function SettingsPage() {
           </Card>
         )}
         {admin && (
-          <Card title="Zeitscheine">
-            <p className="muted small">Zeitschein gestalten oder eure Excel-Vorlage hochladen: in einem Projekt unter „Zeiten“ – die Einstellung gilt für alle Projekte.</p>
-            {myProjects(data)[0] && (
-              <Link href={`/projekte/${myProjects(data)[0].id}/zeiten?ansicht=design`} className="btn">
-                <Clock size={15} /> Zeitschein gestalten
-              </Link>
-            )}
+          <Card title="Module (Lizenz)">
+            <ul className="mod-list">
+              {MODULES.map((m) => {
+                const on = m.key === "tech" || hasModule(data, m.key);
+                return (
+                  <li key={m.key} className={on ? "on" : ""}>
+                    <span>
+                      <strong>{m.name}</strong>
+                      <small>{m.text}</small>
+                    </span>
+                    {m.key === "tech" ? (
+                      <em>immer aktiv</em>
+                    ) : !m.ready ? (
+                      <em>kommt</em>
+                    ) : (
+                      <label className="switch" title={isAdmin ? "" : "Nur der Admin ändert die Lizenz"}>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={!isAdmin}
+                          onChange={(e) => {
+                            const cur = data.company.modules ?? ["grid"];
+                            setCompany({ ...data.company, modules: e.target.checked ? [...cur.filter((x) => x !== m.key), m.key as ModuleKey] : cur.filter((x) => x !== m.key) });
+                            notify(`${m.name} ${e.target.checked ? "aktiviert" : "deaktiviert"}`);
+                          }}
+                        />
+                        <i />
+                      </label>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {!isAdmin && <p className="muted small">Module ändert der Admin der Firma.</p>}
           </Card>
         )}
         <Card title="Firma">

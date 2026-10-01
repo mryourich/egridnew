@@ -38,6 +38,7 @@ export function createEmpty(): Data {
     regie: [],
     materials: [],
     times: [],
+    plans: [],
     articles: [],
     notes: [],
     folders: generalFolders(),
@@ -90,6 +91,8 @@ export function createSeed(): Data {
       { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
       { id: "e9", name: "Petra Koller", role: "Projektleiterin", access: "pl", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
       { id: "e17", name: "Thomas Ebner", role: "Montagekoordinator", access: "mk", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
+      { id: "e18", name: "Claudia Fink", role: "Büro / Lohnverrechnung", access: "buero", department: "Büro", team: "Büro", phone: "+43 660 7788990", email: "claudia@example.at", hourlyRate: 0, qualifications: [], active: true },
+      { id: "e19", name: "Gerhard Lindner", role: "Geschäftsführer", access: "admin", department: "Geschäftsführung", team: "Geschäftsführung", phone: "+43 660 9900112", email: "gerhard@example.at", hourlyRate: 0, qualifications: [], active: true },
       { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     absences: [
@@ -100,8 +103,8 @@ export function createSeed(): Data {
       { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" }
     ],
     issues: [
-      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "/demo/foto3.jpg", nodeId: "n7" },
-      { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "/demo/foto8.jpg", nodeId: "n1" },
+      { id: "i1", projectId: "p2", plan: { planId: "pl1", x: 0.62, y: 0.27 }, kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "/demo/foto3.jpg", nodeId: "n7" },
+      { id: "i2", projectId: "p2", plan: { planId: "pl1", x: 0.83, y: 0.7 }, kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "/demo/foto8.jpg", nodeId: "n1" },
       { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "", nodeId: "n16" },
       { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: demoPhoto("UV-P1 ohne Beschriftung", 40), nodeId: "n24", fixPhoto: demoPhoto("UV-P1 beschriftet", 140), fixNote: "Alle Stromkreise beschriftet, Plan in der Tür.", fixedAt: d(-1), fixedBy: "e5" },
       { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "/demo/foto2.jpg", nodeId: "n21" }
@@ -168,6 +171,7 @@ export function createSeed(): Data {
       { id: "g1", projectId: "p2", no: 1, date: d(-2), orderedBy: "Hr. Leitner (ASFINAG)", description: "Zusätzliche Notbeleuchtung im Querschlag 3 montiert und angeschlossen – nicht im LV enthalten.", workers: [{ employeeId: "e4", hours: 4 }, { employeeId: "e8", hours: 4 }], materials: [{ artNo: "LED-NB-12", name: "Notleuchte LED 12 W", qty: 2, unit: "Stk" }, { artNo: "", name: "NYM-J 3×1,5", qty: 25, unit: "m" }], authorId: "e2", signature: "", signedBy: "" }
     ],
     times: [],
+    plans: [{ id: "pl1", projectId: "p2", name: "Grundriss Ebene 2", dataUrl: "/demo/tunnel-plan.png", width: 2200, height: 1100, addedAt: d(-20), addedBy: "e2" }],
     materials: [
       { id: "m1", projectId: "p2", artNo: "300013261", name: "Kabelschuh 50/M10", qty: 150, unit: "Stk", status: "bestellt", createdAt: d(-6) },
       { id: "m2", projectId: "p2", artNo: "300025001", name: "Kabelschuh 120/M10", qty: 60, unit: "Stk", status: "bestellt", createdAt: d(-6) },

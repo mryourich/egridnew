@@ -54,7 +54,8 @@ export type Qualification = {
 };
 
 /** What a user may do: project management, site management, assembly coordination or worker. */
-export type AccessRole = "pl" | "bl" | "mk" | "monteur";
+/** admin: everything of the company · pl/bl/mk: project, site and assembly management · buero: reads all sites, releases reports · monteur: works on site */
+export type AccessRole = "admin" | "pl" | "bl" | "mk" | "buero" | "monteur";
 
 export type Employee = {
   id: string;
@@ -162,11 +163,25 @@ export type Issue = Tracked & {
   createdAt: ISODate;
   photo: string;
   nodeId?: string;
+  /** Position on a plan (0…1 of width / height). */
+  plan?: { planId: string; x: number; y: number };
   /** Proof of the fix. */
   fixPhoto?: string;
   fixNote?: string;
   fixedAt?: ISODate;
   fixedBy?: string;
+};
+
+/** A drawing of the site (floor plan, section …) – PDF pages are stored as pictures. */
+export type SitePlan = Tracked & {
+  id: string;
+  projectId: string;
+  name: string;
+  dataUrl: string;
+  width: number;
+  height: number;
+  addedAt: ISODate;
+  addedBy: string;
 };
 
 export type DailyReport = Tracked & {
@@ -196,6 +211,9 @@ export type RegieReport = Tracked & {
   authorId: string;
   /** Photos of the extra work (data URLs). */
   photos?: string[];
+  /** Released by the office / project management. */
+  approvedBy?: string;
+  approvedAt?: string;
   /** Client signature (data URL) and name. */
   signature: string;
   signedBy: string;
@@ -329,6 +347,8 @@ export type TimesheetSettings = {
 export type TimesheetFact = "mitarbeiter" | "personalnummer" | "firma" | "projekt" | "kunde" | "ort" | "bauleitung" | "zeitraum";
 export type DesignItem<K extends string> = { key: K; label: string; on: boolean };
 
+export type ModuleKey = "grid" | "projects" | "ai";
+
 export type Company = {
   /** Tenant id – every company that buys VYSNER gets its own. */
   tenantId: string;
@@ -336,6 +356,8 @@ export type Company = {
   address: string;
   workdays: number[];
   timesheet?: TimesheetSettings;
+  /** Licensed modules besides TECH (always on), e.g. ["grid"]. Empty/missing = default set. */
+  modules?: ModuleKey[];
 };
 
 export type Data = {
@@ -354,6 +376,7 @@ export type Data = {
   regie: RegieReport[];
   materials: Material[];
   times: TimeEntry[];
+  plans: SitePlan[];
   articles: Article[];
   notes: Note[];
   folders: DocFolder[];

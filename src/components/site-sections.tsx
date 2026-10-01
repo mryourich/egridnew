@@ -86,6 +86,7 @@ export function DefectsSection({ projectId }: { projectId: string }) {
                 <div className="issue-main">
                   <div className="row-inline">
                     {i.kind !== "mangel" && <Badge tone={L.issueKind[i.kind].tone}>{L.issueKind[i.kind].label}</Badge>}
+                    {i.plan && <Badge tone="blue">auf Plan</Badge>}
                     <Badge tone={L.severity[i.severity].tone}>{L.severity[i.severity].label}</Badge>
                     <strong>{i.title}</strong>
                   </div>
