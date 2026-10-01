@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, ChevronRight, Folder, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, Copy, ChevronRight, Folder, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { fmtShort, today } from "@/lib/date";
+import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { childrenOf, isArea, nodeStatus, pathOf, pointsUnder } from "@/lib/site";
 import { canDelete, employeeName, isManager, projectTeam, uid, useStore } from "@/lib/store";
@@ -16,6 +17,11 @@ import { Empty, Portal, SearchInput } from "./ui";
 
 type Menu = { x: number; y: number; node: SiteNode };
 
+/** Assigns a point and logs it, so the person finds it under "Meine Aufgaben" on the start page. */
+function assignPoint(save: ReturnType<typeof useStore>["save"], data: ReturnType<typeof useStore>["data"], node: SiteNode, id: string) {
+  save("siteNodes", { ...node, assigneeId: id }, id ? `${node.title} → ${employeeName(data, id)} zugewiesen` : `${node.title}: Zuweisung entfernt`);
+}
+
 /** Open points: area tree on the left, checkable points on the right – everything inline, details in a side panel. */
 export function SiteStructure({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
@@ -28,6 +34,15 @@ export function SiteStructure({ project }: { project: Project }) {
   const [renaming, setRenaming] = useState("");
   const [menu, setMenu] = useState<Menu | null>(null);
   const [query, setQuery] = useState("");
+  // ?punkt=<id> opens a point directly (e.g. from "Meine Aufgaben")
+  const punkt = useSearchParams().get("punkt");
+  useEffect(() => {
+    const n = punkt && nodes.find((x) => x.id === punkt);
+    if (!n) return;
+    setOpenPoint(n.id);
+    if (n.parentId) setArea(n.parentId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [punkt]);
 
   const selected = nodes.find((n) => n.id === area);
   const scope = selected ? pointsUnder(nodes, selected.id) : nodes.filter((n) => !isArea(nodes, n));
@@ -52,6 +67,11 @@ export function SiteStructure({ project }: { project: Project }) {
     return out;
   }, [nodes, selected]);
   const looseRoots = !selected ? childrenOf(nodes, "").filter((n) => !isArea(nodes, n)) : [];
+  // groups that actually show (pure container areas are skipped) – numbered 1, 2, 3 …
+  const shownGroups = groups.filter((g) => {
+    const own = childrenOf(nodes, g.id).filter((n) => !isArea(nodes, n) && n.status !== "erledigt");
+    return !(childrenOf(nodes, g.id).some((k) => isArea(nodes, k)) && own.length === 0 && g !== selected);
+  });
 
   const toggle = (id: string) =>
     setCollapsed((c) => {
@@ -77,6 +97,37 @@ export function SiteStructure({ project }: { project: Project }) {
   };
 
   const countPoints = (id: string) => pointsUnder(nodes, id).length;
+
+  /** Copies an area with all sub-areas and points (as open, unassigned) right below the original. */
+  const duplicate = (src: SiteNode) => {
+    const base = Date.now();
+    let n = 0;
+    const copy = (node: SiteNode, parentId: string, top: boolean): string => {
+      const id = uid("n");
+      save(
+        "siteNodes",
+        {
+          id,
+          projectId: project.id,
+          parentId,
+          title: top ? `${node.title} (Kopie)` : node.title,
+          description: node.description,
+          status: "offen",
+          assigneeId: "",
+          due: "",
+          order: top ? node.order + 0.5 : base + n++,
+          kind: node.kind ?? (isArea(nodes, node) ? "area" : "point")
+        },
+        top ? `Bereich ${node.title} dupliziert` : undefined
+      );
+      for (const k of childrenOf(nodes, node.id)) copy(k, id, false);
+      return id;
+    };
+    const id = copy(src, src.parentId, true);
+    setArea(id);
+    setRenaming(id);
+    notify(`„${src.title}“ dupliziert – ${countPoints(src.id)} Punkte`);
+  };
 
   const areaTree = (parentId: string, depth: number): React.ReactNode =>
     childrenOf(nodes, parentId)
@@ -121,7 +172,12 @@ export function SiteStructure({ project }: { project: Project }) {
               ) : (
                 <span className="at-title">
                   {n.title}
-                  <small>{countPoints(n.id)} Punkte</small>
+                  <small>
+                    {pointsUnder(nodes, n.id).filter((x) => x.status === "erledigt").length}/{countPoints(n.id)}
+                  </small>
+                  <span className="bar at-bar">
+                    <i style={{ width: `${countPoints(n.id) ? (pointsUnder(nodes, n.id).filter((x) => x.status === "erledigt").length / countPoints(n.id)) * 100 : 0}%` }} />
+                  </span>
                 </span>
               )}
               {manager && (
@@ -216,38 +272,38 @@ export function SiteStructure({ project }: { project: Project }) {
               <i>{pct}%</i>
             </span>
             <span>
-              <small>Gesamt</small>
               <strong>
-                {doneCount}/{scope.length}
+                {doneCount} / {scope.length}
               </strong>
+              <small>Punkte erledigt</small>
             </span>
           </div>
           <div className="op-kpi">
             <i className="kdot" style={{ background: "#1463ff" }} />
             <span>
-              <small>Offen</small>
               <strong>{scope.filter((n) => n.status === "offen").length}</strong>
+              <small>Offen</small>
             </span>
           </div>
           <div className="op-kpi">
             <i className="kdot" style={{ background: "#f59e0b" }} />
             <span>
-              <small>In Arbeit</small>
               <strong>{scope.filter((n) => n.status === "in_arbeit").length}</strong>
+              <small>In Arbeit</small>
             </span>
           </div>
           <div className="op-kpi">
             <i className="kdot" style={{ background: "#ef4444" }} />
             <span>
-              <small>Mängel</small>
               <strong>{openIssues.length}</strong>
+              <small>Mängel</small>
             </span>
           </div>
           <div className="op-kpi">
-            <i className="kdot" style={{ background: "#10b981" }} />
+            <i className="kdot" style={{ background: "#ef4444" }} />
             <span>
-              <small>Erledigt</small>
-              <strong>{doneCount}</strong>
+              <strong>{scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length}</strong>
+              <small>Überfällig</small>
             </span>
           </div>
         </div>
@@ -255,10 +311,12 @@ export function SiteStructure({ project }: { project: Project }) {
         <div className="card card-flush op-list">
           <div className="op-row op-th">
             <span />
-            <span>Titel</span>
-            <span>Zugewiesen</span>
-            <span>Anhänge</span>
-            <span>Mangel</span>
+            <span>Punkt</span>
+            <span>Status</span>
+            <span>Verantwortlich</span>
+            <span>Fällig am</span>
+            <span>Mängel</span>
+            <span>Fotos</span>
           </div>
           {groups.length === 0 && looseRoots.length === 0 && <Empty>{manager ? "Noch keine Bereiche – links „+ Bereich“." : "Noch keine Punkte."}</Empty>}
           {looseRoots.filter((n) => n.status !== "erledigt" && (!q || n.title.toLowerCase().includes(q))).map((n) => (
@@ -266,6 +324,8 @@ export function SiteStructure({ project }: { project: Project }) {
           ))}
           {groups.map((g) => {
             const own = childrenOf(nodes, g.id).filter((n) => !isArea(nodes, n) && open.includes(n));
+            const all = childrenOf(nodes, g.id).filter((n) => !isArea(nodes, n));
+            const fin = all.filter((n) => n.status === "erledigt").length;
             const container = childrenOf(nodes, g.id).some((k) => isArea(nodes, k));
             // pure container areas only show up when they hold points or are selected themselves
             if (container && own.length === 0 && g !== selected) return null;
@@ -274,12 +334,20 @@ export function SiteStructure({ project }: { project: Project }) {
               <div key={g.id} className="op-group">
                 {showHead && (
                   <button type="button" className="op-group-head" onClick={() => setArea(g.id)}>
-                    <Folder size={13} />
-                    {pathOf(nodes, g.id)
-                      .slice(selected ? pathOf(nodes, selected.id).length - 1 : 0)
-                      .map((p) => p.title)
-                      .join(" › ")}
-                    <small>{own.length} offen</small>
+                    <span
+                      className="og-title"
+                      title={pathOf(nodes, g.id)
+                        .map((p) => p.title)
+                        .join(" › ")}
+                    >
+                      {shownGroups.indexOf(g) + 1}. {g.title}
+                    </span>
+                    <small>
+                      {fin}/{all.length} erledigt
+                    </small>
+                    <span className="bar og-bar">
+                      <i style={{ width: `${all.length ? (fin / all.length) * 100 : 0}%` }} />
+                    </span>
                   </button>
                 )}
                 {own.map((n) => (
@@ -317,6 +385,9 @@ export function SiteStructure({ project }: { project: Project }) {
             </button>
             <button type="button" onClick={() => (setAdding(menu.node.id), setMenu(null))}>
               <Plus size={14} /> Unterbereich
+            </button>
+            <button type="button" onClick={() => (duplicate(menu.node), setMenu(null))}>
+              <Copy size={14} /> Duplizieren
             </button>
             {canDelete(data) && (
               <button
@@ -392,9 +463,13 @@ function AddPointRow({ onAdd }: { onAdd: (title: string) => void }) {
 function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project: Project; onOpen: (id: string) => void; onStatus: (n: SiteNode, s: NodeStatus) => void }) {
   const { data, save } = useStore();
   const team = projectTeam(data, project);
-  const photos = data.photos.filter((p) => p.nodeId === node.id).length;
+  const photos = data.photos.filter((p) => p.nodeId === node.id).sort((a, b) => b.takenAt.localeCompare(a.takenAt));
   const issues = data.issues.filter((i) => i.nodeId === node.id && i.status !== "erledigt").length;
-  const overdue = node.due && node.due < today() && node.status !== "erledigt";
+  const overdue = !!node.due && node.due < today() && node.status !== "erledigt";
+  const assign = (id: string) => assignPoint(save, data, node, id);
+  const next: Record<NodeStatus, NodeStatus> = { offen: "in_arbeit", in_arbeit: "erledigt", erledigt: "offen" };
+  const pill = node.status === "erledigt" ? ["green", "Erledigt"] : overdue ? ["red", "Überfällig"] : node.status === "in_arbeit" ? ["blue", "In Arbeit"] : ["gray", "Offen"];
+  const who = node.assigneeId ? data.employees.find((e) => e.id === node.assigneeId) : undefined;
   return (
     <div className={`op-row ${node.status === "erledigt" ? "done" : ""}`} onClick={() => onOpen(node.id)}>
       <span onClick={(e) => e.stopPropagation()}>
@@ -402,13 +477,17 @@ function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project
       </span>
       <span className="op-title">
         <strong>{node.title}</strong>
-        {node.status === "in_arbeit" && <em className="op-chip">In Arbeit</em>}
-        {node.due && node.status !== "erledigt" && <small className={overdue ? "text-red" : "muted"}>bis {fmtShort(node.due)}</small>}
         {node.status === "erledigt" && <Trail item={node} labels={NODE_LABELS} compact />}
       </span>
+      <span className="op-status" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={`pill pill-${pill[0]}`} title="Klick = nächster Status" onClick={() => onStatus(node, next[node.status])}>
+          {pill[1]}
+        </button>
+      </span>
       <span className="op-assignee" onClick={(e) => e.stopPropagation()}>
-        {node.assigneeId ? <EmpAvatar id={node.assigneeId} size={24} /> : <span className="avatar nz">NZ</span>}
-        <select value={node.assigneeId} onChange={(e) => save("siteNodes", { ...node, assigneeId: e.target.value })} aria-label="Zugewiesen">
+        {node.assigneeId ? <EmpAvatar id={node.assigneeId} size={24} /> : <span className="avatar nz">–</span>}
+        <span className="op-who">{who?.name ?? "Nicht zugewiesen"}</span>
+        <select value={node.assigneeId} onChange={(e) => assign(e.target.value)} aria-label="Zugewiesen">
           <option value="">Nicht zugewiesen</option>
           {team.map((e) => (
             <option key={e.id} value={e.id}>
@@ -417,13 +496,15 @@ function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project
           ))}
         </select>
       </span>
-      <span className="op-attach" onClick={(e) => e.stopPropagation()}>
-        {photos > 0 && <em>{photos}</em>}
-        <PhotoAddButton projectId={project.id} nodeId={node.id} className="icon-btn" label="" />
-      </span>
+      <span className={`op-due ${overdue ? "late" : ""}`}>{node.due ? fmt(node.due) : "–"}</span>
       <span className="op-defect" onClick={(e) => e.stopPropagation()}>
-        {issues > 0 && <em className="op-issues">{issues}</em>}
-        <IssueButton projectId={project.id} nodeId={node.id} location={node.title} className="link-btn op-defect-btn" label="Mangel" />
+        {issues > 0 ? <em className="op-issues">{issues}</em> : <span className="op-zero">0</span>}
+        <IssueButton projectId={project.id} nodeId={node.id} location={node.title} className="icon-btn op-defect-btn" label="Mangel" iconOnly />
+      </span>
+      <span className="op-attach" onClick={(e) => e.stopPropagation()}>
+        {photos[0] && <img className="op-thumb" src={photos[0].dataUrl} alt="" />}
+        {photos.length > 1 && <em>+{photos.length - 1}</em>}
+        <PhotoAddButton projectId={project.id} nodeId={node.id} className="icon-btn" label="" />
       </span>
     </div>
   );
@@ -472,7 +553,7 @@ function PointPanel({ node, nodes, project, onClose, onStatus }: { node: SiteNod
           <div className="inline-fields">
             <label>
               <span>Zuständig</span>
-              <select value={node.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
+              <select value={node.assigneeId} onChange={(e) => assignPoint(save, data, node, e.target.value)}>
                 <option value="">Nicht zugewiesen</option>
                 {team.map((e) => (
                   <option key={e.id} value={e.id}>

@@ -960,6 +960,22 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
   const [pos, setPos] = useState({ left: x, top: y });
   const [sub, setSub] = useState<number | null>(null);
   const [flip, setFlip] = useState(false);
+  // like Windows: moving diagonally into an open sub menu must not switch to the item below
+  const hoverTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hover = (next: number | null) => {
+    clearTimeout(hoverTimer.current);
+    if (sub === null) setSub(next);
+    else if (next !== sub) hoverTimer.current = setTimeout(() => setSub(next), 350);
+  };
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+  /** Keeps a sub menu inside the window (moves it up instead of running off the bottom). */
+  const fit = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    el.style.top = "";
+    const r = el.getBoundingClientRect();
+    const over = r.bottom - (window.innerHeight - 8);
+    if (over > 0) el.style.top = `${Math.max(-r.top + 8, el.offsetTop - over)}px`;
+  };
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -992,13 +1008,13 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
       />
       <div ref={ref} className="plan-menu" style={pos} role="menu">
         {items.map((it, i) => (
-          <div key={it.label} className="pm-item-wrap" onMouseEnter={() => setSub(it.colors || it.icons ? i : null)}>
+          <div key={it.label} className="pm-item-wrap" onMouseEnter={() => hover(it.colors || it.icons ? i : null)}>
             <button
               type="button"
               role="menuitem"
               className={`pm-item ${it.danger ? "danger" : ""} ${sub === i ? "open" : ""}`}
               onClick={() => {
-                if (it.colors || it.icons) setSub(i);
+                if (it.colors || it.icons) (clearTimeout(hoverTimer.current), setSub(i));
                 else {
                   onClose();
                   it.onClick?.();
@@ -1010,7 +1026,7 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
               {(it.colors || it.icons) && <ChevronRight size={14} className="pm-chev" />}
             </button>
             {it.icons && sub === i && (
-              <div className={`pm-palette pm-symbols ${flip ? "flip" : ""}`} role="listbox" aria-label="Symbol">
+              <div ref={fit} className={`pm-palette pm-symbols ${flip ? "flip" : ""}`} role="listbox" aria-label="Symbol" onMouseEnter={() => clearTimeout(hoverTimer.current)}>
                 {SYMBOLS.map((ic) => (
                   <button
                     key={ic}
@@ -1027,7 +1043,7 @@ function PlanMenu({ x, y, items, onClose }: { x: number; y: number; items: PlanM
               </div>
             )}
             {it.colors && sub === i && (
-              <div className={`pm-palette ${flip ? "flip" : ""}`} role="radiogroup" aria-label="Farbe">
+              <div ref={fit} className={`pm-palette ${flip ? "flip" : ""}`} role="radiogroup" aria-label="Farbe" onMouseEnter={() => clearTimeout(hoverTimer.current)}>
                 <div className="pm-grid">
                   {PALETTE.flat().map((c) => (
                     <button key={c} type="button" style={{ background: c }} aria-label={c} onClick={() => pick(it, c)} />

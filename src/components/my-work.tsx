@@ -1,12 +1,14 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, Camera, CheckCircle2, MapPin } from "lucide-react";
+import { AlertTriangle, CalendarDays, Camera, CheckCircle2, ListChecks, MapPin } from "lucide-react";
 import Link from "next/link";
 import { addDays, fmt, inRange, isWeekend, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel, shortPath } from "@/lib/site";
 import { currentUser, myProjects, useStore } from "@/lib/store";
 import type { Job } from "@/lib/types";
+import { myTasks } from "@/lib/tasks";
+import { TaskList } from "./my-tasks";
 import { useEditor } from "./shell";
 import { PhotoAddButton } from "./site";
 import { Badge, Dot, Empty } from "./ui";
@@ -105,6 +107,18 @@ export function MyWork() {
             })}
           </ul>
         )}
+      </section>
+
+      <section className="card">
+        <header className="card-header">
+          <h2>
+            <ListChecks size={15} /> Meine Aufgaben
+          </h2>
+          <Link href="/aufgaben" className="link-btn">
+            Alle
+          </Link>
+        </header>
+        <TaskList tasks={myTasks(data).filter((t) => t.kind === "punkt")} limit={8} />
       </section>
 
       {defects.length > 0 && (
