@@ -33,7 +33,7 @@ Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CS
 
 | Pfad | Inhalt |
 | --- | --- |
-| `src/app/page.tsx` | Website (vysnpro.com) |
+| `src/app/page.tsx` | Website (vysner.com) |
 | `src/app/(app)/*` | App: dashboard, projekte, projekte/[id]/[abschnitt], notizen, dokumente, team, einstellungen, demo |
 | `src/app/(print)/*` | PDFs: Tagesbericht, Regieschein, Fotobericht, Mängelbericht |
 | `src/components/site-gantt.tsx` · `planner.tsx` | Plan |
@@ -53,7 +53,7 @@ npm run dev          # http://localhost:3000
 npm run build && npm start
 ```
 
-## Veröffentlichen auf Hostinger (vysnpro.com)
+## Veröffentlichen auf Hostinger (vysner.com)
 
 Die App braucht einen **Node.js-Server** (API-Route und dynamische Seiten wie `/projekte/[id]`).
 Ein reines „Website/Dateimanager“-Hosting zeigt deshalb nichts an. Nach jedem Merge in `main`
@@ -69,7 +69,7 @@ baut Hostinger automatisch neu.
    - Build-Befehl: `npm run build`
    - Startbefehl: `npm start`
    - Paketmanager: `npm`
-4. Domain **vysnpro.com** der Node.js-App zuweisen. Liegt die Domain bei einem anderen
+4. Domain **vysner.com** der Node.js-App zuweisen. Liegt die Domain bei einem anderen
    Anbieter, die Nameserver auf `ns1.dns-parking.com` / `ns2.dns-parking.com` setzen
    (oder A-Record auf die IP aus dem hPanel). DNS kann bis zu 24 h brauchen.
-5. **Deploy** klicken. Test: `https://vysnpro.com/api/health` liefert `{"status":"ok",...}`.
+5. **Deploy** klicken. Test: `https://vysner.com/api/health` liefert `{"status":"ok",...}`.

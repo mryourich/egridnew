@@ -143,7 +143,7 @@ export default function Landing() {
                 <i />
                 <i />
                 <i />
-                <span>vysnpro.com</span>
+                <span>vysner.com</span>
               </div>
               <img src="/landing/plan.jpg" alt="" width={2040} height={990} />
             </div>
