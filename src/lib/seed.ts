@@ -7,7 +7,17 @@ function demoPhoto(label: string, hue: number) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export const DATA_VERSION = 5;
+export const DATA_VERSION = 6;
+
+/** Starting folders of the general document store. */
+export function generalFolders() {
+  return ["Anleitungen", "Montagevorgaben", "Messprotokolle", "Vorlagen"].map((name, i) => ({ id: `gf${i + 1}`, projectId: "", parentId: "", name }));
+}
+
+/** Starting folders of every new project. */
+export function projectFolders(projectId: string) {
+  return ["Pläne", "Leistungsverzeichnis", "Protokolle", "Schriftverkehr"].map((name, i) => ({ id: `${projectId}-f${i + 1}`, projectId, parentId: "", name }));
+}
 
 /** A clean company: only one site-management login, which then creates sites and the team. */
 export function createEmpty(): Data {
@@ -19,13 +29,18 @@ export function createEmpty(): Data {
     employees: [
       { id: "bl", name: "Bauleitung", role: "Bauleitung", access: "bl", department: "Bauleitung", team: "Bauleitung", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
     ],
-    assignments: [],
     absences: [],
     issues: [],
     siteNodes: [],
     jobs: [],
     photos: [],
     reports: [],
+    regie: [],
+    materials: [],
+    articles: [],
+    notes: [],
+    folders: generalFolders(),
+    files: [],
     activity: []
   };
 }
@@ -54,10 +69,10 @@ export function createSeed(): Data {
     currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
-      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "", siteManagerId: "e10", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
-      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "", siteManagerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
-      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "", siteManagerId: "e1", budget: 210000, description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement." },
-      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "", siteManagerId: "e10", budget: 390000, description: "Neubau NS-Hauptverteilung inkl. Kompensation." }
+      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e9", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17"] },
+      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e9", siteManagerId: "e2", description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C.", createdBy: "e2", members: ["e4", "e6", "e8", "e12", "e13", "e14", "e1", "e9", "e17"] },
+      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e9", siteManagerId: "e1", description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement.", createdBy: "e1", members: ["e5", "e6", "e7", "e11", "e12", "e2", "e9"] },
+      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", description: "Neubau NS-Hauptverteilung inkl. Kompensation.", createdBy: "e10", members: ["e9", "e3", "e4"] }
     ],
     employees: [
       { id: "e1", name: "Mario Juric", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
@@ -72,29 +87,9 @@ export function createSeed(): Data {
       { id: "e11", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
       { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
       { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
+      { id: "e9", name: "Petra Koller", role: "Projektleiterin", access: "pl", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
+      { id: "e17", name: "Thomas Ebner", role: "Montagekoordinator", access: "mk", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
       { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
-    ],
-    assignments: [
-      { id: "a1", resourceType: "employee", resourceId: "e1", projectId: "p1", start: d(0), end: d(1), note: "" },
-      { id: "a2", resourceType: "employee", resourceId: "e1", projectId: "p3", start: d(2), end: d(4), note: "Abnahme Vorbereitung" },
-      { id: "a3", resourceType: "employee", resourceId: "e2", projectId: "p2", start: d(-3), end: d(11), note: "" },
-      { id: "a4", resourceType: "employee", resourceId: "e3", projectId: "p1", start: d(0), end: d(9), note: "Sekundärtechnik" },
-      { id: "a5", resourceType: "employee", resourceId: "e4", projectId: "p1", start: d(0), end: d(4), note: "" },
-      { id: "a6", resourceType: "employee", resourceId: "e4", projectId: "p2", start: d(7), end: d(18), note: "" },
-      { id: "a7", resourceType: "employee", resourceId: "e5", projectId: "p3", start: d(0), end: d(11), note: "Ladepunkte montieren" },
-      { id: "a8", resourceType: "employee", resourceId: "e6", projectId: "p2", start: d(-7), end: d(4), note: "" },
-      { id: "a9", resourceType: "employee", resourceId: "e6", projectId: "p3", start: d(3), end: d(8), note: "Doppelt verplant" },
-      { id: "a10", resourceType: "employee", resourceId: "e7", projectId: "p3", start: d(0), end: d(11), note: "" },
-      { id: "a11", resourceType: "employee", resourceId: "e8", projectId: "p2", start: d(0), end: d(15), note: "Kabelzug Abschnitt B" },
-      { id: "a19", resourceType: "employee", resourceId: "e10", projectId: "p1", start: d(-7), end: d(20), note: "" },
-      { id: "a20", resourceType: "employee", resourceId: "e11", projectId: "p1", start: d(18), end: d(32), note: "Inbetriebnahme" },
-      { id: "a21", resourceType: "employee", resourceId: "e11", projectId: "p3", start: d(3), end: d(8), note: "Lastmanagement" },
-      { id: "a22", resourceType: "employee", resourceId: "e12", projectId: "p2", start: d(-2), end: d(9), note: "" },
-      { id: "a23", resourceType: "employee", resourceId: "e12", projectId: "p3", start: d(12), end: d(22), note: "" },
-      { id: "a24", resourceType: "employee", resourceId: "e13", projectId: "p2", start: d(5), end: d(26), note: "Beleuchtung" },
-      { id: "a25", resourceType: "employee", resourceId: "e14", projectId: "p2", start: d(-10), end: d(12), note: "Kabelzug" },
-      { id: "a26", resourceType: "employee", resourceId: "e2", projectId: "p3", start: d(12), end: d(16), note: "" },
-      { id: "a27", resourceType: "employee", resourceId: "e1", projectId: "p2", start: d(7), end: d(9), note: "Baubesprechung" }
     ],
     absences: [
       { id: "ab1", employeeId: "e3", type: "schulung", start: d(10), end: d(11), note: "Hochvolt Auffrischung" },
@@ -160,10 +155,37 @@ export function createSeed(): Data {
       { id: "f5", projectId: "p3", nodeId: "n24", dataUrl: demoPhoto("UV-P1", 265), caption: "UV-P1 verdrahtet", takenAt: `${d(-2)}T10:30`, authorId: "e5" }
     ],
     reports: [
-      { id: "r1", projectId: "p2", date: d(-1), weather: "bewoelkt", temperature: 9, crew: 5, hours: 42, work: "Trassen Abschnitt B km 1,0–1,3 montiert, Kabelzug vorbereitet.", incidents: "Zufahrt Nord ab 14 Uhr gesperrt.", authorId: "e2" },
-      { id: "r2", projectId: "p1", date: d(-1), weather: "sonnig", temperature: 12, crew: 3, hours: 26, work: "Leistungsschalter Feld 1 gesetzt, Erdung Feld 1 angeschlossen.", incidents: "", authorId: "e1" },
-      { id: "r3", projectId: "p3", date: d(-2), weather: "regen", temperature: 7, crew: 2, hours: 16, work: "UV-P1 verdrahtet, Kernbohrungen Ebene 1.", incidents: "", authorId: "e5" }
+      { id: "r1", projectId: "p2", date: d(-1), crew: 5, hours: 42, work: "Trassen Abschnitt B km 1,0–1,3 montiert, Kabelzug vorbereitet.", incidents: "Zufahrt Nord ab 14 Uhr gesperrt.", authorId: "e2", photos: [demoPhoto("Trasse km 1,2", 200), demoPhoto("Kabeltrommeln", 30)] },
+      { id: "r2", projectId: "p1", date: d(-1), crew: 3, hours: 26, work: "Leistungsschalter Feld 1 gesetzt, Erdung Feld 1 angeschlossen.", incidents: "", authorId: "e1", photos: [] },
+      { id: "r3", projectId: "p3", date: d(-2), crew: 2, hours: 16, work: "UV-P1 verdrahtet, Kernbohrungen Ebene 1.", incidents: "", authorId: "e5", photos: [] }
     ],
+    regie: [
+      { id: "g1", projectId: "p2", no: 1, date: d(-2), orderedBy: "Hr. Leitner (ASFINAG)", description: "Zusätzliche Notbeleuchtung im Querschlag 3 montiert und angeschlossen – nicht im LV enthalten.", workers: [{ employeeId: "e4", hours: 4 }, { employeeId: "e8", hours: 4 }], materials: [{ artNo: "LED-NB-12", name: "Notleuchte LED 12 W", qty: 2, unit: "Stk" }, { artNo: "", name: "NYM-J 3×1,5", qty: 25, unit: "m" }], authorId: "e2", signature: "", signedBy: "" }
+    ],
+    materials: [
+      { id: "m1", projectId: "p2", artNo: "300013261", name: "Kabelschuh 50/M10", qty: 150, unit: "Stk", status: "bestellt", createdAt: d(-6) },
+      { id: "m2", projectId: "p2", artNo: "300025001", name: "Kabelschuh 120/M10", qty: 60, unit: "Stk", status: "bestellt", createdAt: d(-6) },
+      { id: "m3", projectId: "p2", artNo: "", name: "Schirmschelle 22-25", qty: 500, unit: "Stk", status: "offen", createdAt: d(-1) },
+      { id: "m4", projectId: "p2", artNo: "018774530", name: "Beschlagschraube 4,5×30/27", qty: 500, unit: "Stk", status: "angekommen", createdAt: d(-12) },
+      { id: "m5", projectId: "p2", artNo: "04195", name: "Scheibe D5,3", qty: 500, unit: "Stk", status: "angekommen", createdAt: d(-12) },
+      { id: "m6", projectId: "p2", artNo: "217999", name: "Beschriftungsband P-Touch grün/schwarz 9 mm", qty: 6, unit: "Stk", status: "offen", createdAt: d(0) },
+      { id: "m7", projectId: "p1", artNo: "062675", name: "Metallbohrer 7,5 mm", qty: 10, unit: "Stk", status: "angekommen", createdAt: d(-9) }
+    ],
+    articles: [
+      { id: "ar1", artNo: "300013261", name: "Kabelschuh 50/M10", unit: "Stk" },
+      { id: "ar2", artNo: "300025001", name: "Kabelschuh 120/M10", unit: "Stk" },
+      { id: "ar3", artNo: "018774530", name: "Beschlagschraube 4,5×30/27", unit: "Stk" },
+      { id: "ar4", artNo: "04195", name: "Scheibe D5,3", unit: "Stk" },
+      { id: "ar5", artNo: "217999", name: "Beschriftungsband P-Touch grün/schwarz 9 mm", unit: "Stk" },
+      { id: "ar6", artNo: "062675", name: "Metallbohrer 7,5 mm", unit: "Stk" },
+      { id: "ar7", artNo: "LED-NB-12", name: "Notleuchte LED 12 W", unit: "Stk" }
+    ],
+    notes: [
+      { id: "no1", ownerId: "e2", title: "Morgenrunde Takt 3", text: "Drähte in Klemmen nicht richtig drinnen.\nBlindstopfen ab jetzt immer montieren.\nKabelbinder teilweise scharf.", color: "#dbeafe", x: 24, y: 24, w: 260, h: 220, createdAt: d(-1) },
+      { id: "no2", ownerId: "e2", title: "Nacharbeiten", text: "– Türanzeigen anschließen\n– Messungen offen: QK 1–3\n– Schilder NS-Raum fehlen", color: "#fef3c7", x: 310, y: 40, w: 260, h: 240, createdAt: d(0) }
+    ],
+    folders: [...generalFolders(), ...projectFolders("p1"), ...projectFolders("p2"), ...projectFolders("p3"), ...projectFolders("p4")],
+    files: [],
     activity: [
       { id: "ac1", at: `${d(-1)}T16:40:00`, text: "Tagesbericht erstellt: Tunnel Nord", projectId: "p2" },
       { id: "ac2", at: `${d(-2)}T09:15:00`, text: "Mangel gemeldet: Befestigung Kabeltrasse lose", projectId: "p2" },

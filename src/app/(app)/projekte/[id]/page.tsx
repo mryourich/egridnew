@@ -10,6 +10,6 @@ export default function SiteIndex() {
   const { data } = useStore();
   const router = useRouter();
   const section = defaultSection(roleOf(currentUser(data)));
-  useEffect(() => router.replace(`/baustellen/${id}/${section}`), [id, section, router]);
+  useEffect(() => router.replace(`/projekte/${id}/${section}`), [id, section, router]);
   return null;
 }

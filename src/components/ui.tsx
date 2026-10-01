@@ -2,6 +2,7 @@
 
 import { X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { Tone } from "@/lib/labels";
 
 export function Badge({ tone = "gray", children }: { tone?: Tone; children: ReactNode }) {
@@ -20,7 +21,15 @@ export function Progress({ value, color }: { value: number; color?: string }) {
   );
 }
 
-export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
+/** Renders children at the end of <body>, so fixed overlays are never trapped inside a drawer or animated parent. */
+export function Portal({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  return ready ? createPortal(children, document.body) : null;
+}
+
+export function Avatar({ name, size = 24, photo }: { name: string; size?: number; photo?: string }) {
+  if (photo) return <img className="avatar avatar-img" src={photo} alt={name} title={name} style={{ width: size, height: size }} />;
   const initials = name
     .split(" ")
     .map((p) => p[0])

@@ -4,11 +4,13 @@ import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { canDelete, plannable, roleOf, uid, useStore, type Role } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
-import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
+import type { CollectionKey, DailyReport, Data, Issue, Item } from "@/lib/types";
+import { projectFolders } from "@/lib/seed";
 import { IssueSheet } from "./issue-sheet";
+import { ReportSheet } from "./report-sheet";
 import { EntityForm, Modal, type Field } from "./ui";
 
-type EditorKind = "node" | "project" | "assignment" | "issue" | "report" | "employee" | "absence";
+type EditorKind = "node" | "project" | "issue" | "report" | "employee" | "absence";
 
 export type EditorTarget = { kind: EditorKind; item?: Record<string, unknown> };
 
@@ -28,7 +30,7 @@ const roleOptions = (data: Data, roles: Role[]) => data.employees.filter((e) => 
 
 const dateRange = (v: Record<string, unknown>) => (String(v.end) < String(v.start) ? "Das Ende darf nicht vor dem Start liegen." : null);
 
-const defs: Record<Exclude<EditorKind, "issue">, Def> = {
+const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
   node: {
     collection: "siteNodes",
     noun: "Bereich / Punkt",
@@ -45,66 +47,43 @@ const defs: Record<Exclude<EditorKind, "issue">, Def> = {
   },
   project: {
     collection: "projects",
-    noun: "Baustelle",
+    noun: "Projekt",
     fields: (data) => [
       { key: "name", label: "Bezeichnung", required: true, full: true, placeholder: "z. B. Tunnel Nord – Elektroinstallation" },
-      { key: "code", label: "Baustellen-Nr.", required: true },
+      { key: "code", label: "Projekt-Nr.", required: true },
       { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true },
       { key: "client", label: "Auftraggeber" },
       { key: "location", label: "Ort / Adresse" },
-      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]), required: true },
-      { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })) },
+      { key: "managerId", label: "Projektleitung", type: "select", options: roleOptions(data, ["pl"]) },
+      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]) },
       { key: "start", label: "Beginn", type: "date", required: true },
       { key: "end", label: "Ende", type: "date", required: true },
+      { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })), full: true },
+      { key: "image", label: "Bild (z. B. Logo des Kunden)", type: "image", full: true },
       { key: "description", label: "Beschreibung", type: "textarea" }
     ],
-    defaults: (data) => ({
-      code: `B-${new Date().getFullYear().toString().slice(2)}${String(data.projects.length + 1).padStart(2, "0")}`,
-      name: "",
-      client: "",
-      location: "",
-      status: "aktiv",
-      managerId: "",
-      siteManagerId: data.currentUserId,
-      start: today(),
-      end: addDays(today(), 60),
-      budget: 0,
-      color: L.projectColors[data.projects.length % L.projectColors.length],
-      description: ""
-    }),
+    defaults: (data) => {
+      const me = data.employees.find((e) => e.id === data.currentUserId);
+      const role = me ? roleOf(me) : "bl";
+      return {
+        code: `P-${new Date().getFullYear().toString().slice(2)}${String(data.projects.length + 1).padStart(2, "0")}`,
+        name: "",
+        client: "",
+        location: "",
+        status: "aktiv",
+        managerId: role === "pl" ? data.currentUserId : "",
+        siteManagerId: role === "bl" ? data.currentUserId : "",
+        start: today(),
+        end: addDays(today(), 60),
+        color: L.projectColors[data.projects.length % L.projectColors.length],
+        image: "",
+        description: "",
+        createdBy: data.currentUserId,
+        members: []
+      };
+    },
     validate: dateRange,
-    describe: (v) => `Baustelle ${v.name}`
-  },
-  assignment: {
-    collection: "assignments",
-    noun: "Einteilung",
-    fields: (data) => [
-      { key: "resourceId", label: "Mitarbeiter", type: "select", options: employeeOptions(data), required: true, full: true },
-      { key: "projectId", label: "Baustelle", type: "select", options: projectOptions(data), required: true, full: true },
-      { key: "start", label: "Von", type: "date", required: true },
-      { key: "end", label: "Bis", type: "date", required: true },
-      { key: "note", label: "Notiz", full: true }
-    ],
-    defaults: (data) => ({ resourceType: "employee", resourceId: plannable(data)[0]?.id ?? "", projectId: data.projects.find((p) => p.status !== "abgeschlossen")?.id ?? "", start: today(), end: addDays(today(), 4), note: "" }),
-    validate: dateRange,
-    describe: () => "Einteilung"
-  },
-  report: {
-    collection: "reports",
-    noun: "Tagesbericht",
-    fields: (data) => [
-      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true, full: true },
-      { key: "date", label: "Datum", type: "date", required: true },
-      { key: "weather", label: "Wetter", type: "select", options: L.options(L.weather), required: true },
-      { key: "temperature", label: "Temperatur (°C)", type: "number" },
-      { key: "crew", label: "Personal vor Ort", type: "number", min: 0 },
-      { key: "hours", label: "Arbeitsstunden gesamt", type: "number", min: 0 },
-      { key: "authorId", label: "Erstellt von", type: "select", options: employeeOptions(data) },
-      { key: "work", label: "Ausgeführte Arbeiten", type: "textarea", required: true },
-      { key: "incidents", label: "Besondere Vorkommnisse / Behinderungen", type: "textarea" }
-    ],
-    defaults: (data) => ({ projectId: data.projects[0]?.id ?? "", date: today(), weather: "sonnig", temperature: 15, crew: 0, hours: 0, authorId: data.employees[0]?.id ?? "", work: "", incidents: "" }),
-    describe: () => "Tagesbericht"
+    describe: (v) => `Projekt ${v.name}`
   },
   employee: {
     collection: "employees",
@@ -118,7 +97,9 @@ const defs: Record<Exclude<EditorKind, "issue">, Def> = {
         required: true,
         options: [
           { value: "monteur", label: "Monteur – erfassen und abhaken, nichts löschen" },
-          { value: "bl", label: "Bauleitung – alles verwalten" }
+          { value: "mk", label: "Montagekoordination – Projekte anlegen und verwalten" },
+          { value: "bl", label: "Bauleitung – Projekte anlegen und verwalten" },
+          { value: "pl", label: "Projektleitung – Projekte anlegen und verwalten" }
         ]
       },
       { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },
@@ -127,7 +108,8 @@ const defs: Record<Exclude<EditorKind, "issue">, Def> = {
       { key: "phone", label: "Telefon", type: "tel" },
       { key: "email", label: "E-Mail", type: "email" },
       { key: "qualificationsText", label: "Qualifikationen (je Zeile: Name; gültig bis JJJJ-MM-TT)", type: "textarea", placeholder: "SCC**; 2027-05-31" },
-      { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (kann eingeteilt werden)" }
+      { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (kann eingeladen werden)" },
+      { key: "photo", label: "Profilbild", type: "image", full: true }
     ],
     defaults: () => ({ name: "", access: "monteur", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
     describe: (v) => `Mitarbeiter ${v.name}`
@@ -163,6 +145,7 @@ function fromQualText(text: string) {
 
 export function Editor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
   if (target.kind === "issue") return <IssueSheet issue={(target.item ?? {}) as Partial<Issue>} onClose={onClose} />;
+  if (target.kind === "report") return <ReportSheet report={(target.item ?? {}) as Partial<DailyReport>} onClose={onClose} />;
   return <GenericEditor target={target as EditorTarget & { kind: keyof typeof defs }} onClose={onClose} />;
 }
 
@@ -196,6 +179,8 @@ function GenericEditor({ target, onClose }: { target: EditorTarget & { kind: key
             delete item.qualificationsText;
           }
           save(def.collection, item as Item<typeof def.collection>, `${def.describe(values)} ${isNew ? "angelegt" : "aktualisiert"}`);
+          // a new project gets its document folders right away
+          if (target.kind === "project" && isNew) for (const f of projectFolders(String(item.id))) save("folders", f);
           notify(`${def.noun} gespeichert`);
           onClose();
         }}

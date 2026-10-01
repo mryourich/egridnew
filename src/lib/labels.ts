@@ -1,4 +1,4 @@
-import type { AbsenceType, IssueKind, IssueStatus, ProjectStatus, Severity, Weather } from "./types";
+import type { AbsenceType, IssueKind, IssueStatus, MaterialStatus, ProjectStatus, Severity } from "./types";
 
 export type Tone = "blue" | "green" | "amber" | "red" | "gray" | "cyan" | "violet";
 
@@ -35,12 +35,10 @@ export const absenceType: Record<AbsenceType, { label: string; tone: Tone }> = {
   sonstiges: { label: "Sonstiges", tone: "gray" }
 };
 
-export const weather: Record<Weather, { label: string }> = {
-  sonnig: { label: "Sonnig" },
-  bewoelkt: { label: "Bewölkt" },
-  regen: { label: "Regen" },
-  schnee: { label: "Schnee" },
-  frost: { label: "Frost" }
+export const materialStatus: Record<MaterialStatus, { label: string; tone: Tone }> = {
+  offen: { label: "Offen", tone: "blue" },
+  bestellt: { label: "Bestellt", tone: "amber" },
+  angekommen: { label: "Angekommen", tone: "green" }
 };
 
 export const projectColors = ["#1463ff", "#00b4d8", "#7c3aed", "#f59e0b", "#10b981", "#ef4444", "#ec4899", "#0ea5e9", "#84cc16", "#64748b"];

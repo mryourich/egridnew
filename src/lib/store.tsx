@@ -1,9 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { overlaps } from "./date";
 import { createEmpty, createSeed, DATA_VERSION } from "./seed";
-import type { AccessRole, Assignment, Company, CollectionKey, Data, Item } from "./types";
+import type { AccessRole, Company, CollectionKey, Data, Item, Project } from "./types";
 
 const STORAGE_KEY = "vysnpro:data";
 
@@ -83,7 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["assignments", "issues", "reports", "siteNodes", "photos", "jobs"] as const) {
+        for (const k of ["issues", "reports", "regie", "materials", "siteNodes", "photos", "jobs", "folders", "files"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
       }
@@ -100,7 +99,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.jobs = d.jobs.map((j) => (j.nodeId && ids.has(j.nodeId) ? { ...j, nodeId: "" } : j));
       }
       if (key === "employees") {
-        next.assignments = next.assignments.filter((a) => !(a.resourceType === "employee" && a.resourceId === id));
+        next.projects = next.projects.map((p) => (p.members.includes(id) ? { ...p, members: p.members.filter((m) => m !== id) } : p));
+        next.notes = next.notes.filter((n) => n.ownerId !== id);
         next.absences = next.absences.filter((a) => a.employeeId !== id);
         next.jobs = next.jobs.filter((j) => j.employeeId !== id);
       }
@@ -149,33 +149,6 @@ export function useStore() {
   return store;
 }
 
-/** Assignments that overlap another assignment or an absence of the same resource. */
-export function findConflicts(data: Data) {
-  const conflicts = new Set<string>();
-  const byResource = new Map<string, Assignment[]>();
-  for (const a of data.assignments) {
-    const key = `${a.resourceType}:${a.resourceId}`;
-    byResource.set(key, [...(byResource.get(key) ?? []), a]);
-  }
-  for (const list of byResource.values()) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        if (overlaps(list[i].start, list[i].end, list[j].start, list[j].end)) {
-          conflicts.add(list[i].id);
-          conflicts.add(list[j].id);
-        }
-      }
-    }
-  }
-  for (const a of data.assignments) {
-    if (a.resourceType !== "employee") continue;
-    if (data.absences.some((ab) => ab.employeeId === a.resourceId && overlaps(ab.start, ab.end, a.start, a.end))) {
-      conflicts.add(a.id);
-    }
-  }
-  return conflicts;
-}
-
 export function employeeName(data: Data, id: string) {
   return data.employees.find((e) => e.id === id)?.name ?? "–";
 }
@@ -184,13 +157,19 @@ export function currentUser(data: Data) {
   return data.employees.find((e) => e.id === data.currentUserId) ?? data.employees[0];
 }
 
-/** Sites a user runs or is planned on – what they may open. Finished sites only on request. */
+/** Projects are private: only the creator and invited members see them. Finished ones only on request. */
 export function myProjects(data: Data, userId = data.currentUserId, withDone = false) {
-  return data.projects.filter(
-    (p) =>
-      (withDone || p.status !== "abgeschlossen") &&
-      (p.siteManagerId === userId || p.managerId === userId || data.assignments.some((a) => a.projectId === p.id && a.resourceType === "employee" && a.resourceId === userId))
-  );
+  return data.projects.filter((p) => (withDone || p.status !== "abgeschlossen") && isMember(p, userId));
+}
+
+export function isMember(p: Project, userId: string) {
+  return p.createdBy === userId || p.members.includes(userId);
+}
+
+/** Everybody on a project: creator first, then the invited members. */
+export function projectTeam(data: Data, p: Project) {
+  const ids = [p.createdBy, ...p.members.filter((m) => m !== p.createdBy)];
+  return ids.map((id) => data.employees.find((e) => e.id === id)).filter((e): e is NonNullable<typeof e> => !!e);
 }
 
 export type Role = AccessRole;
@@ -198,6 +177,7 @@ export type Role = AccessRole;
 export const roleLabel: Record<Role, string> = {
   pl: "Projektleitung",
   bl: "Bauleitung",
+  mk: "Montagekoordination",
   monteur: "Monteur"
 };
 
@@ -207,6 +187,7 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   const r = (e?.role ?? "").toLowerCase();
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
+  if (r.includes("koordinat")) return "mk";
   return "monteur";
 }
 
@@ -220,7 +201,7 @@ export function plannable(data: Data) {
   return data.employees.filter((e) => e.active);
 }
 
-/** Site management runs the tool: sites, team, settings. */
+/** Everybody except workers may create projects, invite people and manage the team. */
 export function isManager(data: Data) {
   return roleOf(currentUser(data)) !== "monteur";
 }

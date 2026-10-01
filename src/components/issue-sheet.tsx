@@ -7,7 +7,7 @@ import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
 import { canDelete, currentUser, employeeName, plannable, uid, useStore } from "@/lib/store";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
-import { downscale } from "./ui";
+import { downscale, Portal } from "./ui";
 
 const SEVERITY_COLOR: Record<Severity, string> = { niedrig: "#64748b", mittel: "#d97706", hoch: "#dc2626", kritisch: "#991b1b" };
 
@@ -20,21 +20,26 @@ function isTouch() {
  * „Mangel“ button: on a phone it opens the camera straight away and then the
  * defect card with the photo; on a desktop it opens the card directly.
  */
-export function IssueButton({ projectId, nodeId = "", location = "", className = "btn", label = "Mangel" }: { projectId: string; nodeId?: string; location?: string; className?: string; label?: string }) {
+export function IssueButton({ projectId, nodeId = "", location = "", className = "btn", label = "Mangel", iconOnly = false }: { projectId: string; nodeId?: string; location?: string; className?: string; label?: string; iconOnly?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<Partial<Issue> | null>(null);
+  const [shot, setShot] = useState("");
 
   return (
     <>
       <button
         type="button"
         className={className}
-        onClick={() => {
+        title="Mangel melden"
+        onClick={(e) => {
+          e.stopPropagation();
+          // the card always opens; on a phone the camera opens on top of it
+          setShot("");
+          setDraft({ projectId, nodeId, location });
           if (isTouch()) input.current?.click();
-          else setDraft({ projectId, nodeId, location });
         }}
       >
-        <AlertTriangle size={15} /> {label}
+        <AlertTriangle size={15} /> {!iconOnly && label}
       </button>
       <input
         ref={input}
@@ -44,18 +49,17 @@ export function IssueButton({ projectId, nodeId = "", location = "", className =
         hidden
         onChange={async (e) => {
           const file = e.target.files?.[0];
-          const photo = file ? await downscale(file, 1280) : "";
-          setDraft({ projectId, nodeId, location, photo });
+          if (file) setShot(await downscale(file, 1280));
           e.target.value = "";
         }}
       />
-      {draft && <IssueSheet issue={draft} onClose={() => setDraft(null)} />}
+      {draft && <IssueSheet issue={draft} photo={shot} onClose={() => setDraft(null)} />}
     </>
   );
 }
 
 /** Defect card – same look and feel as the job popover. */
-export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose: () => void }) {
+export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; photo?: string; onClose: () => void }) {
   const { data, save, remove, notify } = useStore();
   const isNew = !issue.id;
   const [v, setV] = useState<Issue>({
@@ -84,6 +88,10 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
   const project = data.projects.find((p) => p.id === v.projectId);
 
   useEffect(() => {
+    if (photo) setV((o) => ({ ...o, photo }));
+  }, [photo]);
+
+  useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -103,6 +111,7 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
   };
 
   return (
+    <Portal>
     <div className="sheet-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="job-pop issue-sheet" style={{ "--c": v.status === "erledigt" ? "#059669" : SEVERITY_COLOR[v.severity] } as CSSProperties} role="dialog" aria-label={isNew ? "Neuer Mangel" : "Mangel"}>
         <header>
@@ -284,5 +293,6 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
