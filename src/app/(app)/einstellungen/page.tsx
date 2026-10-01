@@ -4,6 +4,7 @@ import { Download, RotateCcw, Upload, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
+import { TimesheetSettingsCard } from "@/components/timesheet-settings";
 import { today } from "@/lib/date";
 import { isManager, useStore } from "@/lib/store";
 import type { Data } from "@/lib/types";
@@ -53,7 +54,7 @@ export default function SettingsPage() {
 
   return (
     <div className="page page-narrow">
-      <PageHeader title="Einstellungen" subtitle="Firmendaten und Datensicherung" />
+      <PageHeader title="Einstellungen" subtitle="Mitarbeiter, Zeitscheine, Firmendaten und Datensicherung" />
       <div className="stack">
         {admin && (
           <Card title="Mitarbeiter">
@@ -63,6 +64,7 @@ export default function SettingsPage() {
             </Link>
           </Card>
         )}
+        {admin && <TimesheetSettingsCard />}
         <Card title="Firma">
           <form
             className="form"

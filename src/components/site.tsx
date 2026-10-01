@@ -1,5 +1,6 @@
 "use client";
 
+import { dataUrlToBytes, safeName } from "@/lib/files";
 import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
@@ -144,21 +145,6 @@ export function Thumbs({ photos }: { photos: Photo[] }) {
 
 /* ---------------------------------------------------------------- Fotogalerie */
 
-function dataUrlToBytes(url: string): Uint8Array | string {
-  const [meta, body] = url.split(",", 2);
-  if (meta.includes(";base64")) {
-    const bin = atob(body);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-  }
-  return decodeURIComponent(body);
-}
-
-function safe(name: string) {
-  return name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 120) || "Foto";
-}
-
 /** Gallery by area: pick an area in the tree, select photos, export as ZIP or PDF. */
 export function PhotoGallery({ project }: { project: Project }) {
   const { data, notify } = useStore();
@@ -197,14 +183,14 @@ export function PhotoGallery({ project }: { project: Project }) {
       const zip = new JSZip();
       for (const p of chosen) {
         // folders follow the structure: Bereich/Unterpunkt/…/Bereich - Unterpunkt - 001.jpg
-        const folders = p.nodeId ? pathOf(data.siteNodes, p.nodeId).map((n) => safe(n.title)) : ["Ohne Bereich"];
+        const folders = p.nodeId ? pathOf(data.siteNodes, p.nodeId).map((n) => safeName(n.title)) : ["Ohne Bereich"];
         const ext = p.dataUrl.startsWith("data:image/svg") ? "svg" : p.dataUrl.startsWith("data:image/png") ? "png" : "jpg";
-        zip.file(`${folders.join("/")}/${safe(photoName(data.siteNodes, data.photos, p))}.${ext}`, dataUrlToBytes(p.dataUrl));
+        zip.file(`${folders.join("/")}/${safeName(photoName(data.siteNodes, data.photos, p))}.${ext}`, dataUrlToBytes(p.dataUrl));
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `${project.code} Fotos ${safe(areaName)}.zip`;
+      a.download = `${project.code} Fotos ${safeName(areaName)}.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
       notify(`${chosen.length} Fotos exportiert`);

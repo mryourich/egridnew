@@ -107,13 +107,24 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
       { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },
       { key: "department", label: "Abteilung", placeholder: "z. B. Montage" },
       { key: "team", label: "Partie", placeholder: "z. B. Partie A" },
+      {
+        key: "employment",
+        label: "Anstellung",
+        type: "select",
+        options: [
+          { value: "eigen", label: "Eigenpersonal" },
+          { value: "leasing", label: "Leasing (Leihpersonal)" }
+        ]
+      },
+      { key: "leasingCompany", label: "Leasingfirma (bei Leasing)", placeholder: "z. B. Trenkwalder" },
+      { key: "staffNo", label: "Personalnummer", placeholder: "für den Zeitschein" },
       { key: "phone", label: "Telefon", type: "tel" },
       { key: "email", label: "E-Mail", type: "email" },
       { key: "qualificationsText", label: "Qualifikationen (je Zeile: Name; gültig bis JJJJ-MM-TT)", type: "textarea", placeholder: "SCC**; 2027-05-31" },
       { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (kann eingeladen werden)" },
       { key: "photo", label: "Profilbild", type: "image", full: true }
     ],
-    defaults: () => ({ name: "", access: "monteur", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
+    defaults: () => ({ name: "", access: "monteur", role: "", department: "", team: "", employment: "eigen", leasingCompany: "", staffNo: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
     describe: (v) => `Mitarbeiter ${v.name}`
   },
   absence: {

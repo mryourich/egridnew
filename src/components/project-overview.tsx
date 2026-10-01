@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Building2, Camera, CheckCircle2, ClipboardList, Hammer, History, ImagePlus, Package, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Archive, RotateCcw, Building2, Camera, CheckCircle2, ClipboardList, Hammer, History, ImagePlus, Package, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
 import { fmt, fmtShort, inRange, today } from "@/lib/date";
@@ -93,6 +93,27 @@ export function ProjectOverview({ project }: { project: Project }) {
           </div>
         </dl>
         {project.description && <p className="ov-desc">{project.description}</p>}
+        {manager && (
+          <div className="ov-actions">
+            {project.status === "abgeschlossen" ? (
+              <button type="button" className="btn btn-sm" onClick={() => save("projects", { ...project, status: "aktiv" }, `${project.name} wieder geöffnet`)}>
+                <RotateCcw size={14} /> Wieder öffnen
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  if (!window.confirm(`„${project.name}“ abschließen? Es verschwindet aus „Meine Projekte“ und bleibt unter Projekte › Abgeschlossene.`)) return;
+                  save("projects", { ...project, status: "abgeschlossen" }, `${project.name} abgeschlossen`);
+                  notify("Projekt abgeschlossen");
+                }}
+              >
+                <Archive size={14} /> Projekt abschließen
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="card ov-progress">

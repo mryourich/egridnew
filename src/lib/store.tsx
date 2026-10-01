@@ -125,7 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["issues", "reports", "regie", "materials", "siteNodes", "photos", "jobs", "folders", "files"] as const) {
+        for (const k of ["issues", "reports", "regie", "materials", "times", "siteNodes", "photos", "jobs", "folders", "files"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
       }
