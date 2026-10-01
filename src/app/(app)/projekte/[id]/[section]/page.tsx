@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DefectsSection, ReportsSection, TeamSection } from "@/components/site-sections";
+import { DocBrowser } from "@/components/documents";
+import { MaterialSection } from "@/components/material";
 import { PhotoGallery } from "@/components/site";
 import { SiteStructure } from "@/components/structure";
 import { SiteGantt } from "@/components/site-gantt";
@@ -36,6 +38,10 @@ export default function SiteSectionPage() {
       return <DefectsSection projectId={project.id} />;
     case "berichte":
       return <ReportsSection project={project} />;
+    case "material":
+      return <MaterialSection project={project} />;
+    case "dokumente":
+      return <DocBrowser projectId={project.id} />;
     case "team":
       return <TeamSection project={project} />;
   }

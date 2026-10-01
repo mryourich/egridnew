@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, Home, LogOut, Settings, Users } from "lucide-react";
+import { FileText, FolderKanban, Home, LogOut, Settings, StickyNote, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +37,8 @@ function Frame({ children }: { children: ReactNode }) {
   const all: (Module & { icon: typeof Home; roles: Role[] })[] = [
     { href: "/dashboard", label: role === "monteur" ? "Heute" : "Start", icon: Home, match: ["/dashboard"], roles: ["pl", "bl", "mk", "monteur"] },
     { href: "/projekte", label: "Projekte", icon: FolderKanban, match: ["/projekte"], roles: ["pl", "bl", "mk", "monteur"] },
+    { href: "/notizen", label: "Notizen", icon: StickyNote, match: ["/notizen"], roles: ["pl", "bl", "mk", "monteur"] },
+    { href: "/dokumente", label: "Dokumente", icon: FileText, match: ["/dokumente"], roles: ["pl", "bl", "mk", "monteur"] },
     { href: "/team", label: "Team", icon: Users, match: ["/team"], roles: ["pl", "bl", "mk"] }
   ];
   const modules = all.filter((m) => m.roles.includes(role));
@@ -189,7 +191,9 @@ function SiteBar({ role }: { role: Role }) {
     struktur: of(data.siteNodes).filter((n) => n.status !== "erledigt" && !data.siteNodes.some((k) => k.parentId === n.id)).length,
     fotos: of(data.photos).length,
     maengel: of(data.issues).filter((i) => i.status !== "erledigt").length,
-    berichte: of(data.reports).length
+    material: of(data.materials).filter((m) => m.status !== "angekommen").length,
+    berichte: of(data.reports).length + of(data.regie).length,
+    dokumente: of(data.files).length
   };
 
   return (
