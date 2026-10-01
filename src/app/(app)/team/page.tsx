@@ -9,7 +9,7 @@ import * as L from "@/lib/labels";
 import { useStore, roleOf, roleLabel } from "@/lib/store";
 import type { Data, ResourceType } from "@/lib/types";
 
-type Tab = "employees" | "equipment" | "absences";
+type Tab = "employees" | "absences";
 
 function dueTone(date: string): L.Tone {
   const d = diffDays(today(), date);
@@ -34,7 +34,7 @@ function load(data: Data, type: ResourceType, id: string) {
   return Math.round((booked / days) * 100);
 }
 
-export default function ResourcesPage() {
+export default function TeamPage() {
   const { data } = useStore();
   const openEditor = useEditor();
   const [tab, setTab] = useState<Tab>("employees");
@@ -43,16 +43,16 @@ export default function ResourcesPage() {
   const match = (s: string) => !q || s.toLowerCase().includes(q);
   const t = today();
 
-  const kind = { employees: "employee", equipment: "equipment", absences: "absence" } as const;
+  const kind = { employees: "employee", absences: "absence" } as const;
 
   return (
     <div className="page">
       <PageHeader
-        title="Personal"
-        subtitle="Mitarbeiter mit Rechten, Abwesenheiten und Geräte · Fahrzeuge verwaltet der Fuhrpark"
+        title="Team"
+        subtitle="Wer auf deinen Baustellen arbeitet – mit Rechten, Urlaub und Krankenstand"
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: kind[tab] })}>
-            <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : tab === "equipment" ? "Gerät" : "Abwesenheit"}
+            <Plus size={16} /> {tab === "employees" ? "Mitarbeiter" : "Abwesenheit"}
           </button>
         }
       />
@@ -61,7 +61,6 @@ export default function ResourcesPage() {
         onChange={setTab}
         tabs={[
           { value: "employees", label: "Mitarbeiter", count: data.employees.length },
-          { value: "equipment", label: "Geräte", count: data.equipment.length },
           { value: "absences", label: "Abwesenheiten", count: data.absences.filter((a) => a.end >= t).length }
         ]}
       />
@@ -75,11 +74,11 @@ export default function ResourcesPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Team</th>
+                <th>Partie · Rechte</th>
                 <th>Kontakt</th>
                 <th>Qualifikationen</th>
                 <th>Heute</th>
-                <th className="w-progress">Auslastung 2 Wo.</th>
+                <th className="w-progress">Eingeteilt 2 Wo.</th>
               </tr>
             </thead>
             <tbody>
@@ -103,7 +102,7 @@ export default function ResourcesPage() {
                       <td>
                         <span className="cell-title-stack">
                           {e.team}
-                          <Badge tone={roleOf(e) === "pl" ? "violet" : roleOf(e) === "bl" ? "blue" : roleOf(e) === "hr" ? "amber" : roleOf(e) === "fuhrpark" ? "cyan" : "gray"}>{roleLabel[roleOf(e)]}</Badge>
+                          <Badge tone={roleOf(e) === "monteur" ? "gray" : "blue"}>{roleLabel[roleOf(e)]}</Badge>
                         </span>
                       </td>
                       <td>
@@ -127,8 +126,6 @@ export default function ResourcesPage() {
                           <Badge>inaktiv</Badge>
                         ) : absent ? (
                           <Badge tone={L.absenceType[absent.type].tone}>{L.absenceType[absent.type].label}</Badge>
-                        ) : roleOf(e) === "hr" || roleOf(e) === "fuhrpark" ? (
-                          <span className="muted">–</span>
                         ) : p ? (
                           <span className="cell-person">
                             <Dot color={p.color} /> {p.code}
@@ -138,54 +135,10 @@ export default function ResourcesPage() {
                         )}
                       </td>
                       <td>
-                        {roleOf(e) === "hr" || roleOf(e) === "fuhrpark" ? (
-                          <span className="muted small">nicht planbar</span>
-                        ) : (
-                          <span className="cell-progress">
-                            <Progress value={l} color={l > 90 ? "#ef4444" : undefined} /> {l} %
-                          </span>
-                        )}
+                        <span className="cell-progress">
+                          <Progress value={l} color={l > 90 ? "#ef4444" : undefined} /> {l} %
+                        </span>
                       </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "equipment" && (
-        <div className="table-wrap card card-flush">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Gerät</th>
-                <th>Kategorie</th>
-                <th>Inventar-Nr.</th>
-                <th>Nächste Prüfung</th>
-                <th>Status</th>
-                <th>Heute</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.equipment
-                .filter((x) => match(`${x.name} ${x.category} ${x.serial}`))
-                .map((x) => {
-                  const p = currentProject(data, "equipment", x.id);
-                  return (
-                    <tr key={x.id} className="clickable" onClick={() => openEditor({ kind: "equipment", item: x })}>
-                      <td>
-                        <strong>{x.name}</strong>
-                      </td>
-                      <td>{x.category}</td>
-                      <td className="mono">{x.serial}</td>
-                      <td>
-                        <Badge tone={dueTone(x.nextInspection)}>{fmt(x.nextInspection)}</Badge>
-                      </td>
-                      <td>
-                        <Badge tone={L.equipmentStatus[x.status].tone}>{L.equipmentStatus[x.status].label}</Badge>
-                      </td>
-                      <td>{p ? <span className="cell-person"><Dot color={p.color} /> {p.code}</span> : <span className="muted">–</span>}</td>
                     </tr>
                   );
                 })}

@@ -2,6 +2,6 @@
 
 import { SitesOverview } from "@/components/sites-overview";
 
-export default function TeamGridPage() {
+export default function SitesPage() {
   return <SitesOverview />;
 }

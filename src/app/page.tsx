@@ -2,70 +2,86 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
-  Building2,
   CalendarRange,
   Camera,
-  CarFront,
   Check,
-  Clock,
+  ClipboardList,
   FileText,
   FolderKanban,
   HardHat,
-  Layers,
+  ListChecks,
   ShieldCheck,
   Smartphone,
-  UserCog,
   Users,
   Wrench
 } from "lucide-react";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "VYSNpro – Die Zentrale für Firmen mit Baustellen" },
-  description: "Projekte planen, Teams einteilen, Baustellen dokumentieren und Fahrzeuge buchen – in einer App für Büro und Baustelle."
+  title: { absolute: "VYSNpro – Baustellen im Griff" },
+  description: "Das Baustellen-Tool für Bauleiter und Monteure: Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren und Tagesberichte als PDF."
 };
 
-const roles = [
-  { icon: UserCog, name: "Personal", text: "Legt Mitarbeiter an, vergibt Rechte, trägt Urlaub und Krankenstand ein." },
-  { icon: FolderKanban, name: "Projektleitung", text: "Plant Projekte und entscheidet, wer wann auf welcher Baustelle ist." },
-  { icon: HardHat, name: "Bauleitung", text: "Verteilt Aufgaben im Baustellenplan, dokumentiert Fotos, Mängel und Tagesberichte." },
-  { icon: Smartphone, name: "Monteure", text: "Sehen am Handy, was heute zu tun ist, haken ab und fotografieren." }
+const flow = [
+  { icon: CalendarRange, name: "Planen", who: "Bauleitung", text: "Team einteilen, Aufgaben per Rechtsklick in den Plan ziehen – in halben Tagen." },
+  { icon: Smartphone, name: "Ausführen", who: "Monteure", text: "Jeder sieht am Handy, was heute zu tun ist, und hakt ab." },
+  { icon: Camera, name: "Dokumentieren", who: "alle", text: "Fotos und Mängel direkt mit der Kamera – sortiert nach Bereich." },
+  { icon: FileText, name: "Berichten", who: "Bauleitung", text: "Tages-, Foto- und Mängelbericht als PDF für den Auftraggeber." }
 ];
 
 const features = [
   {
-    kicker: "TeamGrid",
+    kicker: "Plan",
     title: "Der Baustellenplan, den Bauleiter wirklich benutzen.",
     text: "Aufgaben wie auf Papier – nur schneller. Ziehen, verlängern, umbenennen, fertig.",
     points: ["Verschieben in halben Tagen", "Rechtsklick: Aufgabe oder Symbol mit Farbpalette", "Urlaub und Krankenstand direkt im Plan", "Kalenderwochen und Feiertage"],
-    img: "/landing/teamgrid.jpg",
+    img: "/landing/plan.jpg",
+    w: 2040,
+    h: 990,
     alt: "Baustellenplan in VYSNpro"
   },
   {
-    kicker: "Ressourcenplanung",
-    title: "Wer ist wann wo – auf einen Blick.",
-    text: "Alle Mitarbeiter über alle Projekte. Doppelbuchungen und Abwesenheiten fallen sofort auf.",
-    points: ["Abteilungen und Teams als Baum", "Einplanen durch Ziehen", "Konflikte rot markiert", "Detail-, Normal- und Übersichtsansicht"],
-    img: "/landing/planung.jpg",
-    alt: "Ressourcenplanung in VYSNpro"
+    kicker: "Mängel",
+    title: "Erfassen. Beheben. Nachweisen.",
+    text: "Kein Mangel geht mehr verloren – und jede Behebung ist mit Foto belegt.",
+    points: ["Foto zuerst – am Handy geht sofort die Kamera auf", "Zuständig und Frist, Überfälliges in Rot", "Monteur meldet „Behoben“ mit Nachher-Foto", "Mängelbericht mit Vorher/Nachher als PDF"],
+    img: "/landing/maengel.jpg",
+    w: 2040,
+    h: 990,
+    alt: "Mängelliste in VYSNpro"
   },
   {
-    kicker: "Fuhrpark",
-    title: "Fahrzeuge ohne Zettelwirtschaft.",
-    text: "Jeder bucht sein Poolfahrzeug selbst. Der Fuhrpark sieht Termine, Schäden und Kosten.",
-    points: ["Freies Fahrzeug in Sekunden finden", "Erinnerung an Service und Pickerl", "Rückgabe mit Kilometer und Schadensmeldung", "Service-Historie mit Kosten je Fahrzeug"],
-    img: "/landing/fuhrpark.jpg",
-    alt: "Fuhrpark-Wochenplan in VYSNpro"
+    kicker: "Struktur",
+    title: "Jeder Bereich, jeder Punkt – abhakbar.",
+    text: "Gliedern Sie die Baustelle so, wie Sie sie im Kopf haben: Gebäude, Geschoß, Raum, Punkt.",
+    points: ["Beliebig tiefe Struktur", "Fortschritt je Bereich in Prozent", "Fotos und Mängel hängen am richtigen Punkt", "Ein Klick öffnet alles zu einem Punkt"],
+    img: "/landing/struktur.jpg",
+    w: 2040,
+    h: 990,
+    alt: "Baustellenstruktur in VYSNpro"
+  },
+  {
+    kicker: "Berichte",
+    title: "Berichte, die Auftraggeber gern lesen.",
+    text: "Aus dem, was ohnehin erfasst wird, entsteht der Bericht – sauber, mit Logo, als PDF.",
+    points: ["Tagesbericht mit KW, Wetter, Team und Fortschritt", "Fotobericht je Bereich, Export als ZIP", "Mängelbericht mit Vorher/Nachher-Fotos", "Drucken oder als PDF speichern"],
+    img: "/landing/bericht.jpg",
+    w: 1190,
+    h: 1140,
+    alt: "Mängelbericht als PDF",
+    doc: true
   }
 ];
 
-const modules = [
-  { icon: FolderKanban, name: "Projekte", text: "Projekte, Terminplan, Einsatzplanung", live: true },
-  { icon: HardHat, name: "TeamGrid", text: "Baustellenplan, Struktur, Fotos, Mängel, Berichte", live: true },
-  { icon: CarFront, name: "Fuhrpark", text: "Poolbuchung, Werkstatt, Service-Historie", live: true },
-  { icon: Users, name: "Personal", text: "Mitarbeiter, Rechte, Abwesenheiten, Qualifikationen", live: true },
-  { icon: Clock, name: "Zeiterfassung", text: "Stunden je Baustelle direkt am Handy", live: false }
+const parts = [
+  { icon: CalendarRange, name: "Plan", text: "Aufgaben und Symbole je Person" },
+  { icon: ListChecks, name: "Struktur", text: "Bereiche und Punkte zum Abhaken" },
+  { icon: Camera, name: "Fotos", text: "Galerie je Bereich, ZIP und PDF" },
+  { icon: AlertTriangle, name: "Mängel", text: "Mit Frist, Zuständigkeit und Nachweis" },
+  { icon: ClipboardList, name: "Tagesberichte", text: "Wetter, Team, Arbeiten, PDF" },
+  { icon: Users, name: "Team", text: "Einteilen, Urlaub, Krankenstand" }
 ];
 
 export default function Landing() {
@@ -77,9 +93,9 @@ export default function Landing() {
             <Image src="/brand/vysnpro-logo-wide.png" alt="VYSNpro" width={167} height={24} priority />
           </Link>
           <nav className="lp-links" aria-label="Seite">
+            <a href="#ablauf">Ablauf</a>
             <a href="#funktionen">Funktionen</a>
-            <a href="#rollen">Rollen</a>
-            <a href="#module">Module</a>
+            <a href="#umfang">Umfang</a>
           </nav>
           <span className="lp-spacer" />
           <Link href="/dashboard" className="lp-btn lp-btn-ghost">
@@ -95,18 +111,18 @@ export default function Landing() {
         <div className="lp-wrap lp-hero-in">
           <div className="lp-hero-copy">
             <span className="lp-pill">
-              <Building2 size={14} /> Für Elektro-, Installations- und Baufirmen
+              <HardHat size={14} /> Für Bauleiter, Poliere und Monteure
             </span>
             <h1>
-              Die Zentrale für Firmen <span className="lp-grad">mit Baustellen.</span>
+              Baustellen im Griff. <span className="lp-grad">Vom Plan bis zur Abnahme.</span>
             </h1>
-            <p className="lp-lead">Projekte planen, Teams einteilen, Baustellen dokumentieren und Fahrzeuge buchen – in einer App, die jeder im Betrieb sofort versteht. Vom Büro bis zum Monteur am Handy.</p>
+            <p className="lp-lead">Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren, Tagesberichte als PDF – in einer App, die auf der Baustelle jeder sofort versteht.</p>
             <div className="lp-cta">
               <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
                 Demo ansehen <ArrowRight size={18} />
               </Link>
               <Link href="/demo?start=leer" className="lp-btn lp-btn-outline lp-btn-lg">
-                Mit eigener Firma starten
+                Eigene Baustelle anlegen
               </Link>
             </div>
             <ul className="lp-ticks">
@@ -117,7 +133,7 @@ export default function Landing() {
                 <Check size={15} /> Am PC und am Handy
               </li>
               <li>
-                <Check size={15} /> In 5 Minuten eingerichtet
+                <Check size={15} /> In 5 Minuten startklar
               </li>
             </ul>
           </div>
@@ -129,7 +145,7 @@ export default function Landing() {
                 <i />
                 <span>vysnpro.com</span>
               </div>
-              <img src="/landing/teamgrid.jpg" alt="" width={2040} height={990} />
+              <img src="/landing/plan.jpg" alt="" width={2040} height={990} />
             </div>
             <div className="lp-phone lp-phone-hero">
               <img src="/landing/handy-heute.jpg" alt="" width={780} height={1560} />
@@ -141,48 +157,43 @@ export default function Landing() {
       <section className="lp-strip">
         <div className="lp-wrap lp-strip-in">
           <span>
-            <Layers size={16} /> Mehrere Firmen, getrennte Daten
-          </span>
-          <span>
-            <ShieldCheck size={16} /> Rollen und Rechte
-          </span>
-          <span>
-            <Camera size={16} /> Kamera direkt am Handy
+            <Wrench size={16} /> Mängel mit Vorher/Nachher
           </span>
           <span>
             <FileText size={16} /> Berichte als PDF
           </span>
           <span>
-            <CalendarRange size={16} /> Österreichische Feiertage
+            <Camera size={16} /> Kamera direkt am Handy
+          </span>
+          <span>
+            <CalendarRange size={16} /> Kalenderwochen und Feiertage
+          </span>
+          <span>
+            <ShieldCheck size={16} /> Monteure können nichts löschen
           </span>
         </div>
       </section>
 
-      <section id="rollen" className="lp-roles">
+      <section id="ablauf" className="lp-roles">
         <div className="lp-wrap">
           <div className="lp-head lp-head-dark">
-            <span className="lp-kicker">Alles verknüpft</span>
-            <h2>Ein System. Jeder sieht genau, was er braucht.</h2>
-            <p>Was das Personal einträgt, sieht die Projektleitung beim Planen. Was die Projektleitung plant, landet im Plan der Bauleitung – und auf dem Handy der Monteure.</p>
+            <span className="lp-kicker">Ein Ablauf</span>
+            <h2>Vom Plan bis zum Bericht – ohne Zettel und Chat-Gruppen.</h2>
+            <p>Die Bauleitung plant, die Monteure arbeiten und dokumentieren am Handy. Alles landet automatisch an der richtigen Stelle – und am Ende im Bericht.</p>
           </div>
           <ol className="lp-chain">
-            {roles.map((r, i) => (
+            {flow.map((r, i) => (
               <li key={r.name}>
                 <span className="lp-chain-step">{i + 1}</span>
                 <span className="lp-chain-icon">
                   <r.icon size={22} />
                 </span>
                 <strong>{r.name}</strong>
+                <em className="lp-chain-who">{r.who}</em>
                 <p>{r.text}</p>
               </li>
             ))}
           </ol>
-          <p className="lp-roles-note">
-            <CarFront size={16} />
-            <span>
-              Dazu der <strong>Fuhrpark</strong>: Jeder bucht selbst, die Fuhrparkverwaltung behält Werkstatt und Kosten im Blick.
-            </span>
-          </p>
         </div>
       </section>
 
@@ -202,8 +213,8 @@ export default function Landing() {
                   ))}
                 </ul>
               </div>
-              <div className="lp-shot">
-                <img src={f.img} alt={f.alt} loading="lazy" width={2040} height={990} />
+              <div className={`lp-shot ${f.doc ? "lp-shot-doc" : ""}`}>
+                <img src={f.img} alt={f.alt} loading="lazy" width={f.w} height={f.h} />
               </div>
             </article>
           ))}
@@ -212,19 +223,19 @@ export default function Landing() {
             <div className="lp-feature-copy">
               <span className="lp-kicker">Am Handy</span>
               <h2>Für die Baustelle gebaut.</h2>
-              <p>Große Knöpfe, wenig Text. Foto drücken – die Kamera geht auf. Mangel melden – erst das Bild, dann zwei Worte.</p>
+              <p>Große Knöpfe, wenig Text. Foto drücken – die Kamera geht auf. Mangel behoben – Nachher-Foto, fertig.</p>
               <ul>
                 <li>
                   <Check size={16} /> „Heute zu tun“ für jeden Monteur
                 </li>
                 <li>
-                  <Check size={16} /> Fotos nach Bereich, Export als ZIP oder PDF
+                  <Check size={16} /> Eigene Mängel mit Knopf „Behoben“
                 </li>
                 <li>
-                  <Check size={16} /> Tagesbericht mit KW und Fortschritt als PDF
+                  <Check size={16} /> Fotos nach Bereich, direkt aus der Kamera
                 </li>
                 <li>
-                  <Check size={16} /> Monteure dürfen erfassen, aber nichts löschen
+                  <Check size={16} /> Monteure erfassen und haken ab, löschen aber nichts
                 </li>
               </ul>
             </div>
@@ -240,25 +251,34 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="module" className="lp-modules">
+      <section id="umfang" className="lp-modules">
         <div className="lp-wrap">
           <div className="lp-head">
-            <span className="lp-kicker">Module</span>
-            <h2>Starten Sie mit dem, was Sie brauchen.</h2>
-            <p>Alle Module greifen auf dieselben Mitarbeiter, Projekte und Fahrzeuge zu – nichts wird doppelt gepflegt.</p>
+            <span className="lp-kicker">Umfang</span>
+            <h2>Alles, was auf die Baustelle gehört. Nicht mehr.</h2>
+            <p>VYSNpro ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
           </div>
-          <div className="lp-module-grid">
-            {modules.map((m) => (
-              <div key={m.name} className={`lp-module ${m.live ? "" : "lp-soon"}`}>
+          <div className="lp-module-grid lp-module-grid-3">
+            {parts.map((m) => (
+              <div key={m.name} className="lp-module">
                 <span className="lp-module-icon">
                   <m.icon size={22} />
                 </span>
-                <strong>
-                  {m.name} {!m.live && <em>bald</em>}
-                </strong>
+                <strong>{m.name}</strong>
                 <p>{m.text}</p>
               </div>
             ))}
+          </div>
+          <div className="lp-module lp-soon lp-soon-wide">
+            <span className="lp-module-icon">
+              <FolderKanban size={22} />
+            </span>
+            <div>
+              <strong>
+                Projektleitung <em>bald</em>
+              </strong>
+              <p>Mehrere Baustellen und Bauleiter überblicken und planen – als nächster Schritt.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -267,23 +287,23 @@ export default function Landing() {
         <div className="lp-wrap">
           <div className="lp-head">
             <span className="lp-kicker">So einfach geht&apos;s</span>
-            <h2>In drei Schritten zur ersten Baustelle.</h2>
+            <h2>In drei Schritten auf der Baustelle.</h2>
           </div>
           <ol className="lp-step-list">
             <li>
               <span>1</span>
-              <strong>Mitarbeiter anlegen</strong>
-              <p>Das Personal legt alle an und vergibt die Rechte: Projektleitung, Bauleitung, Monteur, Fuhrpark.</p>
+              <strong>Team anlegen</strong>
+              <p>Monteure und Bauleiter eintragen und die Rechte vergeben – Bauleitung oder Monteur.</p>
             </li>
             <li>
               <span>2</span>
-              <strong>Projekt planen</strong>
-              <p>Die Projektleitung legt das Projekt an, wählt die Bauleitung und plant das Team ein.</p>
+              <strong>Baustelle anlegen</strong>
+              <p>Name, Ort, Zeitraum – dann die Leute einteilen und die Struktur anlegen.</p>
             </li>
             <li>
               <span>3</span>
-              <strong>Baustelle läuft</strong>
-              <p>Die Bauleitung verteilt Aufgaben, die Monteure sehen sie am Handy – Fotos und Berichte kommen von selbst zurück.</p>
+              <strong>Loslegen</strong>
+              <p>Aufgaben verteilen, die Monteure sehen sie am Handy – Fotos, Mängel und Berichte kommen von selbst zurück.</p>
             </li>
           </ol>
         </div>
@@ -293,14 +313,14 @@ export default function Landing() {
         <div className="lp-wrap lp-final-in">
           <div>
             <h2>Sehen Sie selbst, wie einfach es ist.</h2>
-            <p>Die Demo-Firma ist sofort startklar – mit Projekten, Baustellen, Team und Fuhrpark.</p>
+            <p>Die Demo-Firma ist sofort startklar – mit Baustellen, Team, Plan, Fotos und Mängeln.</p>
           </div>
           <div className="lp-cta">
             <Link href="/demo" className="lp-btn lp-btn-white lp-btn-lg">
               Demo starten <ArrowRight size={18} />
             </Link>
             <Link href="/demo?start=leer" className="lp-btn lp-btn-glass lp-btn-lg">
-              <Wrench size={17} /> Leer starten
+              <HardHat size={17} /> Leer starten
             </Link>
           </div>
         </div>
@@ -309,7 +329,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
           <Image src="/brand/vysnpro-logo-wide.png" alt="VYSNpro" width={139} height={20} />
-          <span>Die Zentrale für Firmen mit Baustellen.</span>
+          <span>Baustellen im Griff.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
           <Link href="/dashboard">Anmelden</Link>

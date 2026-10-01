@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IssuesTab, ReportsTab, ResourceList } from "@/components/project-tabs";
+import { DefectsSection, ReportsSection, TeamSection } from "@/components/site-sections";
 import { PhotoGallery, SiteStructure } from "@/components/site";
 import { SiteGantt } from "@/components/site-gantt";
 import { Empty } from "@/components/ui";
@@ -19,7 +19,7 @@ export default function SiteSectionPage() {
   if (!def || !def.roles.includes(role)) {
     return (
       <Empty>
-        Dieser Bereich ist für deine Rolle nicht verfügbar. <Link href={`/teamgrid/${id}`}>Zur Baustelle</Link>
+        Dieser Bereich ist für deine Rolle nicht verfügbar. <Link href={`/baustellen/${id}`}>Zur Baustelle</Link>
       </Empty>
     );
   }
@@ -32,10 +32,10 @@ export default function SiteSectionPage() {
     case "fotos":
       return <PhotoGallery project={project} />;
     case "maengel":
-      return <IssuesTab projectId={project.id} />;
+      return <DefectsSection projectId={project.id} />;
     case "berichte":
-      return <ReportsTab project={project} />;
+      return <ReportsSection project={project} />;
     case "team":
-      return <ResourceList project={project} readOnly />;
+      return <TeamSection project={project} />;
   }
 }

@@ -7,7 +7,7 @@ import { IssueButton } from "@/components/issue-sheet";
 import { useEditor } from "@/components/shell";
 import { PhotoAddButton } from "@/components/site";
 import { Avatar, Empty } from "@/components/ui";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Pencil } from "lucide-react";
 import { inRange, today } from "@/lib/date";
 import { siteProgress } from "@/lib/site";
 import { currentUser, employeeName, myProjects, roleOf, useStore } from "@/lib/store";
@@ -19,11 +19,11 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   const role = roleOf(currentUser(data));
   const project = data.projects.find((p) => p.id === id);
 
-  if (!project || !myProjects(data).some((p) => p.id === project.id)) {
+  if (!project || !myProjects(data, data.currentUserId, true).some((p) => p.id === project.id)) {
     return (
       <div className="page">
         <Empty>
-          {project ? "Diese Baustelle ist dir nicht zugeteilt." : "Baustelle nicht gefunden."} <Link href="/teamgrid">Zu meinen Baustellen</Link>
+          {project ? "Diese Baustelle ist dir nicht zugeteilt." : "Baustelle nicht gefunden."} <Link href="/baustellen">Zu meinen Baustellen</Link>
         </Empty>
       </div>
     );
@@ -40,7 +40,13 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           <span className="sc-code">{project.code}</span>
           <h1>{project.name}</h1>
           <p className="muted">
-            {project.location} · PL {project.managerId ? employeeName(data, project.managerId) : "–"} · BL {project.siteManagerId ? employeeName(data, project.siteManagerId) : "–"}
+            {[project.client, project.location].filter(Boolean).join(" · ")}
+            {project.siteManagerId ? ` · Bauleitung ${employeeName(data, project.siteManagerId)}` : ""}
+            {role !== "monteur" && (
+              <button type="button" className="link-btn sh-edit" onClick={() => openEditor({ kind: "project", item: project })}>
+                <Pencil size={12} /> Bearbeiten
+              </button>
+            )}
           </p>
         </div>
         <div className="sh-inline">

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronRight, Diamond, Palette, Pencil, Star, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, Diamond, Palette, Pencil, Star, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
@@ -8,6 +8,7 @@ import { nodeOptions } from "@/lib/site";
 import { canDelete, uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
+import { useEditor } from "./shell";
 import { Avatar } from "./ui";
 
 /** Palette in the layout of classic planning boards: 6 rows × 5 columns. */
@@ -74,6 +75,11 @@ type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half
  */
 export function SiteGantt({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
+  const openEditor = useEditor();
+  const addPerson = () => {
+    const start = project.start > today() ? project.start : today();
+    openEditor({ kind: "assignment", item: { resourceType: "employee", projectId: project.id, start, end: project.end > start ? project.end : addDays(start, 4) } });
+  };
   const { from, days, dayWidth: dw, controls } = usePlannerRange("detail");
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -286,12 +292,22 @@ export function SiteGantt({ project }: { project: Project }) {
                 <em>
                   {team.length} Personen · {todayJobs.length} Aufgaben heute
                 </em>
+                <button type="button" className="sg-add-person" onClick={addPerson} title="Person auf diese Baustelle einteilen">
+                  <UserPlus size={13} /> Person
+                </button>
               </div>
               <PlannerHeadTime dayList={dayList} dw={dw} />
             </div>
             <div className="pl-body">
               <PlannerCols dayList={dayList} dw={dw} left={nameW} />
-              {team.length === 0 && <div className="pl-empty">Die Projektleitung hat dieser Baustelle noch niemanden zugeteilt.</div>}
+              {team.length === 0 && (
+                <div className="pl-empty">
+                  Noch niemand auf dieser Baustelle.{" "}
+                  <button type="button" className="link-btn" onClick={addPerson}>
+                    Person einteilen
+                  </button>
+                </div>
+              )}
               {team.map((emp) => {
                 const own = jobs
                   .map(previewJob)
@@ -423,13 +439,13 @@ export function SiteGantt({ project }: { project: Project }) {
 
       <div className="sg-legend">
         <span>
-          <i className="sg-presence" /> auf dieser Baustelle eingeplant (Projektleitung)
+          <i className="sg-presence" /> auf dieser Baustelle eingeteilt
         </span>
         <span>
           <i className="sg-elsewhere" /> auf anderer Baustelle
         </span>
         <span>
-          <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand (HR) – verschiebbar
+          <i className="sg-abs abs-urlaub" /> Urlaub / Krankenstand – verschiebbar
         </span>
       </div>
 
@@ -751,7 +767,7 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
           {(!onSite || absence) && (
             <p className="job-warn">
               <AlertTriangle size={13} />
-              {absence ? `${person?.name} ist ${L.absenceType[absence.type].label.toLowerCase()} (${fmtShort(absence.start)}–${fmtShort(absence.end)}).` : `${person?.name} ist in diesem Zeitraum nicht für die Baustelle eingeplant – bitte mit der Projektleitung abstimmen.`}
+              {absence ? `${person?.name} ist ${L.absenceType[absence.type].label.toLowerCase()} (${fmtShort(absence.start)}–${fmtShort(absence.end)}).` : `${person?.name} ist in diesem Zeitraum nicht auf dieser Baustelle eingeteilt – unter „Team“ einteilen.`}
             </p>
           )}
           <footer>

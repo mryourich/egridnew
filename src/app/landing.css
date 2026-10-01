@@ -166,8 +166,11 @@
 }
 .lp-hero h1 {
   margin: 20px 0 18px;
-  font-size: clamp(38px, 5.2vw, 62px);
+  font-size: clamp(36px, 4.6vw, 56px);
   font-weight: 800;
+}
+.lp-hero h1 .lp-grad {
+  display: block;
 }
 .lp-grad {
   background: linear-gradient(90deg, var(--lp-blue) 0%, #19a5ff 55%, var(--lp-cyan) 100%);
@@ -379,22 +382,14 @@
   color: #b9c5e0;
   font-size: 14.5px;
 }
-.lp-roles-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 28px 0 0;
-  color: #b9c5e0;
-  font-size: 15px;
-  text-align: center;
-}
-.lp-roles-note strong {
-  color: #fff;
-}
-.lp-roles-note svg {
-  flex-shrink: 0;
+.lp-chain-who {
+  margin-top: -6px;
   color: var(--lp-cyan);
+  font-style: normal;
+  font-weight: 650;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* features */
@@ -541,6 +536,28 @@
 .lp-soon .lp-module-icon {
   background: #fff;
   color: var(--lp-muted);
+}
+
+.lp-module-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.lp-soon-wide {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.lp-soon-wide .lp-module-icon {
+  flex-shrink: 0;
+  margin: 0;
+}
+.lp-soon-wide p {
+  margin-top: 4px;
+}
+.lp-shot-doc {
+  justify-self: center;
+  max-width: 480px;
+  transform: rotate(1.5deg);
 }
 
 /* steps */
@@ -718,9 +735,5 @@
   }
   .lp-phone-2 {
     margin-top: 28px;
-  }
-  .lp-roles-note {
-    align-items: flex-start;
-    text-align: left;
   }
 }
