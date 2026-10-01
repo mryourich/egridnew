@@ -235,7 +235,7 @@ export type ActivityEntry = {
 };
 
 export type Company = {
-  /** Tenant id – every company that buys VYSNERTECH gets its own. */
+  /** Tenant id – every company that buys VYSNER gets its own. */
   tenantId: string;
   name: string;
   address: string;

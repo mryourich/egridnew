@@ -21,7 +21,7 @@ export function DocFrame({ title, meta, children }: { title: string; meta: React
       <article className="doc">
         <header className="doc-head">
           <div>
-            <img src="/brand/vysnertech.png" alt="VYSNERTECH" className="doc-logo" />
+            <img src="/brand/vysner-logo.png" alt="VYSNER" className="doc-logo" />
             <p className="doc-company">
               {data.company.name}
               <br />
@@ -36,7 +36,7 @@ export function DocFrame({ title, meta, children }: { title: string; meta: React
         {children}
         <footer className="doc-foot">
           <span>{data.company.name}</span>
-          <span>Erstellt mit VYSNERTECH am {fmt(today())}</span>
+          <span>Erstellt mit VYSNER am {fmt(today())}</span>
         </footer>
       </article>
     </div>
