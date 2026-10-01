@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Copy, Diamond, Palette, Pencil, Plus, Star, Trash2, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, GripVertical, ChevronDown, ChevronRight, Copy, Diamond, Palette, Pencil, Plus, Star, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { addDays, diffDays, fmt, fmtShort, overlaps, today } from "@/lib/date";
 import * as L from "@/lib/labels";
@@ -8,7 +8,7 @@ import { nodeOptions } from "@/lib/site";
 import { canDelete, isManager, isMember, projectTeam, uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Employee, ISODate, Job, Project } from "@/lib/types";
 import { PlannerCols, PlannerHeadTime, usePlannerRange } from "./planner";
-import { useRouter } from "next/navigation";
+import { InviteDialog } from "./invite";
 import { EmpAvatar } from "./person";
 
 /** Palette in the layout of classic planning boards: 6 rows × 5 columns. */
@@ -76,8 +76,8 @@ type Menu = { x: number; y: number; job?: Job; abs?: Absence; emp?: string; half
  */
 export function SiteGantt({ project }: { project: Project }) {
   const { data, save, remove, notify } = useStore();
-  const router = useRouter();
-  const addPerson = () => router.push(`/projekte/${project.id}/team`);
+  const [inviting, setInviting] = useState(false);
+  const addPerson = () => setInviting(true);
   const { from, days, dayWidth: dw, controls } = usePlannerRange("woche");
   const manager = isManager(data);
   const [sel, setSel] = useState<string[]>([]);
@@ -113,37 +113,115 @@ export function SiteGantt({ project }: { project: Project }) {
   const q = query.trim().toLowerCase();
   const visibleJob = (j: Job) => status === "alle" || (status === "erledigt" ? j.done : !j.done);
 
-  // Groups: the project's own groups, otherwise the people's teams ("Partie").
+  // Rows: the team plus free rows (people without an account, subcontractors, crane …), in the saved order.
   const ownGroups = project.groups ?? [];
-  const groupOf = (e: Employee) => (ownGroups.length ? (project.memberGroup?.[e.id] && ownGroups.some((g) => g.id === project.memberGroup![e.id]) ? project.memberGroup![e.id] : "") : `team:${e.team || "Team"}`);
+  const freeRows = project.planRows ?? [];
+  type Item = { id: string; name: string; sub: string; team: string; emp?: Employee };
+  const order = project.rowOrder ?? [];
+  const pos = (id: string) => {
+    const i = order.indexOf(id);
+    return i === -1 ? 1e6 : i;
+  };
+  const items: Item[] = [
+    ...team.map((e) => ({ id: e.id, name: e.name, sub: e.role, team: e.team || "Team", emp: e })),
+    ...freeRows.map((r) => ({ id: r.id, name: r.name, sub: "Freie Zeile", team: "Weitere" }))
+  ]
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => pos(a.it.id) - pos(b.it.id) || a.i - b.i)
+    .map((x) => x.it);
+  // Groups: the project's own groups, otherwise the people's teams ("Partie").
+  const groupOf = (it: Item) => (ownGroups.length ? (project.memberGroup?.[it.id] && ownGroups.some((g) => g.id === project.memberGroup![it.id]) ? project.memberGroup![it.id] : "") : `team:${it.team}`);
   const groups: { id: string; name: string }[] = ownGroups.length
     ? [...ownGroups, { id: "", name: "Ohne Gruppe" }]
-    : [...new Set(team.map((e) => e.team || "Team"))].map((n) => ({ id: `team:${n}`, name: n }));
-  const shown = team.filter((e) => !person || e.id === person);
-  type Row = { kind: "group"; id: string; name: string; count: number } | { kind: "emp"; emp: Employee };
+    : [...new Set(items.map((it) => it.team))].map((n) => ({ id: `team:${n}`, name: n }));
+  const shown = items.filter((it) => !person || it.id === person);
+  type Row = { kind: "group"; id: string; gid: string; name: string; count: number } | { kind: "item"; it: Item };
   const rows: Row[] = [];
   for (const g of groups) {
-    const members = shown.filter((e) => groupOf(e) === g.id);
-    if (!members.length) continue;
-    rows.push({ kind: "group", id: g.id || "none", name: g.name, count: members.length });
-    if (!collapsed.has(g.id || "none")) for (const e of members) rows.push({ kind: "emp", emp: e });
+    const members = shown.filter((it) => groupOf(it) === g.id);
+    // own groups stay visible while empty, so rows can be dragged into them
+    if (!members.length && (!ownGroups.length || !g.id || person)) continue;
+    rows.push({ kind: "group", id: g.id || "none", gid: g.id, name: g.name, count: members.length });
+    if (!collapsed.has(g.id || "none")) for (const it of members) rows.push({ kind: "item", it });
   }
 
-  // Overload: two or more bars on the same day for one person (any project).
-  const overload = useMemo(() => {
-    const out: { name: string; date: string }[] = [];
-    for (const e of team) {
-      const mine = data.jobs.filter((j) => j.employeeId === e.id && !j.symbol && j.end >= from && j.start <= addDays(from, days - 1));
-      for (let i = 0; i < days && mine.length > 1; i++) {
-        const d = addDays(from, i);
-        if (mine.filter((j) => j.start <= d && d <= j.end).length > 1) {
-          out.push({ name: e.name, date: d });
-          break;
-        }
-      }
+  /** Turns the automatic team grouping into own groups, so rows can be moved freely. */
+  const ensureOwn = () => {
+    if (ownGroups.length) return { gs: ownGroups, mg: { ...(project.memberGroup ?? {}) }, map: (id: string) => id };
+    const gs = groups.map((g) => ({ id: uid("g"), name: g.name }));
+    const map = (id: string) => gs[groups.findIndex((g) => g.id === id)]?.id ?? "";
+    const mg: Record<string, string> = {};
+    for (const it of items) mg[it.id] = map(groupOf(it));
+    return { gs, mg, map };
+  };
+  const [dnd, setDnd] = useState<{ type: "row" | "group"; id: string } | null>(null);
+  const [dropAt, setDropAt] = useState("");
+  const [renaming, setRenaming] = useState("");
+  /** Drop a row onto another row (takes its place and group) or onto a group header. */
+  const dropRow = (rowId: string, target: { row?: string; group?: string }) => {
+    if (target.row === rowId) return;
+    const { gs, mg, map } = ensureOwn();
+    const ids = items.map((it) => it.id).filter((id) => id !== rowId);
+    let gid: string;
+    if (target.row) {
+      const tgt = items.find((it) => it.id === target.row)!;
+      gid = map(groupOf(tgt));
+      const at = ids.indexOf(target.row);
+      const from = items.findIndex((it) => it.id === rowId);
+      const to = items.findIndex((it) => it.id === target.row);
+      ids.splice(from < to ? at + 1 : at, 0, rowId);
+    } else {
+      gid = map(target.group ?? "");
+      ids.push(rowId);
     }
-    return out;
-  }, [data.jobs, team, from, days]);
+    save("projects", { ...project, groups: gs, memberGroup: { ...mg, [rowId]: gid }, rowOrder: ids });
+  };
+  /** Drop a group header onto another one: it takes that place. */
+  const dropGroup = (groupId: string, targetId: string) => {
+    const { gs, mg, map } = ensureOwn();
+    const g = map(groupId);
+    const tgt = map(targetId);
+    if (!g || g === tgt) return;
+    const from = gs.findIndex((x) => x.id === g);
+    const to = tgt ? gs.findIndex((x) => x.id === tgt) : gs.length - 1;
+    const list = gs.filter((x) => x.id !== g);
+    list.splice(to, 0, gs[from]);
+    save("projects", { ...project, groups: list, memberGroup: mg });
+  };
+  const addRow = () => {
+    const name = newGroup.trim();
+    if (!name) return;
+    const id = uid("r");
+    save("projects", { ...project, planRows: [...freeRows, { id, name }] }, `Zeile „${name}“ im Plan`);
+    setNewGroup("");
+  };
+  const renameRow = (it: Item, name: string) => {
+    const n = name.trim();
+    setRenaming("");
+    if (!n || n === it.name) return;
+    if (it.emp) save("employees", { ...it.emp, name: n }, `${it.emp.name} heißt jetzt ${n}`);
+    else save("projects", { ...project, planRows: freeRows.map((r) => (r.id === it.id ? { ...r, name: n } : r)) });
+  };
+  const renameGroup = (gid: string, name: string) => {
+    const n = name.trim();
+    setRenaming("");
+    if (!n) return;
+    const { gs, mg, map } = ensureOwn();
+    const id = map(gid);
+    save("projects", { ...project, groups: gs.map((g) => (g.id === id ? { ...g, name: n } : g)), memberGroup: mg });
+  };
+  const deleteRow = (it: Item) => {
+    const own = data.jobs.filter((j) => j.employeeId === it.id);
+    if (!window.confirm(`Zeile „${it.name}“${own.length ? ` mit ${own.length} Balken` : ""} löschen?`)) return;
+    own.forEach((j) => remove("jobs", j.id));
+    save("projects", { ...project, planRows: freeRows.filter((r) => r.id !== it.id) }, `Zeile „${it.name}“ gelöscht`);
+  };
+  const deleteGroup = (gid: string, name: string) => {
+    if (!window.confirm(`Gruppe „${name}“ löschen? Die Zeilen bleiben erhalten (ohne Gruppe).`)) return;
+    const mg = { ...(project.memberGroup ?? {}) };
+    for (const k of Object.keys(mg)) if (mg[k] === gid) mg[k] = "";
+    save("projects", { ...project, groups: ownGroups.filter((g) => g.id !== gid), memberGroup: mg });
+  };
 
   const saveGroups = (groupsNext: { id: string; name: string }[], memberGroup: Record<string, string>) => save("projects", { ...project, groups: groupsNext, memberGroup });
   const addGroup = () => {
@@ -154,7 +232,7 @@ export function SiteGantt({ project }: { project: Project }) {
     if (!gs.length) {
       // first own group: keep today's grouping by turning the teams into groups
       gs = groups.map((g) => ({ id: uid("g"), name: g.name }));
-      for (const e of team) mg[e.id] = gs[groups.findIndex((g) => g.id === groupOf(e))]?.id ?? "";
+      for (const it of items) mg[it.id] = gs[groups.findIndex((g) => g.id === groupOf(it))]?.id ?? "";
     }
     saveGroups([...gs, { id: uid("g"), name }], mg);
     setNewGroup("");
@@ -373,10 +451,10 @@ export function SiteGantt({ project }: { project: Project }) {
         <span className="spacer" />
         <SearchField value={query} onChange={setQuery} />
         <select className="sg-filter" value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Person">
-          <option value="">Alle Personen</option>
-          {team.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
+          <option value="">Alle Zeilen</option>
+          {items.map((it) => (
+            <option key={it.id} value={it.id}>
+              {it.name}
             </option>
           ))}
         </select>
@@ -386,14 +464,8 @@ export function SiteGantt({ project }: { project: Project }) {
           <option value="erledigt">Erledigt</option>
         </select>
       </div>
-      {(overload.length > 0 || sel.length > 0) && (
+      {sel.length > 0 && (
         <div className="sg-status">
-          {overload.slice(0, 3).map((o) => (
-            <span key={o.name} className="sg-warn">
-              <AlertTriangle size={13} /> {o.name} ist am {fmt(o.date)} überlastet.
-            </span>
-          ))}
-          {overload.length > 3 && <span className="sg-warn">+{overload.length - 3} weitere</span>}
           <span className="spacer" />
           {sel.length > 0 && (
             <span className="sg-selinfo desktop-only">
@@ -434,7 +506,7 @@ export function SiteGantt({ project }: { project: Project }) {
             <div className="pl-head">
               <div className="pl-corner sg-corner">
                 <div className="sg-cols">
-                  <span>Mitarbeiter</span>
+                  <span>Zeile</span>
                   <span>Rolle</span>
                   <span>Team</span>
                 </div>
@@ -446,7 +518,10 @@ export function SiteGantt({ project }: { project: Project }) {
                       addGroup();
                     }}
                   >
-                    <input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="Gruppe hinzufügen" aria-label="Neue Gruppe" />
+                    <input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="Neue Zeile / Gruppe" aria-label="Name für neue Zeile oder Gruppe" />
+                    <button type="button" className="btn btn-sm" disabled={!newGroup.trim()} onClick={addRow} title="Freie Zeile – z. B. Person ohne Konto, Subunternehmer, Kran, Lieferung">
+                      <Plus size={13} /> Zeile
+                    </button>
                     <button type="submit" className="btn btn-sm" disabled={!newGroup.trim()}>
                       <Plus size={13} /> Gruppe
                     </button>
@@ -464,8 +539,8 @@ export function SiteGantt({ project }: { project: Project }) {
             </div>
             <div className="pl-body">
               <PlannerCols dayList={dayList} dw={dw} left={nameW} />
-              {team.length > 0 && rows.length === 0 && <div className="pl-empty">Niemand passt zum Filter.</div>}
-              {team.length === 0 && (
+              {items.length > 0 && rows.length === 0 && <div className="pl-empty">Niemand passt zum Filter.</div>}
+              {items.length === 0 && (
                 <div className="pl-empty">
                   Noch niemand im Projekt.{" "}
                   <button type="button" className="link-btn" onClick={addPerson}>
@@ -476,29 +551,71 @@ export function SiteGantt({ project }: { project: Project }) {
               {rows.map((row) => {
                 if (row.kind === "group") {
                   const closed = collapsed.has(row.id);
+                  const toggle = () =>
+                    setCollapsed((c) => {
+                      const n = new Set(c);
+                      if (n.has(row.id)) n.delete(row.id);
+                      else n.add(row.id);
+                      return n;
+                    });
                   return (
-                    <div key={`g-${row.id}`} className="pl-row sg-grp" style={{ height: GROUP_H }}>
-                      <button
-                        type="button"
+                    <div
+                      key={`g-${row.id}`}
+                      className={`pl-row sg-grp ${dropAt === `g:${row.id}` ? "dnd-over" : ""}`}
+                      style={{ height: GROUP_H }}
+                      onDragOver={(e) => {
+                        if (!dnd) return;
+                        e.preventDefault();
+                        setDropAt(`g:${row.id}`);
+                      }}
+                      onDragLeave={() => setDropAt("")}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDropAt("");
+                        if (dnd?.type === "row") dropRow(dnd.id, { group: row.gid });
+                        if (dnd?.type === "group") dropGroup(dnd.id, row.gid);
+                        setDnd(null);
+                      }}
+                    >
+                      <div
                         className="pl-left sg-grp-left"
-                        onClick={() =>
-                          setCollapsed((c) => {
-                            const n = new Set(c);
-                            if (n.has(row.id)) n.delete(row.id);
-                            else n.add(row.id);
-                            return n;
-                          })
-                        }
+                        draggable={manager && !!row.gid && renaming !== `g:${row.id}`}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", row.name);
+                          setDnd({ type: "group", id: row.gid });
+                        }}
+                        onDragEnd={() => (setDnd(null), setDropAt(""))}
                       >
-                        {closed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                        <strong>{row.name}</strong>
-                        <small>{row.count} Ressourcen</small>
-                      </button>
+                        {manager && row.gid && <GripVertical size={13} className="sg-grip" />}
+                        <button type="button" className="sg-grp-toggle" onClick={toggle} aria-label={closed ? "Aufklappen" : "Zuklappen"}>
+                          {closed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                        {renaming === `g:${row.id}` ? (
+                          <NameInput value={row.name} onDone={(n) => renameGroup(row.gid, n ?? row.name)} />
+                        ) : (
+                          <strong onClick={toggle} onDoubleClick={() => manager && row.gid !== "" && setRenaming(`g:${row.id}`)} title={manager ? "Doppelklick = umbenennen" : undefined}>
+                            {row.name}
+                          </strong>
+                        )}
+                        <small>{row.count} Zeilen</small>
+                        {manager && row.gid && ownGroups.length > 0 && (
+                          <span className="sg-row-tools">
+                            <button type="button" className="icon-btn" title="Umbenennen" onClick={() => setRenaming(`g:${row.id}`)}>
+                              <Pencil size={12} />
+                            </button>
+                            <button type="button" className="icon-btn" title="Gruppe löschen" onClick={() => deleteGroup(row.gid, row.name)}>
+                              <Trash2 size={12} />
+                            </button>
+                          </span>
+                        )}
+                      </div>
                       <div className="pl-time sg-grp-band" style={{ width: timelineW }} />
                     </div>
                   );
                 }
-                const emp = row.emp;
+                const it = row.it;
+                const emp = { id: it.id };
                 const own = jobs
                   .map(previewJob)
                   .filter((j) => j.employeeId === emp.id && j.end >= from && j.start <= to && visibleJob(j))
@@ -528,17 +645,55 @@ export function SiteGantt({ project }: { project: Project }) {
                   return { left: s * dw, width: Math.max(0, (e - s + 1) * dw) };
                 };
                 return (
-                  <div key={emp.id} className={`pl-row sg-row ${drag && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""}`} style={{ height: lanes * LANE }} data-emp={emp.id}>
-                    <div className="pl-left sg-left">
+                  <div
+                    key={emp.id}
+                    className={`pl-row sg-row ${drag && drag.mode === "move" && drag.moved && drag.emp === emp.id ? "drop" : ""} ${dropAt === `r:${it.id}` ? "dnd-over" : ""} ${dnd?.id === it.id ? "dnd-src" : ""}`}
+                    style={{ height: lanes * LANE }}
+                    data-emp={emp.id}
+                    onDragOver={(e) => {
+                      if (dnd?.type !== "row") return;
+                      e.preventDefault();
+                      setDropAt(`r:${it.id}`);
+                    }}
+                    onDragLeave={() => setDropAt("")}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDropAt("");
+                      if (dnd?.type === "row") dropRow(dnd.id, { row: it.id });
+                      setDnd(null);
+                    }}
+                  >
+                    <div
+                      className="pl-left sg-left"
+                      draggable={manager && renaming !== `r:${it.id}`}
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", it.name);
+                        setDnd({ type: "row", id: it.id });
+                      }}
+                      onDragEnd={() => (setDnd(null), setDropAt(""))}
+                    >
                       <span className="sg-name">
-                        <EmpAvatar id={emp.id} size={24} />
-                        <strong title={emp.name}>{emp.name}</strong>
+                        {manager && <GripVertical size={13} className="sg-grip" />}
+                        {it.emp ? <EmpAvatar id={it.id} size={24} /> : <span className="sg-free-ic">{it.name.slice(0, 1).toUpperCase()}</span>}
+                        {renaming === `r:${it.id}` ? (
+                          <NameInput value={it.name} onDone={(n) => renameRow(it, n ?? it.name)} />
+                        ) : (
+                          <strong title={manager ? `${it.name} · Doppelklick = umbenennen` : it.name} onDoubleClick={() => manager && setRenaming(`r:${it.id}`)}>
+                            {it.name}
+                          </strong>
+                        )}
+                        {manager && !it.emp && renaming !== `r:${it.id}` && (
+                          <button type="button" className="icon-btn sg-row-del" title="Zeile löschen" onClick={() => deleteRow(it)}>
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </span>
-                      <small className="sg-role" title={emp.role}>
-                        {emp.role}
+                      <small className="sg-role" title={it.sub}>
+                        {it.sub}
                       </small>
                       {manager && ownGroups.length ? (
-                        <select className="sg-group" value={groupOf(emp)} onChange={(e) => moveToGroup(emp.id, e.target.value)} aria-label="Gruppe">
+                        <select className="sg-group" value={groupOf(it)} onChange={(e) => moveToGroup(it.id, e.target.value)} aria-label="Gruppe">
                           <option value="">–</option>
                           {ownGroups.map((g) => (
                             <option key={g.id} value={g.id}>
@@ -547,7 +702,7 @@ export function SiteGantt({ project }: { project: Project }) {
                           ))}
                         </select>
                       ) : (
-                        <small className="sg-group-text">{groups.find((g) => g.id === groupOf(emp))?.name}</small>
+                        <small className="sg-group-text">{groups.find((g) => g.id === groupOf(it))?.name}</small>
                       )}
                     </div>
                     <div
@@ -655,6 +810,7 @@ export function SiteGantt({ project }: { project: Project }) {
 
       <div className="sg-legend">
         <span className="desktop-only">Klick = auswählen · Doppelklick = umbenennen / neuer Balken · Rechtsklick = Menü · Ziehen = verschieben</span>
+        {manager && <span className="desktop-only">Zeilen und Gruppen an <GripVertical size={11} /> ziehen = Reihenfolge / Gruppe ändern · Doppelklick auf den Namen = umbenennen</span>}
         <span className="touch-only">Lange drücken = Menü · Balken ziehen = verschieben</span>
         <span>
           <i className="sg-elsewhere" /> auf einem anderen Projekt eingeplant
@@ -716,6 +872,7 @@ export function SiteGantt({ project }: { project: Project }) {
         />
       )}
 
+      {inviting && <InviteDialog project={project} onClose={() => setInviting(false)} />}
       {details && <JobPopover project={project} job={details.job} x={details.x} y={details.y} teamIds={teamIds} onClose={() => setDetails(null)} />}
     </div>
   );
@@ -728,6 +885,36 @@ function InsertBarIcon() {
       <circle cx="13.5" cy="11.5" r="3.6" fill="#fff" />
       <path d="M13.5 9.8v3.4M11.8 11.5h3.4" />
     </svg>
+  );
+}
+
+/** Inline name field for rows and groups: Enter or leaving saves, Esc cancels (onDone(null)). */
+function NameInput({ value, onDone }: { value: string; onDone: (name: string | null) => void }) {
+  const [text, setText] = useState(value);
+  const ref = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+  const commit = (keep: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    onDone(keep ? text : null);
+  };
+  return (
+    <input
+      ref={ref}
+      className="rename-input sg-name-input"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit(true);
+        if (e.key === "Escape") commit(false);
+      }}
+      onBlur={() => commit(true)}
+    />
   );
 }
 
@@ -898,14 +1085,15 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
 
   const set = (patch: Partial<Job>) => setV((o) => ({ ...o, ...patch }));
   const person = data.employees.find((e) => e.id === v.employeeId);
-  const onSite = isMember(project, v.employeeId);
+  const onSite = isMember(project, v.employeeId) || !!project.planRows?.some((r) => r.id === v.employeeId);
   const absence = data.absences.find((a) => a.employeeId === v.employeeId && overlaps(a.start, a.end, v.start, v.end));
 
+  const who = person?.name ?? project.planRows?.find((r) => r.id === v.employeeId)?.name ?? "";
   const submit = () => {
     if (!v.title.trim()) return;
     const end = v.end < v.start ? v.start : v.end;
-    save("jobs", { ...v, title: v.title.trim(), end }, isNew ? `Aufgabe „${v.title.trim()}“ an ${person?.name ?? ""}` : undefined);
-    notify(isNew ? `Aufgabe für ${person?.name ?? ""} angelegt` : "Aufgabe gespeichert");
+    save("jobs", { ...v, title: v.title.trim(), end }, isNew ? `Aufgabe „${v.title.trim()}“ an ${who}` : undefined);
+    notify(isNew ? `Aufgabe für ${who} angelegt` : "Aufgabe gespeichert");
     onClose();
   };
 
@@ -952,6 +1140,11 @@ export function JobPopover({ project, job, x, y, teamIds, onClose }: { project: 
                       {e.name} · {e.role}
                     </option>
                   ))}
+                {(project.planRows ?? []).map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
