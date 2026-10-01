@@ -46,6 +46,8 @@ export type Project = {
   planRows?: { id: string; name: string }[];
   /** Order of the plan rows (employee ids and free row ids). */
   rowOrder?: string[];
+  /** People who hid the project from their sidebar. */
+  hiddenFor?: string[];
 };
 
 export type Qualification = {
@@ -71,6 +73,12 @@ export type Employee = {
   active: boolean;
   /** Profile picture (data URL). */
   photo?: string;
+  /** Own staff or leased from a staffing agency. */
+  employment?: "eigen" | "leasing";
+  /** Staffing agency of a leased worker. */
+  leasingCompany?: string;
+  /** Personnel number for time sheets. */
+  staffNo?: string;
 };
 
 export type AbsenceType = "urlaub" | "krank" | "schulung" | "sonstiges";
@@ -255,12 +263,64 @@ export type ActivityEntry = {
   projectId: string;
 };
 
+/** One working day of one person on one project. */
+export type TimeEntry = Tracked & {
+  id: string;
+  projectId: string;
+  employeeId: string;
+  date: ISODate;
+  /** "07:00" */
+  start: string;
+  end: string;
+  /** Break in minutes. */
+  pause: number;
+  activity: string;
+};
+
+/** Where the values go in a customer's Excel time sheet. */
+export type TemplateMapping = {
+  sheet: string;
+  /** Header values → cell address, e.g. { mitarbeiter: "C4" }. */
+  header: Partial<Record<TemplateHeaderField, string>>;
+  /** First row of the day table (1-based). */
+  rowStart: number;
+  /** How many day rows the form has (fixed forms); empty = insert as many rows as needed. */
+  rowCount?: number;
+  /** Day values → column letter, e.g. { datum: "A" }. */
+  columns: Partial<Record<TemplateColumnField, string>>;
+  /** Placeholder templates insert rows; fixed forms are only filled. */
+  insertRows?: boolean;
+  /** Short explanation (from the AI) of what was recognised. */
+  note?: string;
+};
+
+export type TemplateHeaderField = "mitarbeiter" | "personalnummer" | "firma" | "verleiher" | "projekt" | "projektnummer" | "kunde" | "ort" | "kw" | "zeitraum" | "von" | "bis" | "summe" | "datum_heute" | "bauleitung";
+export type TemplateColumnField = "datum" | "wochentag" | "beginn" | "ende" | "pause" | "stunden" | "taetigkeit";
+
+export type TimesheetSettings = {
+  /** Default working day. */
+  dayStart: string;
+  dayEnd: string;
+  pause: number;
+  /** Own PDF layout. */
+  title: string;
+  showPause: boolean;
+  showActivity: boolean;
+  signatures: string[];
+  note: string;
+  /** Company logo on the PDF (data URL), otherwise the VYSNER logo. */
+  logo?: string;
+  /** Customer Excel template. */
+  template?: { name: string; dataUrl: string; mapping?: TemplateMapping };
+};
+
 export type Company = {
   /** Tenant id – every company that buys VYSNER gets its own. */
   tenantId: string;
   name: string;
   address: string;
   workdays: number[];
+  timesheet?: TimesheetSettings;
 };
 
 export type Data = {
@@ -278,6 +338,7 @@ export type Data = {
   reports: DailyReport[];
   regie: RegieReport[];
   materials: Material[];
+  times: TimeEntry[];
   articles: Article[];
   notes: Note[];
   folders: DocFolder[];

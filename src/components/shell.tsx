@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarRange, Camera, ClipboardList, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, LogOut, Package, Settings, StickyNote, Users } from "lucide-react";
+import { AlertTriangle, CalendarRange, Clock, Camera, ClipboardList, FileText, FolderKanban, Eye, EyeOff, FolderOpen, Home, LayoutDashboard, ListChecks, LogOut, Package, Settings, StickyNote, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -184,28 +184,44 @@ const SECTION_ICONS: Record<string, typeof Home> = {
   material: Package,
   berichte: ClipboardList,
   dokumente: FolderOpen,
-  uebersicht: LayoutDashboard
+  uebersicht: LayoutDashboard,
+  zeiten: Clock
 };
 
 /** Sidebar: my projects; the open one unfolds into its sections. */
 function ProjectNav({ role }: { role: Role }) {
-  const { data } = useStore();
+  const { data, save, notify } = useStore();
   const pathname = usePathname();
-  const sites = myProjects(data);
+  const me = data.currentUserId;
+  const all = myProjects(data);
+  const hidden = all.filter((p) => p.hiddenFor?.includes(me));
+  const [showHidden, setShowHidden] = useState(false);
+  const sites = all.filter((p) => showHidden || !p.hiddenFor?.includes(me));
   const [, base, siteId, section] = pathname.split("/");
   const openId = base === "projekte" ? siteId : "";
+  const toggle = (p: (typeof all)[number]) => {
+    const isHidden = !!p.hiddenFor?.includes(me);
+    save("projects", { ...p, hiddenFor: isHidden ? p.hiddenFor!.filter((x) => x !== me) : [...(p.hiddenFor ?? []), me] });
+    notify(isHidden ? `${p.name} wird wieder angezeigt` : `${p.name} ausgeblendet`);
+  };
   return (
     <div className="side-projects">
       <span className="side-label">Meine Projekte</span>
-      {sites.length === 0 && <span className="side-empty">Noch keine Projekte</span>}
+      {sites.length === 0 && <span className="side-empty">{all.length ? "Alle ausgeblendet" : "Noch keine Projekte"}</span>}
       {sites.map((p) => {
         const open = p.id === openId;
+        const isHidden = !!p.hiddenFor?.includes(me);
         return (
-          <div key={p.id} className={`sp ${open ? "open" : ""}`}>
-            <Link href={`/projekte/${p.id}`} className="sp-head" title={p.name}>
-              {p.image ? <img src={p.image} alt="" /> : <i style={{ background: p.color }} />}
-              <span>{p.name}</span>
-            </Link>
+          <div key={p.id} className={`sp ${open ? "open" : ""} ${isHidden ? "is-hidden" : ""}`}>
+            <div className="sp-line">
+              <Link href={`/projekte/${p.id}`} className="sp-head" title={p.name}>
+                {p.image ? <img src={p.image} alt="" /> : <i style={{ background: p.color }} />}
+                <span>{p.name}</span>
+              </Link>
+              <button type="button" className="sp-hide" title={isHidden ? "Wieder anzeigen" : "In der Seitenleiste ausblenden"} aria-label={isHidden ? `${p.name} anzeigen` : `${p.name} ausblenden`} onClick={() => toggle(p)}>
+                {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+              </button>
+            </div>
             {open && (
               <nav className="sp-sections" aria-label={p.name}>
                 {siteSections
@@ -224,6 +240,11 @@ function ProjectNav({ role }: { role: Role }) {
           </div>
         );
       })}
+      {hidden.length > 0 && (
+        <button type="button" className="sp-more" onClick={() => setShowHidden((v) => !v)}>
+          {showHidden ? "Ausgeblendete verbergen" : `${hidden.length} ausgeblendet – anzeigen`}
+        </button>
+      )}
     </div>
   );
 }

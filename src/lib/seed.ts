@@ -37,6 +37,7 @@ export function createEmpty(): Data {
     reports: [],
     regie: [],
     materials: [],
+    times: [],
     articles: [],
     notes: [],
     folders: generalFolders(),
@@ -162,6 +163,7 @@ export function createSeed(): Data {
     regie: [
       { id: "g1", projectId: "p2", no: 1, date: d(-2), orderedBy: "Hr. Leitner (ASFINAG)", description: "Zusätzliche Notbeleuchtung im Querschlag 3 montiert und angeschlossen – nicht im LV enthalten.", workers: [{ employeeId: "e4", hours: 4 }, { employeeId: "e8", hours: 4 }], materials: [{ artNo: "LED-NB-12", name: "Notleuchte LED 12 W", qty: 2, unit: "Stk" }, { artNo: "", name: "NYM-J 3×1,5", qty: 25, unit: "m" }], authorId: "e2", signature: "", signedBy: "" }
     ],
+    times: [],
     materials: [
       { id: "m1", projectId: "p2", artNo: "300013261", name: "Kabelschuh 50/M10", qty: 150, unit: "Stk", status: "bestellt", createdAt: d(-6) },
       { id: "m2", projectId: "p2", artNo: "300025001", name: "Kabelschuh 120/M10", qty: 60, unit: "Stk", status: "bestellt", createdAt: d(-6) },
@@ -218,6 +220,41 @@ function withDemoTrail(data: Data): Data {
     if (x.status !== "offen") history.push({ status: x.status, by: x.fixedBy ?? x.assigneeId ?? by, ts: ts(x.fixedAt ?? next(x.createdAt, 1), "14:2" + (i % 10)) });
     return { ...x, createdBy: by, createdTs: history[0].ts, history };
   });
+  // staff numbers, two leased workers and the times of the last two weeks from the plan
+  data.employees = data.employees.map((e, i) => ({
+    ...e,
+    staffNo: e.role === "Subunternehmer" ? undefined : String(1001 + i),
+    employment: e.id === "e6" || e.id === "e8" ? ("leasing" as const) : ("eigen" as const),
+    leasingCompany: e.id === "e6" || e.id === "e8" ? "Trenkwalder Personaldienste" : undefined
+  }));
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const work = ["Kabeltrasse montiert", "Kabelzug", "Leuchten gesetzt", "Verteiler verdrahtet", "Befestigungen geprüft", "Durchbrüche abgedichtet", "Beschriftung", "Messung und Prüfprotokoll"];
+  let tn = 0;
+  for (const p of data.projects) {
+    const crew = [p.createdBy, ...p.members].map((id) => data.employees.find((e) => e.id === id)).filter((e) => e && !e.access && !/subunternehm|bauleit|projektleit|koordinat/i.test(e.role));
+    for (let back = 14; back >= 1; back--) {
+      const date = next(todayIso, -back);
+      const wd = new Date(`${date}T12:00:00`).getDay();
+      if (wd === 0 || wd === 6) continue;
+      crew.forEach((e, i) => {
+        if ((back + i) % 7 === 3) return; // the odd day elsewhere
+        const job = data.jobs.find((j) => j.projectId === p.id && j.employeeId === e!.id && !j.symbol && j.start <= date && j.end >= date);
+        const late = (back + i) % 4 === 0;
+        data.times.push({
+          id: `t${++tn}`,
+          projectId: p.id,
+          employeeId: e!.id,
+          date,
+          start: "07:00",
+          end: late ? "17:00" : wd === 5 ? "13:00" : "16:00",
+          pause: wd === 5 && !late ? 0 : 30,
+          activity: job?.title ?? work[(back + i) % work.length],
+          createdBy: e!.id,
+          createdTs: ts(date, "16:3" + (tn % 10))
+        });
+      });
+    }
+  }
   data.siteNodes = data.siteNodes.map((n, i) =>
     n.status === "offen" ? n : { ...n, history: [{ status: n.status, by: n.assigneeId || pick(i), ts: ts(next(new Date().toISOString().slice(0, 10), -1 - (i % 3)), "15:4" + (i % 10)) }] }
   );

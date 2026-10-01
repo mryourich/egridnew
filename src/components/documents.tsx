@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight, Download, Eye, ExternalLink, X, File, FileImage, FileSpreadsheet, FileText, Folder, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
+import { ChevronRight, Download, Eye, FileArchive, ExternalLink, X, File, FileImage, FileSpreadsheet, FileText, Folder, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, today } from "@/lib/date";
 import { canDelete, employeeName, isManager, uid, useStore } from "@/lib/store";
+import { dataUrlToBytes, downloadBlob, safeName } from "@/lib/files";
 import type { DocFile, DocFolder } from "@/lib/types";
 import { Empty, Portal, SearchInput } from "./ui";
 
@@ -71,6 +72,35 @@ export function DocBrowser({ projectId }: { projectId: string }) {
     }
     if (added) notify(added > 1 ? `${added} Dateien abgelegt` : "Datei abgelegt");
     if (input.current) input.current.value = "";
+  };
+
+  /** ZIP with the folder structure: the given folder (and below) or everything. */
+  const [zipping, setZipping] = useState(false);
+  const exportZip = async (rootId: string) => {
+    const pathOf = (id: string) => {
+      const parts: string[] = [];
+      for (let f = folders.find((x) => x.id === id); f; f = folders.find((x) => x.id === f!.parentId)) parts.unshift(safeName(f.name, "Ordner"));
+      return parts;
+    };
+    const below = (id: string): string[] => [id, ...kids(id).flatMap((k) => below(k.id))];
+    const ids = new Set(rootId ? below(rootId) : folders.map((f) => f.id));
+    const list = data.files.filter((f) => f.projectId === projectId && ids.has(f.folderId));
+    if (!list.length) return notify("Keine Dateien zum Exportieren");
+    setZipping(true);
+    try {
+      const { default: JSZip } = await import("jszip");
+      const zip = new JSZip();
+      const cut = rootId ? pathOf(rootId).length - 1 : 0;
+      // empty folders are kept, so the structure matches the app
+      for (const id of ids) zip.folder(pathOf(id).slice(cut).join("/"));
+      for (const f of list) zip.file([...pathOf(f.folderId).slice(cut), safeName(f.name)].join("/"), dataUrlToBytes(f.dataUrl));
+      const project = data.projects.find((p) => p.id === projectId);
+      const base = project ? `${project.code} ${project.name}` : data.company.name;
+      downloadBlob(await zip.generateAsync({ type: "blob" }), `${safeName(base)} Dokumente${rootId ? ` – ${safeName(folders.find((f) => f.id === rootId)?.name ?? "")}` : ""}.zip`);
+      notify(`${list.length} Dateien exportiert`);
+    } finally {
+      setZipping(false);
+    }
   };
 
   const tree = (parentId: string, depth: number): React.ReactNode =>
@@ -161,6 +191,12 @@ export function DocBrowser({ projectId }: { projectId: string }) {
           </div>
           <span className="row-inline">
             <SearchInput value={query} onChange={setQuery} placeholder="Datei suchen…" />
+            <button type="button" className="btn" disabled={!current || zipping} onClick={() => exportZip(current)} title="Diesen Ordner mit Unterordnern als ZIP">
+              <FileArchive size={15} /> Ordner exportieren
+            </button>
+            <button type="button" className="btn" disabled={zipping} onClick={() => exportZip("")} title="Alle Ordner und Dateien als ZIP">
+              <Download size={15} /> Alles exportieren
+            </button>
             <button type="button" className="btn btn-primary" disabled={!current} onClick={() => input.current?.click()}>
               <Upload size={15} /> Hochladen
             </button>

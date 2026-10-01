@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DefectsSection, ReportsSection } from "@/components/site-sections";
 import { ProjectOverview } from "@/components/project-overview";
+import { TimesSection } from "@/components/times";
 import { DocBrowser } from "@/components/documents";
 import { MaterialSection } from "@/components/material";
 import { PhotoGallery } from "@/components/site";
@@ -43,6 +44,8 @@ export default function SiteSectionPage() {
       return <MaterialSection project={project} />;
     case "dokumente":
       return <DocBrowser projectId={project.id} />;
+    case "zeiten":
+      return <TimesSection project={project} />;
     case "uebersicht":
       return <ProjectOverview project={project} />;
   }
