@@ -50,8 +50,6 @@ export default function DailyReportDoc() {
           </span>
         </div>
         <div>
-          <small>Projektleitung</small>
-          <strong>{employeeName(data, project.managerId)}</strong>
           <small>Bauleitung</small>
           <strong>{employeeName(data, project.siteManagerId)}</strong>
         </div>

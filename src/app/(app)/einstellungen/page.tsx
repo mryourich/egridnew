@@ -4,12 +4,12 @@ import { Download, RotateCcw, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
 import { today } from "@/lib/date";
-import { useStore, currentUser, roleOf } from "@/lib/store";
+import { isManager, useStore } from "@/lib/store";
 import type { Data } from "@/lib/types";
 
 export default function SettingsPage() {
   const { data, setCompany, replaceAll, reset, notify } = useStore();
-  const admin = ["hr", "pl"].includes(roleOf(currentUser(data)));
+  const admin = isManager(data);
   const [name, setName] = useState(data.company.name);
   const [address, setAddress] = useState(data.company.address);
   useEffect(() => {
@@ -41,13 +41,12 @@ export default function SettingsPage() {
   };
 
   const counts = [
-    ["Projekte", data.projects.length],
+    ["Baustellen", data.projects.length],
     ["Mitarbeiter", data.employees.length],
-    ["Fahrzeuge", data.vehicles.length],
-    ["Geräte", data.equipment.length],
-    ["Einplanungen", data.assignments.length],
-    ["Vorgänge", data.tasks.length],
-    ["Meldungen", data.issues.length],
+    ["Einteilungen", data.assignments.length],
+    ["Aufgaben", data.jobs.length],
+    ["Mängel", data.issues.length],
+    ["Fotos", data.photos.length],
     ["Tagesberichte", data.reports.length]
   ] as const;
 
@@ -119,7 +118,7 @@ export default function SettingsPage() {
               className="btn btn-danger-ghost"
               type="button"
               onClick={() => {
-                if (window.confirm("ALLE Daten löschen und leer starten? Es bleibt nur der HR-Zugang.")) {
+                if (window.confirm("ALLE Daten löschen und leer starten? Es bleibt nur der Bauleitungs-Zugang.")) {
                   reset("empty");
                   notify("Alles gelöscht – leer gestartet");
                 }
@@ -131,7 +130,7 @@ export default function SettingsPage() {
         </Card>
         ) : (
           <Card title="Daten">
-            <p className="muted">Datensicherung und Löschen sind der Personalabteilung und der Projektleitung vorbehalten.</p>
+            <p className="muted">Datensicherung und Löschen sind der Bauleitung vorbehalten.</p>
           </Card>
         )}
       </div>

@@ -4,12 +4,11 @@ import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { canDelete, plannable, roleOf, uid, useStore, type Role } from "@/lib/store";
 import { levelName, nodeOptions, nodeStatus } from "@/lib/site";
-import type { Booking, CollectionKey, Data, Issue, Item, ServiceEntry } from "@/lib/types";
-import { BookingSheet, ServiceSheet } from "./fleet";
+import type { CollectionKey, Data, Issue, Item } from "@/lib/types";
 import { IssueSheet } from "./issue-sheet";
 import { EntityForm, Modal, type Field } from "./ui";
 
-type EditorKind = "node" | "project" | "assignment" | "task" | "issue" | "material" | "report" | "employee" | "vehicle" | "equipment" | "absence" | "booking" | "service";
+type EditorKind = "node" | "project" | "assignment" | "issue" | "report" | "employee" | "absence";
 
 export type EditorTarget = { kind: EditorKind; item?: Record<string, unknown> };
 
@@ -23,15 +22,13 @@ type Def = {
 };
 
 const projectOptions = (data: Data) => data.projects.filter((p) => p.status !== "abgeschlossen").map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }));
-/** People for planning and assignments – without HR. */
+/** People who can be put on a site. */
 const employeeOptions = (data: Data) => plannable(data).map((e) => ({ value: e.id, label: e.name }));
-/** Everybody, e.g. for absences. */
-const allEmployeeOptions = (data: Data) => data.employees.filter((e) => e.active).map((e) => ({ value: e.id, label: e.name }));
 const roleOptions = (data: Data, roles: Role[]) => data.employees.filter((e) => e.active && roles.includes(roleOf(e))).map((e) => ({ value: e.id, label: e.name }));
 
 const dateRange = (v: Record<string, unknown>) => (String(v.end) < String(v.start) ? "Das Ende darf nicht vor dem Start liegen." : null);
 
-const defs: Record<Exclude<EditorKind, "booking" | "service">, Def> = {
+const defs: Record<Exclude<EditorKind, "issue">, Def> = {
   node: {
     collection: "siteNodes",
     noun: "Bereich / Punkt",
@@ -48,134 +45,55 @@ const defs: Record<Exclude<EditorKind, "booking" | "service">, Def> = {
   },
   project: {
     collection: "projects",
-    noun: "Projekt",
+    noun: "Baustelle",
     fields: (data) => [
-      { key: "code", label: "Projektnummer", required: true },
-      { key: "name", label: "Bezeichnung", required: true },
-      { key: "client", label: "Auftraggeber" },
-      { key: "location", label: "Ort" },
+      { key: "name", label: "Bezeichnung", required: true, full: true, placeholder: "z. B. Tunnel Nord – Elektroinstallation" },
+      { key: "code", label: "Baustellen-Nr.", required: true },
       { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true },
-      { key: "managerId", label: "Projektleitung", type: "select", options: roleOptions(data, ["pl"]) },
-      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]) },
-      { key: "start", label: "Start", type: "date", required: true },
-      { key: "end", label: "Ende", type: "date", required: true },
-      { key: "budget", label: "Budget (€)", type: "number", min: 0 },
+      { key: "client", label: "Auftraggeber" },
+      { key: "location", label: "Ort / Adresse" },
+      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]), required: true },
       { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })) },
+      { key: "start", label: "Beginn", type: "date", required: true },
+      { key: "end", label: "Ende", type: "date", required: true },
       { key: "description", label: "Beschreibung", type: "textarea" }
     ],
     defaults: (data) => ({
-      code: `P-${new Date().getFullYear().toString().slice(2)}${String(data.projects.length + 1).padStart(2, "0")}`,
+      code: `B-${new Date().getFullYear().toString().slice(2)}${String(data.projects.length + 1).padStart(2, "0")}`,
       name: "",
       client: "",
       location: "",
-      status: "planung",
-      managerId: data.currentUserId,
-      siteManagerId: "",
+      status: "aktiv",
+      managerId: "",
+      siteManagerId: data.currentUserId,
       start: today(),
-      end: addDays(today(), 30),
+      end: addDays(today(), 60),
       budget: 0,
       color: L.projectColors[data.projects.length % L.projectColors.length],
       description: ""
     }),
     validate: dateRange,
-    describe: (v) => `Projekt ${v.name}`
+    describe: (v) => `Baustelle ${v.name}`
   },
   assignment: {
     collection: "assignments",
-    noun: "Einplanung",
-    fields: (data, v) => {
-      const resources =
-        v.resourceType === "vehicle"
-          ? data.vehicles.map((x) => ({ value: x.id, label: `${x.name} · ${x.plate}` }))
-          : v.resourceType === "equipment"
-            ? data.equipment.map((x) => ({ value: x.id, label: x.name }))
-            : employeeOptions(data);
-      const free = !v.projectId;
-      return [
-        { key: "resourceId", label: v.resourceType === "employee" ? "Mitarbeiter" : L.resourceType[v.resourceType as keyof typeof L.resourceType]?.label ?? "Ressource", type: "select", options: resources, required: true, full: true },
-        { key: "projectId", label: "Projekt", type: "select", options: [{ value: "", label: "– Freier Eintrag (kein Projekt) –" }, ...projectOptions(data)], full: true },
-        ...(free
-          ? ([
-              { key: "label", label: "Bezeichnung", required: true, placeholder: "z. B. Büro, Schulung, Service" },
-              { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })) }
-            ] as Field[])
-          : []),
-        { key: "start", label: "Von", type: "date", required: true },
-        { key: "end", label: "Bis", type: "date", required: true },
-        { key: "note", label: "Notiz", full: true }
-      ];
-    },
-    defaults: (data) => ({ resourceType: "employee", resourceId: data.employees.find((e) => e.active)?.id ?? "", projectId: data.projects.find((p) => p.status !== "abgeschlossen")?.id ?? "", start: today(), end: addDays(today(), 4), note: "", label: "", color: "#64748b" }),
-    validate: dateRange,
-    describe: (v) => (v.projectId ? "Einplanung" : `Eintrag ${v.label}`)
-  },
-  task: {
-    collection: "tasks",
-    noun: "Vorgang",
-    fields: (data, v) => [
-      { key: "title", label: "Bezeichnung", required: true, full: true },
-      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true },
-      { key: "phase", label: "Phase / Gewerk" },
-      { key: "start", label: "Start", type: "date", required: true },
-      { key: "end", label: "Ende", type: "date", required: true },
-      { key: "status", label: "Status", type: "select", options: L.options(L.taskStatus), required: true },
-      { key: "assigneeId", label: "Verantwortlich", type: "select", options: employeeOptions(data) },
-      {
-        key: "dependsOn",
-        label: "Nachfolger von",
-        type: "select",
-        options: data.tasks.filter((t) => t.projectId === v.projectId && t.id !== v.id).map((t) => ({ value: t.id, label: t.title }))
-      },
-      { key: "milestone", label: "Meilenstein", type: "checkbox", placeholder: "Als Meilenstein anzeigen" },
-      { key: "progress", label: "Fortschritt", type: "range", full: true }
-    ],
-    defaults: (data) => ({ title: "", projectId: data.projects[0]?.id ?? "", phase: "", start: today(), end: addDays(today(), 5), progress: 0, status: "offen", assigneeId: "", dependsOn: "", milestone: false }),
-    validate: dateRange,
-    describe: (v) => `Vorgang ${v.title}`
-  },
-  issue: {
-    collection: "issues",
-    noun: "Mangel",
-    fields: (data, v) => [
-      { key: "kind", label: "Art", type: "select", options: L.options(L.issueKind), required: true },
-      { key: "severity", label: "Priorität", type: "select", options: L.options(L.severity), required: true },
-      { key: "title", label: "Titel", required: true, full: true },
-      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true },
-      { key: "nodeId", label: "Bereich", type: "select", options: nodeOptions(data.siteNodes, String(v.projectId)) },
-      { key: "location", label: "Ort / Bauteil" },
-      { key: "assigneeId", label: "Zuständig", type: "select", options: employeeOptions(data) },
-      { key: "due", label: "Frist", type: "date" },
-      { key: "status", label: "Status", type: "select", options: L.options(L.issueStatus), required: true },
-      { key: "description", label: "Beschreibung", type: "textarea" },
-      { key: "photo", label: "Foto", type: "image" }
-    ],
-    defaults: (data) => ({ kind: "mangel", severity: "mittel", title: "", projectId: data.projects[0]?.id ?? "", nodeId: "", location: "", assigneeId: "", due: addDays(today(), 3), status: "offen", description: "", photo: "", createdAt: today() }),
-    describe: (v) => `${L.issueKind[v.kind as keyof typeof L.issueKind]?.label ?? "Meldung"} ${v.title}`
-  },
-  material: {
-    collection: "materials",
-    noun: "Material",
+    noun: "Einteilung",
     fields: (data) => [
-      { key: "name", label: "Material", required: true, full: true },
-      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true },
-      { key: "unit", label: "Einheit", required: true },
-      { key: "planned", label: "Menge geplant", type: "number", min: 0 },
-      { key: "delivered", label: "Geliefert", type: "number", min: 0 },
-      { key: "used", label: "Verbaut", type: "number", min: 0 },
-      { key: "unitPrice", label: "Einzelpreis (€)", type: "number", min: 0 },
-      { key: "supplier", label: "Lieferant" },
-      { key: "deliveryDate", label: "Liefertermin", type: "date" },
-      { key: "status", label: "Status", type: "select", options: L.options(L.materialStatus), required: true }
+      { key: "resourceId", label: "Mitarbeiter", type: "select", options: employeeOptions(data), required: true, full: true },
+      { key: "projectId", label: "Baustelle", type: "select", options: projectOptions(data), required: true, full: true },
+      { key: "start", label: "Von", type: "date", required: true },
+      { key: "end", label: "Bis", type: "date", required: true },
+      { key: "note", label: "Notiz", full: true }
     ],
-    defaults: (data) => ({ name: "", projectId: data.projects[0]?.id ?? "", unit: "Stk", planned: 0, delivered: 0, used: 0, unitPrice: 0, supplier: "", deliveryDate: addDays(today(), 7), status: "geplant" }),
-    validate: (v) => (Number(v.used) > Number(v.delivered) ? "Es kann nicht mehr verbaut als geliefert sein." : null),
-    describe: (v) => `Material ${v.name}`
+    defaults: (data) => ({ resourceType: "employee", resourceId: plannable(data)[0]?.id ?? "", projectId: data.projects.find((p) => p.status !== "abgeschlossen")?.id ?? "", start: today(), end: addDays(today(), 4), note: "" }),
+    validate: dateRange,
+    describe: () => "Einteilung"
   },
   report: {
     collection: "reports",
     noun: "Tagesbericht",
     fields: (data) => [
-      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true },
+      { key: "projectId", label: "Projekt", type: "select", options: projectOptions(data), required: true, full: true },
       { key: "date", label: "Datum", type: "date", required: true },
       { key: "weather", label: "Wetter", type: "select", options: L.options(L.weather), required: true },
       { key: "temperature", label: "Temperatur (°C)", type: "number" },
@@ -199,65 +117,26 @@ const defs: Record<Exclude<EditorKind, "booking" | "service">, Def> = {
         type: "select",
         required: true,
         options: [
-          { value: "monteur", label: "Monteur / Mitarbeiter" },
-          { value: "bl", label: "Bauleitung" },
-          { value: "pl", label: "Projektleitung" },
-          { value: "hr", label: "Personal (HR)" },
-          { value: "fuhrpark", label: "Fuhrpark" }
+          { value: "monteur", label: "Monteur – erfassen und abhaken, nichts löschen" },
+          { value: "bl", label: "Bauleitung – alles verwalten" }
         ]
       },
       { key: "role", label: "Funktion (Text)", placeholder: "z. B. Elektrotechniker" },
-      { key: "department", label: "Abteilung" },
-      { key: "team", label: "Team / Partie" },
-      { key: "hourlyRate", label: "Stundensatz (€)", type: "number", min: 0 },
+      { key: "department", label: "Abteilung", placeholder: "z. B. Montage" },
+      { key: "team", label: "Partie", placeholder: "z. B. Partie A" },
       { key: "phone", label: "Telefon", type: "tel" },
       { key: "email", label: "E-Mail", type: "email" },
       { key: "qualificationsText", label: "Qualifikationen (je Zeile: Name; gültig bis JJJJ-MM-TT)", type: "textarea", placeholder: "SCC**; 2027-05-31" },
-      { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (planbar)" }
+      { key: "active", label: "Status", type: "checkbox", placeholder: "Aktiv (kann eingeteilt werden)" }
     ],
     defaults: () => ({ name: "", access: "monteur", role: "", department: "", team: "", hourlyRate: 0, phone: "", email: "", qualificationsText: "", qualifications: [], active: true }),
     describe: (v) => `Mitarbeiter ${v.name}`
-  },
-  vehicle: {
-    collection: "vehicles",
-    noun: "Fahrzeug",
-    fields: (data, v) => [
-      { key: "name", label: "Marke / Modell", required: true },
-      { key: "plate", label: "Kennzeichen", required: true },
-      { key: "type", label: "Art", placeholder: "PKW, Transporter, Pritsche …" },
-      { key: "seats", label: "Sitzplätze", type: "number", min: 1 },
-      { key: "fuel", label: "Antrieb", type: "select", options: L.options(L.fuel) },
-      { key: "km", label: "Kilometerstand", type: "number", min: 0 },
-      { key: "pool", label: "Nutzung", type: "checkbox", placeholder: "Poolfahrzeug – alle dürfen buchen" },
-      ...(v.pool ? [] : ([{ key: "driverId", label: "Dienstwagen von", type: "select", options: data.employees.filter((e) => e.active).map((e) => ({ value: e.id, label: e.name })) }] as Field[])),
-      { key: "nextService", label: "Nächstes Service", type: "date" },
-      { key: "nextInspection", label: "Nächstes Pickerl (§57a)", type: "date" },
-      { key: "location", label: "Standort" },
-      { key: "vin", label: "Fahrgestellnummer" },
-      { key: "status", label: "Status", type: "select", options: L.options(L.vehicleStatus), required: true },
-      { key: "note", label: "Hinweis für Fahrer", type: "textarea", placeholder: "z. B. Ladekarte im Handschuhfach" }
-    ],
-    defaults: () => ({ name: "", plate: "", type: "PKW", seats: 5, fuel: "diesel", km: 0, pool: true, driverId: "", nextService: addDays(today(), 365), nextInspection: addDays(today(), 365), location: "", vin: "", status: "verfuegbar", note: "" }),
-    describe: (v) => `Fahrzeug ${v.plate}`
-  },
-  equipment: {
-    collection: "equipment",
-    noun: "Gerät",
-    fields: () => [
-      { key: "name", label: "Bezeichnung", required: true },
-      { key: "category", label: "Kategorie" },
-      { key: "serial", label: "Inventar-/Seriennummer" },
-      { key: "nextInspection", label: "Nächste Prüfung", type: "date" },
-      { key: "status", label: "Status", type: "select", options: L.options(L.equipmentStatus), required: true }
-    ],
-    defaults: () => ({ name: "", category: "", serial: "", nextInspection: addDays(today(), 365), status: "verfuegbar" }),
-    describe: (v) => `Gerät ${v.name}`
   },
   absence: {
     collection: "absences",
     noun: "Abwesenheit",
     fields: (data) => [
-      { key: "employeeId", label: "Mitarbeiter", type: "select", options: allEmployeeOptions(data), required: true },
+      { key: "employeeId", label: "Mitarbeiter", type: "select", options: employeeOptions(data), required: true },
       { key: "type", label: "Art", type: "select", options: L.options(L.absenceType), required: true },
       { key: "start", label: "Von", type: "date", required: true },
       { key: "end", label: "Bis", type: "date", required: true },
@@ -284,8 +163,6 @@ function fromQualText(text: string) {
 
 export function Editor({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
   if (target.kind === "issue") return <IssueSheet issue={(target.item ?? {}) as Partial<Issue>} onClose={onClose} />;
-  if (target.kind === "booking") return <BookingSheet booking={(target.item ?? {}) as Partial<Booking>} onClose={onClose} />;
-  if (target.kind === "service") return <ServiceSheet entry={(target.item ?? {}) as Partial<ServiceEntry>} onClose={onClose} />;
   return <GenericEditor target={target as EditorTarget & { kind: keyof typeof defs }} onClose={onClose} />;
 }
 
@@ -318,8 +195,6 @@ function GenericEditor({ target, onClose }: { target: EditorTarget & { kind: key
             item.qualifications = fromQualText(String(values.qualificationsText ?? ""));
             delete item.qualificationsText;
           }
-          if (target.kind === "task" && values.status === "erledigt") item = { ...item, progress: 100 };
-          if (target.kind === "vehicle" && values.pool) item = { ...item, driverId: "" };
           save(def.collection, item as Item<typeof def.collection>, `${def.describe(values)} ${isNew ? "angelegt" : "aktualisiert"}`);
           notify(`${def.noun} gespeichert`);
           onClose();

@@ -13,9 +13,9 @@ export type Project = {
   color: string;
   start: ISODate;
   end: ISODate;
-  /** Projektleitung – plans the project and its team. */
+  /** Projektleitung – reserved for later. */
   managerId: string;
-  /** Bauleitung – runs the site in TeamGrid. */
+  /** Bauleitung – runs the site. */
   siteManagerId: string;
   budget: number;
   description: string;
@@ -26,8 +26,8 @@ export type Qualification = {
   validUntil: ISODate;
 };
 
-/** What a user may see and do: project manager, site manager, HR, fleet manager or worker. */
-export type AccessRole = "pl" | "bl" | "hr" | "fuhrpark" | "monteur";
+/** What a user may see and do. Site management runs the site, workers do the work; "pl" is reserved for project management later. */
+export type AccessRole = "pl" | "bl" | "monteur";
 
 export type Employee = {
   id: string;
@@ -44,79 +44,7 @@ export type Employee = {
   active: boolean;
 };
 
-export type Fuel = "diesel" | "benzin" | "elektro" | "hybrid";
-
-export type Vehicle = {
-  id: string;
-  plate: string;
-  name: string;
-  type: string;
-  seats: number;
-  /** Next service / maintenance. */
-  nextService: ISODate;
-  /** Next §57a inspection („Pickerl“). */
-  nextInspection?: ISODate;
-  /** Manual state; the workshop state also follows from planned workshop visits. */
-  status: "verfuegbar" | "werkstatt" | "ausser_betrieb";
-  /** Pool vehicle – every employee may book it. */
-  pool?: boolean;
-  /** Company car permanently assigned to one person. */
-  driverId?: string;
-  fuel?: Fuel;
-  /** Current mileage in km. */
-  km?: number;
-  vin?: string;
-  location?: string;
-  note?: string;
-};
-
-/** Reservation of a vehicle; times are local "YYYY-MM-DDTHH:mm". */
-export type Booking = {
-  id: string;
-  vehicleId: string;
-  employeeId: string;
-  start: string;
-  end: string;
-  purpose: string;
-  projectId: string;
-  /** Set on return. */
-  returned?: boolean;
-  kmEnd?: number;
-  returnNote?: string;
-};
-
-export type ServiceKind = "service" | "pickerl" | "reifen" | "reparatur" | "schaden" | "sonstiges";
-/** offen = reported, no date yet · geplant = workshop date agreed · erledigt = history */
-export type ServiceStatus = "offen" | "geplant" | "erledigt";
-
-/** Workshop visit – appointment while planned, service history once done. */
-export type ServiceEntry = {
-  id: string;
-  vehicleId: string;
-  kind: ServiceKind;
-  status: ServiceStatus;
-  /** Workshop day (empty while only reported). */
-  date: ISODate;
-  /** Vehicle back on this day. */
-  until: ISODate;
-  time: string;
-  workshop: string;
-  description: string;
-  km: number;
-  cost: number;
-  reportedBy: string;
-};
-
-export type Equipment = {
-  id: string;
-  name: string;
-  category: string;
-  serial: string;
-  nextInspection: ISODate;
-  status: "verfuegbar" | "defekt" | "ausser_betrieb";
-};
-
-export type ResourceType = "employee" | "vehicle" | "equipment";
+export type ResourceType = "employee";
 
 export type Assignment = {
   id: string;
@@ -142,22 +70,6 @@ export type Absence = {
   start: ISODate;
   end: ISODate;
   note: string;
-};
-
-export type TaskStatus = "offen" | "in_arbeit" | "erledigt" | "blockiert";
-
-export type Task = {
-  id: string;
-  projectId: string;
-  title: string;
-  phase: string;
-  start: ISODate;
-  end: ISODate;
-  progress: number;
-  status: TaskStatus;
-  assigneeId: string;
-  dependsOn: string;
-  milestone: boolean;
 };
 
 /** Work the site manager hands to a worker on the site schedule (Tom's-Planner style bar). */
@@ -228,22 +140,11 @@ export type Issue = {
   createdAt: ISODate;
   photo: string;
   nodeId?: string;
-};
-
-export type MaterialStatus = "geplant" | "bestellt" | "teilgeliefert" | "geliefert";
-
-export type Material = {
-  id: string;
-  projectId: string;
-  name: string;
-  unit: string;
-  planned: number;
-  delivered: number;
-  used: number;
-  unitPrice: number;
-  supplier: string;
-  deliveryDate: ISODate;
-  status: MaterialStatus;
+  /** Proof of the fix. */
+  fixPhoto?: string;
+  fixNote?: string;
+  fixedAt?: ISODate;
+  fixedBy?: string;
 };
 
 export type Weather = "sonnig" | "bewoelkt" | "regen" | "schnee" | "frost";
@@ -259,16 +160,6 @@ export type DailyReport = {
   work: string;
   incidents: string;
   authorId: string;
-};
-
-export type DocumentFile = {
-  id: string;
-  projectId: string;
-  name: string;
-  category: string;
-  size: number;
-  addedAt: ISODate;
-  dataUrl: string;
 };
 
 export type ActivityEntry = {
@@ -293,20 +184,13 @@ export type Data = {
   currentUserId: string;
   projects: Project[];
   employees: Employee[];
-  vehicles: Vehicle[];
-  bookings: Booking[];
-  services: ServiceEntry[];
-  equipment: Equipment[];
   assignments: Assignment[];
   absences: Absence[];
-  tasks: Task[];
   issues: Issue[];
   siteNodes: SiteNode[];
   jobs: Job[];
   photos: Photo[];
-  materials: Material[];
   reports: DailyReport[];
-  documents: DocumentFile[];
   activity: ActivityEntry[];
 };
 

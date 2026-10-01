@@ -4,6 +4,6 @@ export function GET() {
   return NextResponse.json({
     status: "ok",
     product: "VYSNpro",
-    modules: ["dashboard", "plantafel", "projekte", "meldungen", "ressourcen", "einstellungen"]
+    modules: ["baustellen", "plan", "struktur", "fotos", "maengel", "tagesberichte", "team"]
   });
 }

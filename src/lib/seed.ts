@@ -7,32 +7,25 @@ function demoPhoto(label: string, hue: number) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export const DATA_VERSION = 4;
+export const DATA_VERSION = 5;
 
-/** A clean company: only one HR login, which then creates everyone else. */
+/** A clean company: only one site-management login, which then creates sites and the team. */
 export function createEmpty(): Data {
   return {
     version: DATA_VERSION,
-    currentUserId: "hr",
+    currentUserId: "bl",
     company: { tenantId: "firma", name: "Meine Firma", address: "", workdays: [1, 2, 3, 4, 5] },
     projects: [],
     employees: [
-      { id: "hr", name: "Personalabteilung", role: "Personalverwaltung", access: "hr", department: "Verwaltung", team: "Personal", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
+      { id: "bl", name: "Bauleitung", role: "Bauleitung", access: "bl", department: "Bauleitung", team: "Bauleitung", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
     ],
-    vehicles: [],
-    bookings: [],
-    services: [],
-    equipment: [],
     assignments: [],
     absences: [],
-    tasks: [],
     issues: [],
     siteNodes: [],
     jobs: [],
     photos: [],
-    materials: [],
     reports: [],
-    documents: [],
     activity: []
   };
 }
@@ -42,8 +35,6 @@ export function createSeed(): Data {
   const t = today();
   const w = startOfWeek(t);
   const d = (n: number) => addDays(w, n);
-  // fleet dates count from today so bookings are always current
-  const td = (n: number) => addDays(today(), n);
 
   let order = 0;
   const node = (id: string, projectId: string, parentId: string, title: string, status: SiteNode["status"], assigneeId = "", due = "", description = ""): SiteNode => ({
@@ -63,60 +54,25 @@ export function createSeed(): Data {
     currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
-      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e1", siteManagerId: "e10", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
-      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e1", siteManagerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
-      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e1", siteManagerId: "e2", budget: 210000, description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement." },
-      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", budget: 390000, description: "Neubau NS-Hauptverteilung inkl. Kompensation." }
+      { id: "p1", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "", siteManagerId: "e10", budget: 480000, description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik." },
+      { id: "p2", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "", siteManagerId: "e2", budget: 1250000, description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C." },
+      { id: "p3", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "", siteManagerId: "e1", budget: 210000, description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement." },
+      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "", siteManagerId: "e10", budget: 390000, description: "Neubau NS-Hauptverteilung inkl. Kompensation." }
     ],
     employees: [
-      { id: "e1", name: "Mario Juric", role: "Projektleiter", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
-      { id: "e2", name: "Anna Berger", role: "Bauleiterin", department: "Projektleitung", team: "Bauleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
+      { id: "e1", name: "Mario Juric", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
+      { id: "e2", name: "Anna Berger", role: "Bauleiterin", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
       { id: "e3", name: "Lukas Hofer", role: "Elektrotechniker", department: "Montage", team: "Montage A", phone: "+43 660 3456789", email: "lukas@example.at", hourlyRate: 52, qualifications: [{ name: "Hochvolt", validUntil: d(12) }], active: true },
       { id: "e4", name: "Stefan Maier", role: "Monteur", department: "Montage", team: "Montage A", phone: "+43 660 4567890", email: "stefan@example.at", hourlyRate: 45, qualifications: [{ name: "Staplerschein", validUntil: d(400) }], active: true },
       { id: "e5", name: "Julia Wimmer", role: "Elektrotechnikerin", department: "Montage", team: "Montage B", phone: "+43 660 5678901", email: "julia@example.at", hourlyRate: 52, qualifications: [{ name: "Hubarbeitsbühne", validUntil: d(-5) }], active: true },
       { id: "e6", name: "Thomas Gruber", role: "Monteur", department: "Montage", team: "Montage B", phone: "+43 660 6789012", email: "thomas@example.at", hourlyRate: 45, qualifications: [], active: true },
       { id: "e7", name: "Daniel Huber", role: "Lehrling", department: "Montage", team: "Montage B", phone: "+43 660 7890123", email: "daniel@example.at", hourlyRate: 22, qualifications: [], active: true },
       { id: "e8", name: "Sabine Leitner", role: "Kabelzieherin", department: "Montage", team: "Montage A", phone: "+43 660 8901234", email: "sabine@example.at", hourlyRate: 44, qualifications: [{ name: "Erste Hilfe", validUntil: d(90) }], active: true },
-      { id: "e9", name: "Petra Koller", role: "Projektleiterin", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
-      { id: "e10", name: "Markus Brandl", role: "Bauleiter", department: "Projektleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
+      { id: "e10", name: "Markus Brandl", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
       { id: "e11", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
       { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
       { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
-      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true },
-      { id: "e15", name: "Claudia Wagner", role: "Personalverwaltung (HR)", department: "Verwaltung", team: "Personal", phone: "+43 660 4455667", email: "claudia@example.at", hourlyRate: 48, qualifications: [], active: true },
-      { id: "e16", name: "Robert Fischer", role: "Fuhrparkleiter", access: "fuhrpark", department: "Verwaltung", team: "Fuhrpark", phone: "+43 660 5566778", email: "robert@example.at", hourlyRate: 46, qualifications: [], active: true }
-    ],
-    vehicles: [
-      { id: "v1", plate: "VB-123AB", name: "VW Crafter", type: "Transporter", seats: 3, nextService: td(9), nextInspection: td(140), status: "verfuegbar", pool: false, driverId: "e3", fuel: "diesel", km: 84210, vin: "WV1ZZZSYZL9012345", location: "Werk Vöcklabruck", note: "Werkstattregal, Leiterträger" },
-      { id: "v2", plate: "VB-456CD", name: "Ford Transit", type: "Transporter", seats: 6, nextService: td(60), nextInspection: td(25), status: "verfuegbar", pool: false, driverId: "e2", fuel: "diesel", km: 61880, vin: "WF0XXXTTGXKA12345", location: "Werk Vöcklabruck", note: "" },
-      { id: "v3", plate: "VB-789EF", name: "Mercedes Sprinter", type: "Pritsche", seats: 3, nextService: td(-2), nextInspection: td(200), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 132400, vin: "WDB9066331S123456", location: "Werk Vöcklabruck", note: "Anhängerkupplung 3,5 t" },
-      { id: "v4", plate: "VB-321GH", name: "Skoda Octavia Combi", type: "PKW", seats: 5, nextService: td(120), nextInspection: td(260), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 45120, vin: "TMBJJ7NE0L0123456", location: "Büro Linz", note: "" },
-      { id: "v5", plate: "VB-654JK", name: "VW ID.4", type: "PKW", seats: 5, nextService: td(210), nextInspection: td(12), status: "verfuegbar", pool: true, driverId: "", fuel: "elektro", km: 18350, vin: "WVGZZZE2ZMP012345", location: "Büro Linz", note: "Ladekarte im Handschuhfach" },
-      { id: "v6", plate: "VB-987LM", name: "Toyota Hilux", type: "Pick-up", seats: 5, nextService: td(45), nextInspection: td(300), status: "verfuegbar", pool: true, driverId: "", fuel: "diesel", km: 97600, vin: "AHTKB3CD802123456", location: "Werk Vöcklabruck", note: "Allrad, für Baustellen im Gelände" }
-    ],
-    bookings: [
-      { id: "b1", vehicleId: "v4", employeeId: "e1", start: `${td(0)}T07:30`, end: `${td(0)}T17:00`, purpose: "Baubesprechung UW Nord", projectId: "p1" },
-      { id: "b2", vehicleId: "v5", employeeId: "e9", start: `${td(1)}T08:00`, end: `${td(1)}T12:00`, purpose: "Kundentermin", projectId: "" },
-      { id: "b3", vehicleId: "v6", employeeId: "e10", start: `${td(0)}T06:30`, end: `${td(2)}T18:00`, purpose: "Material Tunnel Nord", projectId: "p2" },
-      { id: "b4", vehicleId: "v4", employeeId: "e11", start: `${td(2)}T07:00`, end: `${td(3)}T16:00`, purpose: "Inbetriebnahme Ladepark", projectId: "p3" },
-      { id: "b5", vehicleId: "v5", employeeId: "e1", start: `${td(-3)}T08:00`, end: `${td(-3)}T15:00`, purpose: "Abnahme", projectId: "p3", returned: true, kmEnd: 18350, returnNote: "" },
-      { id: "b6", vehicleId: "v3", employeeId: "e4", start: `${td(-5)}T06:30`, end: `${td(-4)}T17:00`, purpose: "Kabeltrommeln", projectId: "p2", returned: true, kmEnd: 132400, returnNote: "Kontrollleuchte Motor leuchtet" }
-    ],
-    services: [
-      { id: "s1", vehicleId: "v3", kind: "service", status: "geplant", date: td(3), until: td(3), time: "07:30", workshop: "Pappas Vöcklabruck", description: "Großes Service, Bremsen prüfen", km: 0, cost: 0, reportedBy: "e16" },
-      { id: "s2", vehicleId: "v3", kind: "schaden", status: "offen", date: "", until: "", time: "", workshop: "", description: "Kontrollleuchte Motor leuchtet", km: 132400, cost: 0, reportedBy: "e4" },
-      { id: "s3", vehicleId: "v1", kind: "reifen", status: "erledigt", date: td(-160), until: td(-160), time: "08:00", workshop: "Reifen Pichler", description: "Sommerreifen montiert", km: 76100, cost: 64, reportedBy: "e16" },
-      { id: "s4", vehicleId: "v1", kind: "service", status: "erledigt", date: td(-356), until: td(-355), time: "07:30", workshop: "Porsche Vöcklabruck", description: "Jahresservice inkl. Ölwechsel", km: 62500, cost: 486, reportedBy: "e16" },
-      { id: "s5", vehicleId: "v1", kind: "reparatur", status: "erledigt", date: td(-90), until: td(-89), time: "08:00", workshop: "Porsche Vöcklabruck", description: "Schiebetür-Führung getauscht", km: 80020, cost: 312, reportedBy: "e3" },
-      { id: "s6", vehicleId: "v2", kind: "pickerl", status: "erledigt", date: td(-340), until: td(-340), time: "09:00", workshop: "ÖAMTC Vöcklabruck", description: "§57a ohne Mängel", km: 42000, cost: 62, reportedBy: "e16" },
-      { id: "s7", vehicleId: "v4", kind: "service", status: "erledigt", date: td(-245), until: td(-245), time: "07:30", workshop: "Porsche Linz", description: "Service 30.000 km", km: 30100, cost: 398, reportedBy: "e16" },
-      { id: "s8", vehicleId: "v6", kind: "reifen", status: "geplant", date: td(8), until: td(8), time: "10:00", workshop: "Reifen Pichler", description: "Winterreifen montieren", km: 0, cost: 0, reportedBy: "e16" }
-    ],
-    equipment: [
-      { id: "q1", name: "Hubarbeitsbühne 12 m", category: "Hebetechnik", serial: "HB-12-004", nextInspection: d(30), status: "verfuegbar" },
-      { id: "q2", name: "Kabeltrommelanhänger", category: "Kabel", serial: "KT-2201", nextInspection: d(200), status: "verfuegbar" },
-      { id: "q3", name: "Kabelzugmaschine", category: "Kabel", serial: "KZ-0098", nextInspection: d(5), status: "verfuegbar" },
-      { id: "q4", name: "Messkoffer Isolation", category: "Messtechnik", serial: "MK-7781", nextInspection: d(75), status: "verfuegbar" }
+      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     assignments: [
       { id: "a1", resourceType: "employee", resourceId: "e1", projectId: "p1", start: d(0), end: d(1), note: "" },
@@ -130,12 +86,6 @@ export function createSeed(): Data {
       { id: "a9", resourceType: "employee", resourceId: "e6", projectId: "p3", start: d(3), end: d(8), note: "Doppelt verplant" },
       { id: "a10", resourceType: "employee", resourceId: "e7", projectId: "p3", start: d(0), end: d(11), note: "" },
       { id: "a11", resourceType: "employee", resourceId: "e8", projectId: "p2", start: d(0), end: d(15), note: "Kabelzug Abschnitt B" },
-      { id: "a12", resourceType: "vehicle", resourceId: "v1", projectId: "p1", start: d(0), end: d(9), note: "" },
-      { id: "a13", resourceType: "vehicle", resourceId: "v2", projectId: "p2", start: d(-7), end: d(18), note: "" },
-      { id: "a15", resourceType: "equipment", resourceId: "q1", projectId: "p3", start: d(1), end: d(6), note: "" },
-      { id: "a16", resourceType: "equipment", resourceId: "q3", projectId: "p2", start: d(0), end: d(10), note: "" },
-      { id: "a17", resourceType: "equipment", resourceId: "q4", projectId: "p1", start: d(7), end: d(9), note: "Messungen" },
-      { id: "a18", resourceType: "employee", resourceId: "e9", projectId: "p4", start: d(14), end: d(30), note: "Ausführungsplanung" },
       { id: "a19", resourceType: "employee", resourceId: "e10", projectId: "p1", start: d(-7), end: d(20), note: "" },
       { id: "a20", resourceType: "employee", resourceId: "e11", projectId: "p1", start: d(18), end: d(32), note: "Inbetriebnahme" },
       { id: "a21", resourceType: "employee", resourceId: "e11", projectId: "p3", start: d(3), end: d(8), note: "Lastmanagement" },
@@ -149,35 +99,16 @@ export function createSeed(): Data {
     absences: [
       { id: "ab1", employeeId: "e3", type: "schulung", start: d(10), end: d(11), note: "Hochvolt Auffrischung" },
       { id: "ab2", employeeId: "e5", type: "urlaub", start: d(14), end: d(18), note: "" },
-      { id: "ab3", employeeId: "e8", type: "krank", start: d(2), end: d(3), note: "" },
+      { id: "ab3", employeeId: "e8", type: "krank", start: d(9), end: d(10), note: "" },
       { id: "ab4", employeeId: "e1", type: "urlaub", start: d(21), end: d(25), note: "" },
       { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" }
     ],
-    tasks: [
-      { id: "t1", projectId: "p1", title: "Baustelleneinrichtung", phase: "Vorbereitung", start: d(-21), end: d(-17), progress: 100, status: "erledigt", assigneeId: "e1", dependsOn: "", milestone: false },
-      { id: "t2", projectId: "p1", title: "Fundamente & Kabelkanäle", phase: "Tiefbau", start: d(-16), end: d(-3), progress: 100, status: "erledigt", assigneeId: "e4", dependsOn: "t1", milestone: false },
-      { id: "t3", projectId: "p1", title: "Montage Primärtechnik", phase: "Montage", start: d(-2), end: d(12), progress: 35, status: "in_arbeit", assigneeId: "e3", dependsOn: "t2", milestone: false },
-      { id: "t4", projectId: "p1", title: "Sekundärtechnik verdrahten", phase: "Montage", start: d(6), end: d(24), progress: 0, status: "offen", assigneeId: "e3", dependsOn: "t3", milestone: false },
-      { id: "t5", projectId: "p1", title: "Inbetriebnahme & Prüfung", phase: "Abschluss", start: d(25), end: d(38), progress: 0, status: "offen", assigneeId: "e1", dependsOn: "t4", milestone: false },
-      { id: "t6", projectId: "p1", title: "Abnahme", phase: "Abschluss", start: d(40), end: d(40), progress: 0, status: "offen", assigneeId: "e1", dependsOn: "t5", milestone: true },
-      { id: "t7", projectId: "p2", title: "Kabeltrassen Abschnitt A", phase: "Trassen", start: d(-35), end: d(-10), progress: 100, status: "erledigt", assigneeId: "e6", dependsOn: "", milestone: false },
-      { id: "t8", projectId: "p2", title: "Kabeltrassen Abschnitt B", phase: "Trassen", start: d(-9), end: d(6), progress: 60, status: "in_arbeit", assigneeId: "e8", dependsOn: "t7", milestone: false },
-      { id: "t9", projectId: "p2", title: "Kabelzug Abschnitt A+B", phase: "Kabel", start: d(0), end: d(16), progress: 15, status: "in_arbeit", assigneeId: "e8", dependsOn: "", milestone: false },
-      { id: "t10", projectId: "p2", title: "Beleuchtung montieren", phase: "Montage", start: d(10), end: d(24), progress: 0, status: "offen", assigneeId: "e4", dependsOn: "t8", milestone: false },
-      { id: "t11", projectId: "p2", title: "Materialfreigabe Notstrom", phase: "Kabel", start: d(-4), end: d(2), progress: 20, status: "blockiert", assigneeId: "e2", dependsOn: "", milestone: false },
-      { id: "t12", projectId: "p2", title: "Übergabe Abschnitt A–C", phase: "Abschluss", start: d(30), end: d(30), progress: 0, status: "offen", assigneeId: "e2", dependsOn: "t10", milestone: true },
-      { id: "t13", projectId: "p3", title: "Unterverteilungen setzen", phase: "Montage", start: d(-7), end: d(1), progress: 80, status: "in_arbeit", assigneeId: "e5", dependsOn: "", milestone: false },
-      { id: "t14", projectId: "p3", title: "Wallboxen montieren", phase: "Montage", start: d(2), end: d(11), progress: 0, status: "offen", assigneeId: "e5", dependsOn: "t13", milestone: false },
-      { id: "t15", projectId: "p3", title: "Lastmanagement konfigurieren", phase: "Inbetriebnahme", start: d(12), end: d(18), progress: 0, status: "offen", assigneeId: "e1", dependsOn: "t14", milestone: false },
-      { id: "t16", projectId: "p3", title: "Abnahme Netzbetreiber", phase: "Abschluss", start: d(22), end: d(22), progress: 0, status: "offen", assigneeId: "e1", dependsOn: "t15", milestone: true },
-      { id: "t17", projectId: "p4", title: "Ausführungsplanung", phase: "Planung", start: d(14), end: d(28), progress: 0, status: "offen", assigneeId: "e2", dependsOn: "", milestone: false }
-    ],
     issues: [
-      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "", nodeId: "n7" },
+      { id: "i1", projectId: "p2", kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: demoPhoto("Konsole lose", 15), nodeId: "n7" },
       { id: "i2", projectId: "p2", kind: "behinderung", title: "Zufahrt gesperrt durch Tiefbau", description: "Fremdfirma blockiert Zufahrt Portal Nord bis voraussichtlich Freitag.", location: "Portal Nord", severity: "mittel", status: "in_arbeit", assigneeId: "e2", due: d(4), createdAt: d(-1), photo: "", nodeId: "n1" },
       { id: "i3", projectId: "p1", kind: "abweichung", title: "Kabeltyp abweichend geliefert", description: "Geliefert NA2XS2Y statt N2XS2Y – Freigabe durch Planer nötig.", location: "Lager", severity: "mittel", status: "offen", assigneeId: "e1", due: d(3), createdAt: d(-3), photo: "", nodeId: "n16" },
-      { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: "", nodeId: "n24" },
-      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: "", nodeId: "n21" }
+      { id: "i4", projectId: "p3", kind: "mangel", title: "Beschriftung Unterverteilung fehlt", description: "UV-P1 und UV-P2 ohne Stromkreisbeschriftung.", location: "Ebene 1", severity: "niedrig", status: "erledigt", assigneeId: "e5", due: d(-1), createdAt: d(-5), photo: demoPhoto("UV-P1 ohne Beschriftung", 40), nodeId: "n24", fixPhoto: demoPhoto("UV-P1 beschriftet", 140), fixNote: "Alle Stromkreise beschriftet, Plan in der Tür.", fixedAt: d(-1), fixedBy: "e5" },
+      { id: "i5", projectId: "p1", kind: "mangel", title: "Erdungsanschluss Feld 2 fehlt", description: "", location: "Feld 2", severity: "kritisch", status: "offen", assigneeId: "e3", due: d(-1), createdAt: d(-4), photo: demoPhoto("Feld 2 – Erdung", 0), nodeId: "n21" }
     ],
     jobs: [
       { id: "j1", projectId: "p2", employeeId: "e8", title: "Kabelzug Abschnitt B", color: "#2563eb", start: d(0), end: d(3), nodeId: "n6", note: "", done: false },
@@ -228,24 +159,10 @@ export function createSeed(): Data {
       { id: "f4", projectId: "p1", nodeId: "n17", dataUrl: demoPhoto("Feld 1 – Schalter", 150), caption: "Leistungsschalter gesetzt", takenAt: `${d(-3)}T15:20`, authorId: "e3" },
       { id: "f5", projectId: "p3", nodeId: "n24", dataUrl: demoPhoto("UV-P1", 265), caption: "UV-P1 verdrahtet", takenAt: `${d(-2)}T10:30`, authorId: "e5" }
     ],
-    materials: [
-      { id: "m1", projectId: "p2", name: "Kabeltrasse KR 60×300", unit: "m", planned: 1800, delivered: 1200, used: 1050, unitPrice: 18.5, supplier: "Rexel", deliveryDate: d(3), status: "teilgeliefert" },
-      { id: "m2", projectId: "p2", name: "NYY-J 5×16", unit: "m", planned: 3200, delivered: 3200, used: 900, unitPrice: 9.2, supplier: "Schäcke", deliveryDate: d(-10), status: "geliefert" },
-      { id: "m3", projectId: "p2", name: "LED Tunnelleuchte 60 W", unit: "Stk", planned: 140, delivered: 0, used: 0, unitPrice: 310, supplier: "Zumtobel", deliveryDate: d(9), status: "bestellt" },
-      { id: "m4", projectId: "p1", name: "N2XS2Y 1×240 12/20 kV", unit: "m", planned: 900, delivered: 900, used: 200, unitPrice: 42, supplier: "Nexans", deliveryDate: d(-8), status: "geliefert" },
-      { id: "m5", projectId: "p1", name: "Schutzrelais 7SJ82", unit: "Stk", planned: 4, delivered: 0, used: 0, unitPrice: 6800, supplier: "Siemens", deliveryDate: d(12), status: "bestellt" },
-      { id: "m6", projectId: "p3", name: "Wallbox 22 kW", unit: "Stk", planned: 24, delivered: 12, used: 4, unitPrice: 1150, supplier: "ABL", deliveryDate: d(1), status: "teilgeliefert" },
-      { id: "m7", projectId: "p3", name: "DC-Schnelllader 60 kW", unit: "Stk", planned: 4, delivered: 0, used: 0, unitPrice: 24500, supplier: "Alpitronic", deliveryDate: d(16), status: "geplant" }
-    ],
     reports: [
       { id: "r1", projectId: "p2", date: d(-1), weather: "bewoelkt", temperature: 9, crew: 5, hours: 42, work: "Trassen Abschnitt B km 1,0–1,3 montiert, Kabelzug vorbereitet.", incidents: "Zufahrt Nord ab 14 Uhr gesperrt.", authorId: "e2" },
       { id: "r2", projectId: "p1", date: d(-1), weather: "sonnig", temperature: 12, crew: 3, hours: 26, work: "Leistungsschalter Feld 1 gesetzt, Erdung Feld 1 angeschlossen.", incidents: "", authorId: "e1" },
       { id: "r3", projectId: "p3", date: d(-2), weather: "regen", temperature: 7, crew: 2, hours: 16, work: "UV-P1 verdrahtet, Kernbohrungen Ebene 1.", incidents: "", authorId: "e5" }
-    ],
-    documents: [
-      { id: "d1", projectId: "p1", name: "Einreichplan_UW_Nord.pdf", category: "Pläne", size: 2400000, addedAt: d(-20), dataUrl: "" },
-      { id: "d2", projectId: "p2", name: "Leistungsverzeichnis_Tunnel.xlsx", category: "Verträge", size: 480000, addedAt: d(-30), dataUrl: "" },
-      { id: "d3", projectId: "p3", name: "Datenblatt_Wallbox.pdf", category: "Datenblätter", size: 950000, addedAt: d(-6), dataUrl: "" }
     ],
     activity: [
       { id: "ac1", at: `${d(-1)}T16:40:00`, text: "Tagesbericht erstellt: Tunnel Nord", projectId: "p2" },

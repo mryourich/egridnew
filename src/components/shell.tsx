@@ -1,12 +1,12 @@
 "use client";
 
-import { CarFront, FolderKanban, HardHat, Home, LogOut, Settings, Users } from "lucide-react";
+import { HardHat, ListChecks, LogOut, Settings, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { siteSections } from "@/lib/sections";
-import { currentUser, findConflicts, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
+import { currentUser, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
 import { Editor, type EditorTarget } from "./editors";
 import { Avatar } from "./ui";
 
@@ -32,39 +32,12 @@ function Frame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [target, setTarget] = useState<EditorTarget | null>(null);
 
-  const conflicts = findConflicts(data).size;
   const role = roleOf(currentUser(data));
 
-  const all: (Module & { icon: typeof Home; roles: Role[] })[] = [
-    { href: "/dashboard", label: "Start", icon: Home, match: ["/dashboard"], roles: ["pl", "bl", "hr", "monteur"] },
-    {
-      href: "/projekte",
-      label: "Projekte",
-      icon: FolderKanban,
-      match: ["/projekte", "/ressourcenplanung"],
-      roles: ["pl"],
-      sub: [
-        { href: "/projekte", label: "Alle Projekte" },
-        { href: "/ressourcenplanung", label: "Ressourcenplanung", badge: conflicts }
-      ]
-    },
-    { href: "/teamgrid", label: role === "monteur" ? "Meine Baustellen" : "TeamGrid", short: role === "monteur" ? "Baustellen" : undefined, icon: HardHat, match: ["/teamgrid"], roles: ["pl", "bl", "monteur"] },
-    { href: "/ressourcen", label: "Personal", icon: Users, match: ["/ressourcen"], roles: ["pl", "hr"] },
-    role === "fuhrpark"
-      ? {
-          href: "/fuhrpark",
-          label: "Fuhrpark",
-          icon: CarFront,
-          match: ["/fuhrpark"],
-          roles: ["fuhrpark"],
-          sub: [
-            { href: "/fuhrpark", label: "Übersicht" },
-            { href: "/fuhrpark/buchen", label: "Buchungen" },
-            { href: "/fuhrpark/fahrzeuge", label: "Fahrzeuge" },
-            { href: "/fuhrpark/werkstatt", label: "Werkstatt", badge: data.services.filter((x) => x.status === "offen").length }
-          ]
-        }
-      : { href: "/fuhrpark", label: "Fahrzeug buchen", short: "Fahrzeuge", icon: CarFront, match: ["/fuhrpark"], roles: ["pl", "bl", "hr", "monteur"] }
+  const all: (Module & { icon: typeof HardHat; roles: Role[] })[] = [
+    { href: "/dashboard", label: "Heute", icon: ListChecks, match: ["/dashboard"], roles: ["monteur"] },
+    { href: "/baustellen", label: "Baustellen", icon: HardHat, match: ["/baustellen"], roles: ["pl", "bl", "monteur"] },
+    { href: "/team", label: "Team", icon: Users, match: ["/team"], roles: ["pl", "bl"] }
   ];
   const modules = all.filter((m) => m.roles.includes(role));
 
@@ -92,11 +65,11 @@ function Frame({ children }: { children: ReactNode }) {
             <span className="topbar-company">{data.company.name}</span>
             <UserSwitch />
           </header>
-          {current?.href === "/teamgrid" && <TeamGridBar role={role} />}
+          {current?.href === "/baustellen" && <SiteBar role={role} />}
           {current?.sub && (
             <nav className="subbar" aria-label={current.label}>
               {current.sub.map((s) => (
-                <Link key={s.href} href={s.href} className={(s.href === "/fuhrpark" ? pathname === s.href : isActive([s.href])) ? "active" : ""}>
+                <Link key={s.href} href={s.href} className={isActive([s.href]) ? "active" : ""}>
                   {s.label}
                   {s.badge ? <em>{s.badge}</em> : null}
                 </Link>
@@ -155,8 +128,8 @@ function UserSwitch() {
           <small className="menu-title">
             <LogOut size={12} /> Anmelden als (Demo)
           </small>
-          {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Personal“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
-          {(["hr", "fuhrpark", "pl", "bl", "monteur"] as Role[])
+          {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Team“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
+          {(["bl", "monteur"] as Role[])
             .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
             .map((r) => (
             <div key={r} className="menu-group">
@@ -185,8 +158,8 @@ function UserSwitch() {
   );
 }
 
-/** TeamGrid navigation: site picker plus the sections of the open site. */
-function TeamGridBar({ role }: { role: Role }) {
+/** Site navigation: site picker plus the sections of the open site. */
+function SiteBar({ role }: { role: Role }) {
   const { data } = useStore();
   const pathname = usePathname();
   const router = useRouter();
@@ -198,11 +171,11 @@ function TeamGridBar({ role }: { role: Role }) {
   if (!site) {
     return (
       <nav className="subbar" aria-label="Baustellen">
-        <Link href="/teamgrid" className={pathname === "/teamgrid" ? "active" : ""}>
+        <Link href="/baustellen" className={pathname === "/baustellen" ? "active" : ""}>
           Übersicht
         </Link>
         {sites.map((p) => (
-          <Link key={p.id} href={`/teamgrid/${p.id}`}>
+          <Link key={p.id} href={`/baustellen/${p.id}`}>
             <i className="dot" style={{ background: p.color }} /> {p.name}
           </Link>
         ))}
@@ -225,7 +198,7 @@ function TeamGridBar({ role }: { role: Role }) {
         className="site-picker"
         value={site.id}
         style={{ borderColor: site.color }}
-        onChange={(e) => router.push(`/teamgrid/${e.target.value}/${section ?? ""}`)}
+        onChange={(e) => router.push(`/baustellen/${e.target.value}/${section ?? ""}`)}
         aria-label="Baustelle wechseln"
       >
         {sites.map((p) => (
@@ -237,7 +210,7 @@ function TeamGridBar({ role }: { role: Role }) {
       {siteSections
         .filter((s) => s.roles.includes(role))
         .map((s) => (
-          <Link key={s.key} href={`/teamgrid/${site.id}/${s.key}`} className={section === s.key ? "active" : ""}>
+          <Link key={s.key} href={`/baustellen/${site.id}/${s.key}`} className={section === s.key ? "active" : ""}>
             {s.label}
             {counts[s.key] ? <em>{counts[s.key]}</em> : null}
           </Link>

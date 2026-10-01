@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertTriangle, Camera, Trash2, X } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { addDays, today } from "@/lib/date";
+import { addDays, fmt, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { canDelete, plannable, uid, useStore } from "@/lib/store";
+import { canDelete, currentUser, employeeName, plannable, uid, useStore } from "@/lib/store";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
 import { downscale } from "./ui";
 
@@ -71,9 +71,15 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
     due: issue.due ?? addDays(today(), 3),
     createdAt: issue.createdAt ?? today(),
     photo: issue.photo ?? "",
-    nodeId: issue.nodeId ?? ""
+    nodeId: issue.nodeId ?? "",
+    fixPhoto: issue.fixPhoto ?? "",
+    fixNote: issue.fixNote ?? "",
+    fixedAt: issue.fixedAt,
+    fixedBy: issue.fixedBy
   });
   const photoInput = useRef<HTMLInputElement>(null);
+  const fixInput = useRef<HTMLInputElement>(null);
+  const me = currentUser(data);
   const set = (patch: Partial<Issue>) => setV((o) => ({ ...o, ...patch }));
   const project = data.projects.find((p) => p.id === v.projectId);
 
@@ -85,14 +91,20 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
 
   const submit = () => {
     if (!v.title.trim()) return;
-    save("issues", { ...v, title: v.title.trim() }, isNew ? `Mangel „${v.title.trim()}“ gemeldet` : `Mangel „${v.title.trim()}“ aktualisiert`);
-    notify(isNew ? "Mangel gemeldet" : "Mangel gespeichert");
+    const done = v.status === "erledigt";
+    // who fixed it and when is recorded once; reopening clears it
+    const item: Issue = done
+      ? { ...v, title: v.title.trim(), fixNote: v.fixNote?.trim(), fixedAt: v.fixedAt || today(), fixedBy: v.fixedBy || me?.id }
+      : { ...v, title: v.title.trim(), fixedAt: undefined, fixedBy: undefined };
+    const was = data.issues.find((i) => i.id === v.id)?.status;
+    save("issues", item, isNew ? `Mangel „${item.title}“ gemeldet` : done && was !== "erledigt" ? `Mangel „${item.title}“ behoben` : `Mangel „${item.title}“ aktualisiert`);
+    notify(isNew ? "Mangel gemeldet" : done && was !== "erledigt" ? "Als behoben gemeldet ✓" : "Mangel gespeichert");
     onClose();
   };
 
   return (
     <div className="sheet-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="job-pop issue-sheet" style={{ "--c": SEVERITY_COLOR[v.severity] } as CSSProperties} role="dialog" aria-label={isNew ? "Neuer Mangel" : "Mangel"}>
+      <div className="job-pop issue-sheet" style={{ "--c": v.status === "erledigt" ? "#059669" : SEVERITY_COLOR[v.severity] } as CSSProperties} role="dialog" aria-label={isNew ? "Neuer Mangel" : "Mangel"}>
         <header>
           <span>
             {isNew ? "Neuer Mangel" : "Mangel"}
@@ -194,6 +206,58 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
             </div>
           )}
 
+          {!isNew && v.status === "erledigt" && (
+            <div className="fix-box">
+              <strong>
+                <CheckCircle2 size={14} /> Behebung
+                {v.fixedAt && (
+                  <small>
+                    {fmt(v.fixedAt)}
+                    {v.fixedBy ? ` · ${employeeName(data, v.fixedBy)}` : ""}
+                  </small>
+                )}
+              </strong>
+              <div className={`issue-photo-slot fix ${v.fixPhoto ? "has" : ""}`}>
+                {v.fixPhoto ? (
+                  <>
+                    <img src={v.fixPhoto} alt="Nach Behebung" />
+                    <span className="slot-actions">
+                      <button type="button" className="btn btn-sm" onClick={() => fixInput.current?.click()}>
+                        <Camera size={13} /> Neu
+                      </button>
+                      <button type="button" className="btn btn-sm" onClick={() => set({ fixPhoto: "" })} aria-label="Foto entfernen">
+                        <Trash2 size={13} />
+                      </button>
+                    </span>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => fixInput.current?.click()}>
+                    <Camera size={20} />
+                    <span>Foto nach Behebung</span>
+                  </button>
+                )}
+                <input
+                  ref={fixInput}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  hidden
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) set({ fixPhoto: await downscale(file, 1280) });
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              <div className="job-grid">
+                <label className="full">
+                  <span>Was wurde gemacht?</span>
+                  <textarea rows={2} value={v.fixNote ?? ""} onChange={(e) => set({ fixNote: e.target.value })} placeholder="z. B. Konsolen nachgezogen, Drehmoment geprüft" />
+                </label>
+              </div>
+            </div>
+          )}
+
           <footer>
             {!isNew && canDelete(data) && (
               <button
@@ -214,7 +278,7 @@ export function IssueSheet({ issue, onClose }: { issue: Partial<Issue>; onClose:
               Abbrechen
             </button>
             <button type="submit" className="btn btn-sm btn-primary" disabled={!v.title.trim()}>
-              {isNew ? "Melden" : "Speichern"}
+              {isNew ? "Melden" : v.status === "erledigt" && data.issues.find((i) => i.id === v.id)?.status !== "erledigt" ? "Behoben melden" : "Speichern"}
             </button>
           </footer>
         </form>

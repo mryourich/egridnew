@@ -1,59 +1,44 @@
 # VYSNpro
 
-Die Unternehmenszentrale für Firmen mit Projekt- und Baustellengeschäft: Ressourcen planen,
-Projekte steuern, Mängel erfassen und das Team im Blick behalten – in einer App.
+Baustellenmanagement für Bauleitung und Monteure: Aufgaben planen, Mängel erfassen und beheben,
+Fotos dokumentieren und Tagesberichte als PDF – im Büro und am Handy.
 
 ## Aufbau
 
-Eine Plattform für mehrere Mandanten (jede Firma bekommt ihren eigenen Bereich). Jede Rolle sieht nur,
-was sie braucht – und alles ist verknüpft:
+Mehrere Firmen (Mandanten), jede mit eigenen Daten. Zwei Rollen:
 
-```
-HR (Personal, Abwesenheiten)
-  → Projektleitung (plant, wer auf welcher Baustelle ist)
-    → Bauleitung (verteilt Aufgaben an das Team im Baustellen-Plan)
-      → Monteure (sehen „Heute zu tun“, haken ab, machen Fotos)
-```
-
-| Rolle | Startseite | Module |
+| Rolle | Start | Darf |
 | --- | --- | --- |
-| **Projektleitung** | Kennzahlen, Auslastung, Fristen | Projekte (Einsatzplanung je Projekt, Ressourcenplanung), TeamGrid, Personal |
-| **Bauleitung** | Meine Baustellen (Karten) | TeamGrid-Menü je Baustelle: **Plan** (Aufgaben per Klick/Rechtsklick, Farbpalette, duplizieren), **Struktur** (Bereiche → Punkte, Klick öffnet), **Fotos** (Galerie je Bereich, Export ZIP/PDF), **Mängel** (Kamera zuerst), **Tagesberichte** (PDF mit KW, Aufgaben, Struktur-Fortschritt, Fotos), Team |
-| **Monteur** | Heute zu tun, die nächsten Tage | Meine Baustellen (Struktur, Fotos, Mängel) |
-| **HR** | Kennzahlen | Personal (Mitarbeiter, Abwesenheiten) |
-| **Fuhrpark** | Übersicht: fällige Services/Pickerl, Meldungen, Werkstatttermine, heute unterwegs | Buchungen (Wochenplan), Fahrzeuge (Akte mit Service-Historie), Werkstatt (Termine ausmachen, Historie mit Kosten) |
-| **Alle** | – | **Fahrzeug buchen**: freies Poolfahrzeug finden, buchen, zurückgeben (Kilometer, Schaden melden) |
+| **Bauleitung** | Baustellen (Karten) | Baustellen anlegen, Team verwalten und einteilen, alles bearbeiten und löschen |
+| **Monteur** | „Heute“: Aufgaben, eigene Mängel, nächste Tage | erfassen, abhaken, Mängel als behoben melden – aber nichts löschen |
 
-**Start:** Die App beginnt leer mit einem HR-Zugang („Personalabteilung“). HR legt Mitarbeiter an und vergibt
-ihre **Rechte** (Projektleitung, Bauleitung, HR, Fuhrpark, Monteur). Danach oben rechts auf den Namen klicken und in die
-jeweilige Rolle wechseln (Demo bis zum echten Login). Unter *Einstellungen* lässt sich eine Demo-Firma laden
-oder wieder alles löschen.
+Je Baustelle: **Plan** (Aufgaben per Klick/Rechtsklick in halben Tagen, Farbpalette, Symbole, Urlaub verschiebbar),
+**Struktur** (Bereiche → Punkte zum Abhaken), **Fotos** (Galerie je Bereich, ZIP/PDF), **Mängel** (Kamera zuerst,
+Frist, Zuständigkeit, Behebung mit Nachher-Foto, Mängelbericht als PDF), **Tagesberichte** (PDF mit KW) und **Team**.
 
-**Rechte:** Monteure dürfen erfassen und abhaken, aber nichts löschen (keine Aufgaben, Fotos, Mängel, Punkte).
+Die Projektleitung (mehrere Baustellen und Bauleiter planen) folgt als nächster Schritt.
 
-Die Daten liegen im Moment im Browser (localStorage) und sind mit Demo-Daten vorbefüllt.
-Supabase (Login, Mandanten, Datenbank und Foto-Speicher) ist der nächste Schritt.
+**Start:** Die App beginnt leer mit einem Bauleitungs-Zugang. Unter *Team* Mitarbeiter mit Rechten anlegen,
+unter *Baustellen* die erste Baustelle anlegen und Leute einteilen. Oben rechts auf den Namen klicken, um in eine
+andere Rolle zu wechseln (Demo bis zum echten Login). `/demo` lädt eine Demo-Firma, `/demo?start=leer` startet leer.
 
-Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CSS (`src/app/globals.css`).
+Die Daten liegen im Moment im Browser (localStorage). Supabase (Login, Mandanten, Datenbank, Foto-Speicher) ist der nächste Schritt.
+
+Technik: Next.js 16 (App Router), React 19, TypeScript, lucide-react, eigenes CSS (`src/app/globals.css`, Website: `src/app/landing.css`).
 
 | Pfad | Inhalt |
 | --- | --- |
-| `src/app/(app)/*` | Seiten: dashboard, projekte, projekte/[id], ressourcenplanung, teamgrid, teamgrid/[id], ressourcen, fuhrpark (buchen, fahrzeuge, fahrzeuge/[id], werkstatt), einstellungen |
-| `src/components/planner.tsx` | Ressourcenplaner (Plantafel) |
-| `src/components/site.tsx` | SiteManager: Struktur-Baum, Seitenfenster, Fotos, Lightbox |
-| `src/components/site-gantt.tsx` | Baustellen-Plan mit Aufgaben und Farbpalette |
-| `src/components/my-work.tsx` | Startseite Monteur |
-| `src/components/issue-sheet.tsx` | Mängel-Karte (Kamera zuerst am Handy) |
-| `src/app/(print)/*` | Druck-/PDF-Ansichten: Tagesbericht, Fotobericht |
-| `src/components/sites-overview.tsx` | Baustellen-Karten Bauleitung |
-| `src/components/gantt.tsx` | Gantt für den Terminplan |
-| `src/components/editors.tsx` | Formulare für alle Datensätze |
-| `src/components/fleet.tsx` | Fuhrpark: Buchungs- und Werkstattkarte, Wochenplan, Fahrzeugsuche |
-| `src/components/fleet-pages.tsx` | Fuhrpark-Übersicht und Buchungsseite |
-| `src/lib/fleet.ts` | Verfügbarkeit, Fahrzeugstatus, Fälligkeiten |
-| `src/lib/site.ts` | Baum-Hilfen (Pfad, Fortschritt, Ebenen) |
-| `src/lib/store.tsx` | Datenspeicher |
-| `src/lib/seed.ts` | Demo-Daten (relativ zum heutigen Datum) |
+| `src/app/page.tsx` | Website (vysnpro.com) |
+| `src/app/(app)/*` | App: dashboard, baustellen, baustellen/[id]/[abschnitt], team, einstellungen, demo |
+| `src/app/(print)/*` | PDF-Ansichten: Tagesbericht, Fotobericht, Mängelbericht |
+| `src/components/site-gantt.tsx` | Baustellenplan |
+| `src/components/site.tsx` | Struktur, Fotos, Lightbox |
+| `src/components/site-sections.tsx` | Mängel, Tagesberichte, Team je Baustelle |
+| `src/components/issue-sheet.tsx` | Mängel-Karte mit Behebung |
+| `src/components/my-work.tsx` | „Heute“ für Monteure |
+| `src/components/sites-overview.tsx` | Baustellen-Karten |
+| `src/components/editors.tsx` | Formulare |
+| `src/lib/store.tsx` · `seed.ts` · `site.ts` | Datenspeicher, Demo-Daten, Baum-Hilfen |
 
 ## Lokal starten
 

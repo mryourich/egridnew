@@ -14,7 +14,7 @@ type Store = {
   setCompany: (company: Company) => void;
   setCurrentUser: (id: string) => void;
   replaceAll: (data: Data) => void;
-  /** "empty" starts a clean company with one HR login, "demo" loads the sample company. */
+  /** "empty" starts a clean company with one site-management login, "demo" loads the sample company. */
   reset: (kind: "empty" | "demo") => void;
   notify: (text: string) => void;
   toast: string;
@@ -83,7 +83,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
       // Cascade: removing a project or resource removes what hangs off it.
       if (key === "projects") {
-        for (const k of ["assignments", "tasks", "issues", "materials", "reports", "documents", "siteNodes", "photos", "jobs"] as const) {
+        for (const k of ["assignments", "issues", "reports", "siteNodes", "photos", "jobs"] as const) {
           (next as Record<string, unknown>)[k] = (next[k] as { projectId: string }[]).filter((x) => x.projectId !== id);
         }
       }
@@ -103,16 +103,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.assignments = next.assignments.filter((a) => !(a.resourceType === "employee" && a.resourceId === id));
         next.absences = next.absences.filter((a) => a.employeeId !== id);
         next.jobs = next.jobs.filter((j) => j.employeeId !== id);
-        next.bookings = next.bookings.filter((b) => b.employeeId !== id);
-        next.vehicles = next.vehicles.map((v) => (v.driverId === id ? { ...v, driverId: "" } : v));
-      }
-      if (key === "vehicles" || key === "equipment") {
-        const type = key === "vehicles" ? "vehicle" : "equipment";
-        next.assignments = next.assignments.filter((a) => !(a.resourceType === type && a.resourceId === id));
-        if (key === "vehicles") {
-          next.bookings = next.bookings.filter((b) => b.vehicleId !== id);
-          next.services = next.services.filter((x) => x.vehicleId !== id);
-        }
       }
       return next;
     });
@@ -132,7 +122,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             if (kind === "empty") return createEmpty();
             // keep the viewer in the same role when switching to the demo firm
             const seed = createSeed();
-            const role = old ? roleOf(currentUser(old)) : "hr";
+            const role = old ? roleOf(currentUser(old)) : "bl";
             const same = seed.employees.find((e) => roleOf(e) === role);
             return same ? { ...seed, currentUserId: same.id } : seed;
           }),
@@ -186,36 +176,19 @@ export function findConflicts(data: Data) {
   return conflicts;
 }
 
-export function resourceName(data: Data, type: Assignment["resourceType"], id: string) {
-  if (type === "employee") return data.employees.find((e) => e.id === id)?.name ?? "–";
-  if (type === "vehicle") {
-    const v = data.vehicles.find((x) => x.id === id);
-    return v ? `${v.name} (${v.plate})` : "–";
-  }
-  return data.equipment.find((x) => x.id === id)?.name ?? "–";
-}
-
 export function employeeName(data: Data, id: string) {
   return data.employees.find((e) => e.id === id)?.name ?? "–";
-}
-
-export function projectProgress(data: Data, projectId: string) {
-  const tasks = data.tasks.filter((t) => t.projectId === projectId && !t.milestone);
-  if (!tasks.length) return 0;
-  const weight = (t: (typeof tasks)[number]) => Math.max(1, (Date.parse(t.end) - Date.parse(t.start)) / 86_400_000 + 1);
-  const total = tasks.reduce((s, t) => s + weight(t), 0);
-  return Math.round(tasks.reduce((s, t) => s + weight(t) * t.progress, 0) / total);
 }
 
 export function currentUser(data: Data) {
   return data.employees.find((e) => e.id === data.currentUserId) ?? data.employees[0];
 }
 
-/** Projects a user leads on site, manages, or is planned for – what TeamGrid may open. */
-export function myProjects(data: Data, userId = data.currentUserId) {
+/** Sites a user runs or is planned on – what they may open. Finished sites only on request. */
+export function myProjects(data: Data, userId = data.currentUserId, withDone = false) {
   return data.projects.filter(
     (p) =>
-      p.status !== "abgeschlossen" &&
+      (withDone || p.status !== "abgeschlossen") &&
       (p.siteManagerId === userId || p.managerId === userId || data.assignments.some((a) => a.projectId === p.id && a.resourceType === "employee" && a.resourceId === userId))
   );
 }
@@ -225,8 +198,6 @@ export type Role = AccessRole;
 export const roleLabel: Record<Role, string> = {
   pl: "Projektleitung",
   bl: "Bauleitung",
-  hr: "Personal (HR)",
-  fuhrpark: "Fuhrpark",
   monteur: "Monteur"
 };
 
@@ -236,8 +207,6 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   const r = (e?.role ?? "").toLowerCase();
   if (r.includes("projektleit")) return "pl";
   if (r.includes("bauleit")) return "bl";
-  if (/\bhr\b/.test(r) || r.includes("personal")) return "hr";
-  if (r.includes("fuhrpark")) return "fuhrpark";
   return "monteur";
 }
 
@@ -246,15 +215,12 @@ export function canDelete(data: Data) {
   return roleOf(currentUser(data)) !== "monteur";
 }
 
-/** Office roles that are never planned onto sites. */
-const OFFICE: Role[] = ["hr", "fuhrpark"];
-
-/** People that can be planned onto sites – HR and fleet management have nothing to do with projects. */
+/** People that can be put on a site. */
 export function plannable(data: Data) {
-  return data.employees.filter((e) => e.active && !OFFICE.includes(roleOf(e)));
+  return data.employees.filter((e) => e.active);
 }
 
-/** Fleet management: all vehicles, workshop dates and service history. */
-export function canManageFleet(data: Data) {
-  return roleOf(currentUser(data)) === "fuhrpark";
+/** Site management runs the tool: sites, team, settings. */
+export function isManager(data: Data) {
+  return roleOf(currentUser(data)) !== "monteur";
 }

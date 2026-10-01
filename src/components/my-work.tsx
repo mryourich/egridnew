@@ -1,11 +1,13 @@
 "use client";
 
-import { CalendarDays, Camera, MapPin } from "lucide-react";
+import { AlertTriangle, CalendarDays, Camera, CheckCircle2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { addDays, fmt, inRange, isWeekend, today, weekdayShort } from "@/lib/date";
-import { pathLabel } from "@/lib/site";
+import * as L from "@/lib/labels";
+import { pathLabel, shortPath } from "@/lib/site";
 import { currentUser, myProjects, useStore } from "@/lib/store";
 import type { Job } from "@/lib/types";
+import { useEditor } from "./shell";
 import { PhotoAddButton } from "./site";
 import { Badge, Dot, Empty } from "./ui";
 
@@ -17,6 +19,7 @@ function greeting() {
 /** Home of a worker: today's jobs, the week ahead and the sites they are on. */
 export function MyWork() {
   const { data, save, notify } = useStore();
+  const openEditor = useEditor();
   const me = currentUser(data);
   const t = today();
   const mine = data.jobs.filter((j) => j.employeeId === me?.id);
@@ -24,6 +27,10 @@ export function MyWork() {
   const where = data.assignments.filter((a) => a.resourceType === "employee" && a.resourceId === me?.id && inRange(t, a.start, a.end));
   const absence = data.absences.find((a) => a.employeeId === me?.id && inRange(t, a.start, a.end));
   const sites = myProjects(data);
+  const rank = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
+  const defects = data.issues
+    .filter((i) => i.assigneeId === me?.id && i.status !== "erledigt")
+    .sort((a, b) => rank[a.severity] - rank[b.severity] || (a.due || "9").localeCompare(b.due || "9"));
 
   const week: { date: string; jobs: Job[] }[] = [];
   for (let d = addDays(t, 1); week.length < 5; d = addDays(d, 1)) {
@@ -52,7 +59,7 @@ export function MyWork() {
                 {where.map((a) => {
                   const p = data.projects.find((x) => x.id === a.projectId);
                   return p ? (
-                    <Link key={a.id} href={`/teamgrid/${p.id}`} className="hero-site">
+                    <Link key={a.id} href={`/baustellen/${p.id}`} className="hero-site">
                       <MapPin size={13} /> {p.name}
                     </Link>
                   ) : (
@@ -88,7 +95,7 @@ export function MyWork() {
                     <strong>{j.title}</strong>
                     <small>
                       {p && (
-                        <Link href={`/teamgrid/${p.id}`}>
+                        <Link href={`/baustellen/${p.id}`}>
                           <Dot color={p.color} /> {p.name}
                         </Link>
                       )}
@@ -104,6 +111,40 @@ export function MyWork() {
           </ul>
         )}
       </section>
+
+      {defects.length > 0 && (
+        <section className="card">
+          <header className="card-header">
+            <h2>
+              <AlertTriangle size={15} /> Meine Mängel
+            </h2>
+            <span className="muted small">{defects.length} offen</span>
+          </header>
+          <ul className="defect-list">
+            {defects.map((i) => {
+              const p = data.projects.find((x) => x.id === i.projectId);
+              const late = i.due && i.due < t;
+              return (
+                <li key={i.id}>
+                  <button type="button" className="defect-open" onClick={() => openEditor({ kind: "issue", item: i })}>
+                    {i.photo ? <img src={i.photo} alt="" /> : <span className={`defect-dot sev-${i.severity}`} />}
+                    <span>
+                      <strong>{i.title}</strong>
+                      <small>
+                        {p?.name}
+                        {i.nodeId ? ` · ${shortPath(data.siteNodes, i.nodeId)}` : ""} · <span className={late ? "text-red" : ""}>bis {fmt(i.due)}</span> · {L.severity[i.severity].label}
+                      </small>
+                    </span>
+                  </button>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => openEditor({ kind: "issue", item: { ...i, status: "erledigt" } })}>
+                    <CheckCircle2 size={14} /> Behoben
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <header className="card-header">
@@ -139,7 +180,7 @@ export function MyWork() {
           <ul className="compact-list">
             {sites.map((p) => (
               <li key={p.id}>
-                <Link href={`/teamgrid/${p.id}`}>
+                <Link href={`/baustellen/${p.id}`}>
                   <Dot color={p.color} />
                   <strong>{p.name}</strong>
                   <span className="muted">{p.location}</span>
