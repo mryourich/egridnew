@@ -233,7 +233,7 @@ final class AppStore {
         var tasks: [MyTask] = data.nodes
             .filter { $0.assigneeId == me && $0.status != .erledigt && !parents.contains($0.id) && projectIds.contains($0.projectId) }
             .map { n in
-                MyTask(id: n.id, kind: .point, title: n.title, projectId: n.projectId, context: path(of: n),
+                MyTask(id: n.id, kind: .point, title: n.title, projectId: n.projectId, context: self.node(n.parentId)?.title ?? "Punkt",
                        due: n.due, overdue: (n.due.map { $0 < today }) ?? false)
             }
         tasks += data.issues
