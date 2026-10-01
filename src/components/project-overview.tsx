@@ -1,13 +1,13 @@
 "use client";
 
-import { AlertTriangle, Building2, Camera, CheckCircle2, ClipboardList, Hammer, ImagePlus, Package, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Building2, Camera, CheckCircle2, ClipboardList, Hammer, History, ImagePlus, Package, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
 import { fmt, fmtShort, inRange, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { ago, projectStats } from "@/lib/overview";
+import { projectStats } from "@/lib/overview";
 import { shortPath } from "@/lib/site";
-import { employeeName, isManager, projectTeam, useStore } from "@/lib/store";
+import { employeeName, fmtStamp, isManager, projectTeam, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
 import { Panel, rowName } from "./dashboard";
 import { InviteDialog } from "./invite";
@@ -19,6 +19,7 @@ export function ProjectOverview({ project }: { project: Project }) {
   const { data, save, notify } = useStore();
   const manager = isManager(data);
   const [invite, setInvite] = useState(false);
+  const [allLog, setAllLog] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const t = today();
   const s = projectStats(data, project);
@@ -286,26 +287,55 @@ export function ProjectOverview({ project }: { project: Project }) {
         ))}
       </Panel>
 
-      <Panel title="Letzter Tagesbericht & Aktivität" icon={<ClipboardList size={16} />} empty="Noch nichts passiert." wide>
-        {s.lastReport && (
+      {s.lastReport && (
+        <Panel title="Letzter Tagesbericht" icon={<ClipboardList size={16} />} empty="">
           <Link href={`${base}/berichte`} className="dl-item ov-report">
             <span className="dl-date">{fmtShort(s.lastReport.date)}</span>
             <span>
-              <strong>Tagesbericht · {s.lastReport.crew} Personen · {s.lastReport.hours} Std.</strong>
+              <strong>
+                {s.lastReport.crew} Personen · {s.lastReport.hours} Std. · {employeeName(data, s.lastReport.authorId)}
+              </strong>
               <small>{s.lastReport.work || "–"}</small>
             </span>
           </Link>
+        </Panel>
+      )}
+
+      <section className="card dash-panel wide ov-log">
+        <header className="card-header">
+          <h2>
+            <History size={16} /> Protokoll
+          </h2>
+          <span className="muted small">Wer hat wann was gemacht</span>
+        </header>
+        {s.activity.length ? (
+          <table className="log-table">
+            <thead>
+              <tr>
+                <th>Zeitpunkt</th>
+                <th>Wer</th>
+                <th>Was</th>
+              </tr>
+            </thead>
+            <tbody>
+              {s.activity.slice(0, allLog ? 1000 : 15).map((a) => (
+                <tr key={a.id}>
+                  <td>{fmtStamp(a.at)}</td>
+                  <td>{a.by ? employeeName(data, a.by) : "–"}</td>
+                  <td>{a.text}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="dl-empty">Noch nichts passiert.</p>
         )}
-        {s.activity.slice(0, 6).map((a) => (
-          <div key={a.id} className="dl-item dl-act">
-            <i className="dl-dot" style={{ background: project.color }} />
-            <span>
-              <strong>{a.text}</strong>
-              <small>{ago(a.at)}</small>
-            </span>
-          </div>
-        ))}
-      </Panel>
+        {!allLog && s.activity.length > 15 && (
+          <button type="button" className="btn btn-sm log-more" onClick={() => setAllLog(true)}>
+            Alle {s.activity.length} Einträge anzeigen
+          </button>
+        )}
+      </section>
 
       {invite && <InviteDialog project={project} onClose={() => setInvite(false)} />}
     </div>

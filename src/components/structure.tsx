@@ -7,6 +7,7 @@ import * as L from "@/lib/labels";
 import { childrenOf, isArea, nodeStatus, pathOf, pointsUnder } from "@/lib/site";
 import { canDelete, employeeName, isManager, projectTeam, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Project, SiteNode } from "@/lib/types";
+import { NODE_LABELS, Trail } from "./trail";
 import { IssueButton } from "./issue-sheet";
 import { EmpAvatar } from "./person";
 import { useEditor } from "./shell";
@@ -402,7 +403,8 @@ function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project
       <span className="op-title">
         <strong>{node.title}</strong>
         {node.status === "in_arbeit" && <em className="op-chip">In Arbeit</em>}
-        {node.due && <small className={overdue ? "text-red" : "muted"}>bis {fmtShort(node.due)}</small>}
+        {node.due && node.status !== "erledigt" && <small className={overdue ? "text-red" : "muted"}>bis {fmtShort(node.due)}</small>}
+        {node.status === "erledigt" && <Trail item={node} labels={NODE_LABELS} compact />}
       </span>
       <span className="op-assignee" onClick={(e) => e.stopPropagation()}>
         {node.assigneeId ? <EmpAvatar id={node.assigneeId} size={24} /> : <span className="avatar nz">NZ</span>}
@@ -548,6 +550,14 @@ function PointPanel({ node, nodes, project, onClose, onStatus }: { node: SiteNod
               </ul>
             </section>
           )}
+
+          <section className="detail-section">
+            <header>
+              <h3>Verlauf</h3>
+            </header>
+            <Trail item={node} labels={NODE_LABELS} />
+            {!node.createdTs && !node.history?.length && <p className="muted small">Noch keine Einträge.</p>}
+          </section>
 
           {canDelete(data) && (
             <footer className="drawer-foot">

@@ -21,6 +21,27 @@ type Store = {
 
 const StoreContext = createContext<Store | null>(null);
 
+/** Local date-time "YYYY-MM-DDTHH:mm:ss" (not UTC – shown as is). */
+export function nowStamp() {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+/** "01.10.2026, 14:32" */
+export function fmtStamp(ts: string | undefined) {
+  if (!ts) return "";
+  const [d, t = ""] = ts.split("T");
+  const [y, m, day] = d.split("-");
+  return `${day}.${m}.${y}${t ? `, ${t.slice(0, 5)}` : ""}`;
+}
+
+/** Material status may only be changed by site and project management. */
+export function canSetMaterialStatus(data: Data) {
+  const r = roleOf(currentUser(data));
+  return r === "bl" || r === "pl";
+}
+
 export function uid(prefix = "") {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -63,14 +84,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const withActivity = (d: Data, text: string | undefined, projectId: string) =>
-    text ? [{ id: uid("ac"), at: new Date().toISOString().slice(0, 19), text, projectId }, ...d.activity].slice(0, 200) : d.activity;
+    text ? [{ id: uid("ac"), at: nowStamp(), by: d.currentUserId, text, projectId }, ...d.activity].slice(0, 1000) : d.activity;
 
   const save = useCallback(<K extends CollectionKey>(key: K, item: Item<K>, activity?: string) => {
     setData((d) => {
       if (!d) return d;
       const list = d[key] as Item<K>[];
-      const exists = list.some((x) => x.id === item.id);
-      const next = exists ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item];
+      const old = list.find((x) => x.id === item.id) as Record<string, unknown> | undefined;
+      const exists = !!old;
+      // stamp who created / changed it and record every status change
+      let stamped = item;
+      if (key !== "activity") {
+        const ts = nowStamp();
+        const me = d.currentUserId;
+        const it = { ...(item as Record<string, unknown>) };
+        if (!old) {
+          it.createdBy ??= me;
+          it.createdTs ??= ts;
+        } else {
+          // forms that rebuild the entry keep its origin and history
+          for (const f of ["createdBy", "createdTs", "history"]) if (it[f] === undefined && old[f] !== undefined) it[f] = old[f];
+          it.updatedBy = me;
+          it.updatedTs = ts;
+        }
+        if ("status" in it && key !== "projects" && (!old || old.status !== it.status)) {
+          const hist = (Array.isArray(it.history) ? it.history : []) as { status: string; by: string; ts: string }[];
+          it.history = [...hist, { status: String(it.status), by: me, ts }];
+        }
+        stamped = it as Item<K>;
+      }
+      const next = exists ? list.map((x) => (x.id === stamped.id ? stamped : x)) : [...list, stamped];
       const projectId = "projectId" in item ? String(item.projectId) : key === "projects" ? item.id : "";
       return { ...d, [key]: next, activity: withActivity(d, activity, projectId) };
     });

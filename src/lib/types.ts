@@ -1,6 +1,19 @@
 /** ISO date string, YYYY-MM-DD */
 export type ISODate = string;
 
+/** Local date-time YYYY-MM-DDTHH:mm:ss */
+export type Stamp = string;
+
+/** Who created / changed an entry and when – filled in automatically by the store. */
+export type Tracked = {
+  createdBy?: string;
+  createdTs?: Stamp;
+  updatedBy?: string;
+  updatedTs?: Stamp;
+  /** Every status change: new status, who, when. */
+  history?: { status: string; by: string; ts: Stamp }[];
+};
+
 export type ProjectStatus = "planung" | "aktiv" | "pausiert" | "abgeschlossen";
 
 export type Project = {
@@ -72,7 +85,7 @@ export type Absence = {
 };
 
 /** Work the site manager hands to a worker on the site schedule (Tom's-Planner style bar). */
-export type Job = {
+export type Job = Tracked & {
   id: string;
   projectId: string;
   employeeId: string;
@@ -97,7 +110,7 @@ export type Job = {
 export type NodeStatus = "offen" | "in_arbeit" | "erledigt";
 
 /** Structure of a construction site: areas, sub-areas and single points (any depth). */
-export type SiteNode = {
+export type SiteNode = Tracked & {
   id: string;
   projectId: string;
   /** Empty string for top-level areas. */
@@ -112,7 +125,7 @@ export type SiteNode = {
   kind?: "area" | "point";
 };
 
-export type Photo = {
+export type Photo = Tracked & {
   id: string;
   projectId: string;
   nodeId: string;
@@ -127,7 +140,7 @@ export type IssueKind = "mangel" | "abweichung" | "behinderung";
 export type IssueStatus = "offen" | "in_arbeit" | "erledigt";
 export type Severity = "niedrig" | "mittel" | "hoch" | "kritisch";
 
-export type Issue = {
+export type Issue = Tracked & {
   id: string;
   projectId: string;
   kind: IssueKind;
@@ -148,7 +161,7 @@ export type Issue = {
   fixedBy?: string;
 };
 
-export type DailyReport = {
+export type DailyReport = Tracked & {
   id: string;
   projectId: string;
   date: ISODate;
@@ -162,7 +175,7 @@ export type DailyReport = {
 };
 
 /** Extra work billed separately ("Regieschein"), signed by the client. */
-export type RegieReport = {
+export type RegieReport = Tracked & {
   id: string;
   projectId: string;
   no: number;
@@ -180,7 +193,7 @@ export type RegieReport = {
 
 export type MaterialStatus = "offen" | "bestellt" | "angekommen";
 
-export type Material = {
+export type Material = Tracked & {
   id: string;
   projectId: string;
   artNo: string;
@@ -221,7 +234,7 @@ export type DocFolder = {
   name: string;
 };
 
-export type DocFile = {
+export type DocFile = Tracked & {
   id: string;
   projectId: string;
   folderId: string;
@@ -236,6 +249,8 @@ export type DocFile = {
 export type ActivityEntry = {
   id: string;
   at: string;
+  /** Who did it. */
+  by?: string;
   text: string;
   projectId: string;
 };

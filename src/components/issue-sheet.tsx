@@ -7,6 +7,7 @@ import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
 import { canDelete, currentUser, employeeName, plannable, uid, useStore } from "@/lib/store";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
+import { ISSUE_LABELS, Trail } from "./trail";
 import { downscale, Portal } from "./ui";
 
 const SEVERITY_COLOR: Record<Severity, string> = { niedrig: "#64748b", mittel: "#d97706", hoch: "#dc2626", kritisch: "#991b1b" };
@@ -268,6 +269,12 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
             </div>
           )}
 
+          {!isNew && (
+            <div className="sheet-trail">
+              <span>Verlauf</span>
+              <Trail item={data.issues.find((i) => i.id === v.id) ?? v} labels={ISSUE_LABELS} created="Gemeldet" />
+            </div>
+          )}
           <footer>
             {!isNew && canDelete(data) && (
               <button

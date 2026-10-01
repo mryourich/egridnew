@@ -76,6 +76,9 @@ export function SitesOverview() {
             const report = data.reports.some((r) => r.projectId === p.id && r.date === t);
             return (
               <Link key={p.id} href={`/projekte/${p.id}`} className="site-card" style={{ "--c": p.color } as CSSProperties}>
+                <div className={`sc-banner ${p.clientImage ? "has" : ""}`}>
+                  {p.clientImage ? <img src={p.clientImage} alt={p.client} /> : <span>{p.client || "Kein Kundenbild"}</span>}
+                </div>
                 <div className="sc-top">
                   {p.image && <img className="sc-image" src={p.image} alt="" />}
                   <span className="sc-code">{p.code}</span>

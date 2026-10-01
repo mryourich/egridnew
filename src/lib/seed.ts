@@ -64,7 +64,7 @@ export function createSeed(): Data {
     order: order++
   });
 
-  return {
+  const seed: Data = {
     version: DATA_VERSION,
     currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
@@ -192,5 +192,35 @@ export function createSeed(): Data {
       { id: "ac3", at: `${d(-3)}T11:02:00`, text: "Abweichung gemeldet: Kabeltyp abweichend geliefert", projectId: "p1" }
     ]
   };
+  return withDemoTrail(seed);
+}
+
+/** Demo entries get a believable "who did what when" trail. */
+function withDemoTrail(data: Data): Data {
+  const ts = (date: string, hm: string) => `${date}T${hm}:00`;
+  const next = (date: string, n: number) => {
+    const x = new Date(`${date}T12:00:00`);
+    x.setDate(x.getDate() + n);
+    return x.toISOString().slice(0, 10);
+  };
+  const workers = ["e4", "e8", "e5", "e6"].filter((id) => data.employees.some((e) => e.id === id));
+  const pick = (i: number) => workers[i % Math.max(1, workers.length)] ?? data.currentUserId;
+  data.materials = data.materials.map((m, i) => {
+    const by = pick(i);
+    const history = [{ status: "offen", by, ts: ts(m.createdAt, "07:3" + (i % 10)) }];
+    if (m.status !== "offen") history.push({ status: "bestellt", by: data.currentUserId, ts: ts(next(m.createdAt, 0), "10:1" + (i % 10)) });
+    if (m.status === "angekommen") history.push({ status: "angekommen", by: data.currentUserId, ts: ts(next(m.createdAt, 3), "07:0" + (i % 10)) });
+    return { ...m, createdBy: by, createdTs: history[0].ts, history };
+  });
+  data.issues = data.issues.map((x, i) => {
+    const by = pick(i + 1);
+    const history = [{ status: "offen", by, ts: ts(x.createdAt, "09:1" + (i % 10)) }];
+    if (x.status !== "offen") history.push({ status: x.status, by: x.fixedBy ?? x.assigneeId ?? by, ts: ts(x.fixedAt ?? next(x.createdAt, 1), "14:2" + (i % 10)) });
+    return { ...x, createdBy: by, createdTs: history[0].ts, history };
+  });
+  data.siteNodes = data.siteNodes.map((n, i) =>
+    n.status === "offen" ? n : { ...n, history: [{ status: n.status, by: n.assigneeId || pick(i), ts: ts(next(new Date().toISOString().slice(0, 10), -1 - (i % 3)), "15:4" + (i % 10)) }] }
+  );
+  return data;
 }
 

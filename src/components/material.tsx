@@ -4,7 +4,8 @@ import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { canDelete, uid, useStore } from "@/lib/store";
+import { canDelete, canSetMaterialStatus, uid, useStore } from "@/lib/store";
+import { MATERIAL_LABELS, Trail } from "./trail";
 import type { Material, MaterialStatus, Project } from "@/lib/types";
 import { SearchInput } from "./ui";
 
@@ -19,6 +20,9 @@ export function MaterialSection({ project }: { project: Project }) {
   const [unit, setUnit] = useState("Stk");
   const [query, setQuery] = useState("");
   const q = query.toLowerCase();
+  const boss = canSetMaterialStatus(data);
+  /** Workers may correct their own entries while nothing is ordered yet. */
+  const editable = (m: Material) => boss || (m.status === "offen" && m.createdBy === data.currentUserId);
   const list = data.materials.filter((m) => m.projectId === project.id && (!q || `${m.artNo} ${m.name}`.toLowerCase().includes(q)));
 
   const remember = (no: string, n: string, u: string) => {
@@ -41,7 +45,7 @@ export function MaterialSection({ project }: { project: Project }) {
   const add = () => {
     if (!name.trim()) return;
     const item: Material = { id: uid("m"), projectId: project.id, artNo: artNo.trim(), name: name.trim(), qty: Number(qty) || 1, unit: unit || "Stk", status: "offen", createdAt: today() };
-    save("materials", item, `Material ${item.name}`);
+    save("materials", item, `Bestellung: ${item.qty} ${item.unit} ${item.name}`);
     remember(item.artNo, item.name, item.unit);
     notify(`${item.name} hinzugefügt`);
     setArtNo("");
@@ -52,7 +56,7 @@ export function MaterialSection({ project }: { project: Project }) {
 
   const update = (m: Material, patch: Partial<Material>) => {
     const next = { ...m, ...patch };
-    save("materials", next);
+    save("materials", next, patch.status ? `${m.name}: ${L.materialStatus[patch.status].label}` : undefined);
     if (patch.artNo !== undefined || patch.name !== undefined) remember(next.artNo, next.name, next.unit);
   };
 
@@ -79,7 +83,9 @@ export function MaterialSection({ project }: { project: Project }) {
         <button type="submit" className="btn btn-primary" disabled={!name.trim()}>
           <Plus size={15} /> Hinzufügen
         </button>
-        <p className="mat-hint">Artikel mit Art.-Nr. merkt sich VYSNER – beim nächsten Mal genügt die Nummer.</p>
+        <p className="mat-hint">
+          Artikel mit Art.-Nr. merkt sich VYSNER – beim nächsten Mal genügt die Nummer.{!boss && " Den Status (bestellt / angekommen) setzt die Bauleitung."}
+        </p>
       </form>
 
       <div className="toolbar">
@@ -97,25 +103,32 @@ export function MaterialSection({ project }: { project: Project }) {
               </header>
               {items.map((m) => (
                 <article key={m.id} className="mat-card">
-                  <input className="mat-title" value={m.name} onChange={(e) => update(m, { name: e.target.value })} aria-label="Material" />
+                  <input className="mat-title" value={m.name} readOnly={!editable(m)} onChange={(e) => update(m, { name: e.target.value })} aria-label="Material" />
                   <div className="mat-row">
                     <label>
                       <span>Art.-Nr.</span>
-                      <input value={m.artNo} onChange={(e) => update(m, { artNo: e.target.value })} />
+                      <input value={m.artNo} readOnly={!editable(m)} onChange={(e) => update(m, { artNo: e.target.value })} />
                     </label>
                     <label className="mat-q">
                       <span>Menge</span>
-                      <input type="number" min={0} value={m.qty} onChange={(e) => update(m, { qty: Number(e.target.value) })} />
+                      <input type="number" min={0} value={m.qty} readOnly={!editable(m)} onChange={(e) => update(m, { qty: Number(e.target.value) })} />
                       <small>{m.unit}</small>
                     </label>
                   </div>
+                  <Trail item={m} labels={MATERIAL_LABELS} created="Angefordert" />
                   <div className="mat-actions">
-                    {COLUMNS.map((st) => (
-                      <button key={st} type="button" className={m.status === st ? "on" : ""} onClick={() => update(m, { status: st })}>
-                        {L.materialStatus[st].label}
-                      </button>
-                    ))}
-                    {canDelete(data) && (
+                    {boss ? (
+                      COLUMNS.map((st) => (
+                        <button key={st} type="button" className={m.status === st ? "on" : ""} onClick={() => update(m, { status: st })}>
+                          {L.materialStatus[st].label}
+                        </button>
+                      ))
+                    ) : (
+                      <span className="mat-locked" title="Status ändert die Bauleitung">
+                        {L.materialStatus[m.status].label} · Status ändert die Bauleitung
+                      </span>
+                    )}
+                    {(canDelete(data) || (m.status === "offen" && m.createdBy === data.currentUserId)) && (
                       <button type="button" className="mat-del" aria-label="Entfernen" onClick={() => window.confirm(`${m.name} entfernen?`) && remove("materials", m.id, `Material ${m.name} entfernt`)}>
                         <X size={13} />
                       </button>
