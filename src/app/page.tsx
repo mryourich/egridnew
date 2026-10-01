@@ -90,7 +90,7 @@ export default function Landing() {
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
           <Link href="/" className="lp-logo" aria-label="VYSNERTECH">
-            <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={184} height={38} priority />
+            <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={216} height={31} priority />
           </Link>
           <nav className="lp-links" aria-label="Seite">
             <a href="#ablauf">Ablauf</a>
@@ -328,7 +328,7 @@ export default function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
-          <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={150} height={31} />
+          <Image src="/brand/vysnertech.png" alt="VYSNERTECH" width={168} height={24} />
           <span>Baustellen im Griff.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>

@@ -7809,3 +7809,30 @@ b {
 .mat-angekommen .mat-card {
   border-left-color: var(--border);
 }
+.brand-words {
+  align-items: center;
+  gap: 5px;
+}
+.side .brand-tech {
+  height: 11.5px;
+  filter: none;
+}
+.mtop .brand-tech {
+  height: 12px;
+  filter: none;
+}
+.brand-tile {
+  overflow: hidden;
+}
+.brand-tile img {
+  width: 28px;
+}
+.side .brand-word {
+  height: 11px;
+}
+.side .brand-tech {
+  height: 10.2px;
+}
+.side .brand-words {
+  gap: 4px;
+}
