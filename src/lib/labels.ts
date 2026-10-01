@@ -31,6 +31,7 @@ export const severity: Record<Severity, { label: string; tone: Tone }> = {
 export const absenceType: Record<AbsenceType, { label: string; tone: Tone }> = {
   urlaub: { label: "Urlaub", tone: "cyan" },
   krank: { label: "Krank", tone: "red" },
+  za: { label: "Zeitausgleich", tone: "green" },
   schulung: { label: "Schulung", tone: "violet" },
   sonstiges: { label: "Sonstiges", tone: "gray" }
 };
@@ -54,3 +55,6 @@ export function eur(value: number) {
 export function num(value: number, digits = 0) {
   return new Intl.NumberFormat("de-AT", { maximumFractionDigits: digits }).format(value || 0);
 }
+
+/** Short sign for tight cells (time grid, plan). */
+export const absenceShort: Record<AbsenceType, string> = { urlaub: "U", krank: "K", za: "ZA", schulung: "S", sonstiges: "A" };

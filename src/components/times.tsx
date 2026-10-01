@@ -6,8 +6,9 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { addDays, fmt, fmtShort, holidayName, isWeekend, today, weekdayShort } from "@/lib/date";
 import { downloadBlob, safeName } from "@/lib/files";
 import { currentUser, isManager, projectTeam, uid, useStore } from "@/lib/store";
-import { daysOf, entryHours, fmtHours, isLeasing, monthPeriod, proposeFromPlan, sheetData, timesheetSettings, weekPeriod } from "@/lib/timesheet";
-import type { Employee, Project, TimeEntry } from "@/lib/types";
+import { absenceOn, daysOf, entryHours, fmtHours, isLeasing, monthPeriod, proposeFromPlan, sheetData, timesheetSettings, weekPeriod } from "@/lib/timesheet";
+import * as L from "@/lib/labels";
+import type { Absence, AbsenceType, Employee, Project, TimeEntry } from "@/lib/types";
 import { EmpAvatar } from "./person";
 import { TemplatePanel, TimesheetDesigner } from "./timesheet-designer";
 import { Portal, Segmented } from "./ui";
@@ -46,6 +47,15 @@ export function TimesSection({ project }: { project: Project }) {
 
   const entry = (emp: string, d: string) => data.times.find((x) => x.projectId === project.id && x.employeeId === emp && x.date === d);
   const sum = (emp: string) => data.times.filter((x) => x.projectId === project.id && x.employeeId === emp && x.date >= period.from && x.date <= period.to).reduce((n, x) => n + entryHours(x), 0);
+  /** "2 U · 1 K" in the period (working days only). */
+  const offCount = (emp: string) => {
+    const n: Partial<Record<AbsenceType, number>> = {};
+    for (const d of days) {
+      const a = isWeekend(d) || holidayName(d) ? undefined : absenceOn(data, emp, d);
+      if (a) n[a.type] = (n[a.type] ?? 0) + 1;
+    }
+    return (Object.keys(n) as AbsenceType[]).map((t) => `${n[t]} ${L.absenceShort[t]}`).join(" · ");
+  };
   const canEdit = (emp: string) => manager || emp === me?.id;
   const step = (dir: number) => setAnchor(kind === "woche" ? addDays(period.from, dir * 7) : addDays(dir > 0 ? addDays(period.to, 1) : period.from, dir > 0 ? 0 : -1));
 
@@ -192,15 +202,21 @@ export function TimesSection({ project }: { project: Project }) {
                       </td>
                       {days.map((d) => {
                         const x = entry(e.id, d);
+                        const ab = absenceOn(data, e.id, d);
+                        const tip = ab ? `${L.absenceType[ab.type].label}${ab.hours ? ` ${fmtHours(ab.hours)} h` : ""}${ab.note ? ` – ${ab.note}` : ""}` : x ? `${x.start}–${x.end}, Pause ${x.pause} min${x.activity ? `\n${x.activity}` : ""}` : "Zeit, ZA, Urlaub oder Krank eintragen";
                         return (
-                          <td key={d} className={`tt-cell ${isWeekend(d) || holidayName(d) ? "we" : ""} ${x ? "has" : ""}`}>
-                            <button type="button" disabled={!canEdit(e.id)} onClick={() => setEdit({ emp: e, date: d, entry: x })} title={x ? `${x.start}–${x.end}, Pause ${x.pause} min${x.activity ? `\n${x.activity}` : ""}` : "Zeit eintragen"}>
-                              {x ? fmtHours(entryHours(x)) : ""}
+                          <td key={d} className={`tt-cell ${isWeekend(d) || holidayName(d) ? "we" : ""} ${x ? "has" : ""} ${ab ? `off abs-${ab.type}` : ""}`}>
+                            <button type="button" disabled={!canEdit(e.id)} onClick={() => setEdit({ emp: e, date: d, entry: x })} title={tip}>
+                              {x ? fmtHours(entryHours(x)) : ab ? L.absenceShort[ab.type] : ""}
+                              {x && ab && <i className="tt-mark">{L.absenceShort[ab.type]}</i>}
                             </button>
                           </td>
                         );
                       })}
-                      <td className="tt-sum">{fmtHours(sum(e.id))}</td>
+                      <td className="tt-sum">
+                        {fmtHours(sum(e.id))}
+                        {offCount(e.id) && <small>{offCount(e.id)}</small>}
+                      </td>
                       <td className="tt-act">
                         <button type="button" className="icon-btn" title="Zeitschein als PDF" onClick={() => openPdf([e])}>
                           <FileText size={14} />
@@ -251,25 +267,55 @@ function GroupRows({ label, count, onPdf, children }: { label: string; count: nu
   );
 }
 
+type Mode = "arbeit" | "za" | "urlaub" | "krank";
+
+/** One day of one person: working time – or ZA, Urlaub, Krank (also for several days). */
 function EntryDialog({ project, emp, date, entry, onClose }: { project: Project; emp: Employee; date: string; entry?: TimeEntry; onClose: () => void }) {
-  const { data, save, remove } = useStore();
+  const { data, save, remove, notify } = useStore();
   const s = timesheetSettings(data);
   const plan = data.jobs.filter((j) => j.projectId === project.id && j.employeeId === emp.id && !j.symbol && j.start <= date && j.end >= date).map((j) => j.title);
+  const existing = absenceOn(data, emp.id, date);
+  const [mode, setMode] = useState<Mode>(existing && (["za", "urlaub", "krank"] as string[]).includes(existing.type) ? (existing.type as Mode) : "arbeit");
   const [v, setV] = useState({ start: entry?.start ?? s.dayStart, end: entry?.end ?? s.dayEnd, pause: entry?.pause ?? s.pause, activity: entry?.activity ?? plan.join(", ") });
+  const [abs, setAbs] = useState({ start: existing?.start ?? date, end: existing?.end ?? date, note: existing?.note ?? "", hours: existing?.hours ? String(existing.hours) : "" });
   const hours = entryHours(v);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
-  const submit = () => {
+
+  const saveWork = () => {
     save("times", { ...(entry ?? { id: uid("t"), projectId: project.id, employeeId: emp.id, date }), ...v, pause: Number(v.pause) || 0 }, `Zeit ${emp.name} ${fmt(date)}: ${fmtHours(hours)} h`);
+    // a full working day replaces an all-day absence on that single day
+    if (existing && existing.start === date && existing.end === date && !existing.hours) remove("absences", existing.id);
     onClose();
   };
+
+  const saveAbsence = (type: AbsenceType) => {
+    const end = abs.end < abs.start ? abs.start : abs.end;
+    const za = type === "za" && Number(abs.hours) > 0 ? Number(abs.hours) : undefined;
+    // whole days off: the working times of these days on this project go away
+    const clash = za ? [] : data.times.filter((t) => t.projectId === project.id && t.employeeId === emp.id && t.date >= abs.start && t.date <= end);
+    if (clash.length && !window.confirm(`An ${clash.length === 1 ? "diesem Tag ist" : `${clash.length} Tagen sind`} schon Arbeitszeiten eingetragen. Durch ${L.absenceType[type].label} ersetzen?`)) return;
+    clash.forEach((t) => remove("times", t.id));
+    const item: Absence = { ...(existing ?? { id: uid("a"), employeeId: emp.id }), type, start: abs.start, end, note: abs.note.trim(), hours: za };
+    save("absences", item, `${L.absenceType[type].label} ${emp.name} ${fmt(abs.start)}${end !== abs.start ? ` – ${fmt(end)}` : ""}`);
+    notify(`${L.absenceType[type].label} eingetragen`);
+    onClose();
+  };
+
+  const tabs: [Mode, string][] = [
+    ["arbeit", "Arbeitszeit"],
+    ["za", "ZA"],
+    ["urlaub", "Urlaub"],
+    ["krank", "Krank"]
+  ];
+
   return (
     <Portal>
       <div className="sheet-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="job-pop time-pop" role="dialog" aria-label="Zeit eintragen">
+        <div className={`job-pop time-pop mode-${mode}`} role="dialog" aria-label="Zeit eintragen">
           <header>
             <span>
               {emp.name} · {weekdayShort(date)} {fmt(date)}
@@ -278,46 +324,97 @@ function EntryDialog({ project, emp, date, entry, onClose }: { project: Project;
               <X size={16} />
             </button>
           </header>
+          <div className="time-modes" role="tablist">
+            {tabs.map(([k, l]) => (
+              <button key={k} type="button" role="tab" aria-selected={mode === k} className={mode === k ? `on m-${k}` : ""} onClick={() => setMode(k)}>
+                {l}
+              </button>
+            ))}
+          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              submit();
+              if (mode === "arbeit") saveWork();
+              else saveAbsence(mode);
             }}
           >
-            <div className="job-grid">
-              <label>
-                <span>Beginn</span>
-                <input type="time" value={v.start} onChange={(e) => setV({ ...v, start: e.target.value })} autoFocus />
-              </label>
-              <label>
-                <span>Ende</span>
-                <input type="time" value={v.end} onChange={(e) => setV({ ...v, end: e.target.value })} />
-              </label>
-              <label>
-                <span>Pause (min)</span>
-                <input type="number" min={0} step={5} value={v.pause} onChange={(e) => setV({ ...v, pause: Number(e.target.value) })} />
-              </label>
-              <label>
-                <span>Stunden</span>
-                <input value={`${fmtHours(hours)} h`} readOnly />
-              </label>
-              <label className="full">
-                <span>Tätigkeit</span>
-                <input value={v.activity} onChange={(e) => setV({ ...v, activity: e.target.value })} placeholder={plan.length ? plan.join(", ") : "z. B. Kabelzug Abschnitt B"} />
-              </label>
-            </div>
+            {mode === "arbeit" ? (
+              <div className="job-grid">
+                <label>
+                  <span>Beginn</span>
+                  <input type="time" value={v.start} onChange={(e) => setV({ ...v, start: e.target.value })} autoFocus />
+                </label>
+                <label>
+                  <span>Ende</span>
+                  <input type="time" value={v.end} onChange={(e) => setV({ ...v, end: e.target.value })} />
+                </label>
+                <label>
+                  <span>Pause (min)</span>
+                  <input type="number" min={0} step={5} value={v.pause} onChange={(e) => setV({ ...v, pause: Number(e.target.value) })} />
+                </label>
+                <label>
+                  <span>Stunden</span>
+                  <input value={`${fmtHours(hours)} h`} readOnly />
+                </label>
+                <label className="full">
+                  <span>Tätigkeit</span>
+                  <input value={v.activity} onChange={(e) => setV({ ...v, activity: e.target.value })} placeholder={plan.length ? plan.join(", ") : "z. B. Kabelzug Abschnitt B"} />
+                </label>
+                {existing && (
+                  <p className="full time-hint">
+                    {L.absenceType[existing.type].label} {existing.start === existing.end ? "an diesem Tag" : `${fmt(existing.start)} – ${fmt(existing.end)}`} ist eingetragen.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="job-grid">
+                <label>
+                  <span>Von</span>
+                  <input type="date" value={abs.start} onChange={(e) => e.target.value && setAbs({ ...abs, start: e.target.value, end: e.target.value > abs.end ? e.target.value : abs.end })} />
+                </label>
+                <label>
+                  <span>Bis</span>
+                  <input type="date" value={abs.end} min={abs.start} onChange={(e) => e.target.value && setAbs({ ...abs, end: e.target.value })} />
+                </label>
+                {mode === "za" && (
+                  <label>
+                    <span>Stunden ZA (leer = ganzer Tag)</span>
+                    <input type="number" min={0} max={24} step={0.5} value={abs.hours} onChange={(e) => setAbs({ ...abs, hours: e.target.value })} placeholder="ganzer Tag" />
+                  </label>
+                )}
+                <label className={mode === "za" ? "" : "full"}>
+                  <span>Notiz</span>
+                  <input value={abs.note} onChange={(e) => setAbs({ ...abs, note: e.target.value })} placeholder={mode === "krank" ? "z. B. Krankmeldung liegt vor" : "optional"} />
+                </label>
+                <p className="full time-hint">
+                  {mode === "urlaub" ? "Urlaub" : mode === "krank" ? "Krankenstand" : "Zeitausgleich"} gilt für die Person in allen Projekten und erscheint auch im Plan und auf dem Zeitschein.
+                </p>
+              </div>
+            )}
             <footer>
-              {entry && (
+              {mode === "arbeit" && entry && (
                 <button
                   type="button"
                   className="icon-btn"
-                  title="Löschen"
+                  title="Arbeitszeit löschen"
                   onClick={() => {
                     remove("times", entry.id, `Zeit ${emp.name} ${fmt(date)} gelöscht`);
                     onClose();
                   }}
                 >
                   <Trash2 size={15} />
+                </button>
+              )}
+              {mode !== "arbeit" && existing && existing.type === mode && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-danger-ghost"
+                  onClick={() => {
+                    remove("absences", existing.id, `${L.absenceType[existing.type].label} ${emp.name} gelöscht`);
+                    onClose();
+                  }}
+                >
+                  <Trash2 size={13} /> {L.absenceType[existing.type].label} löschen
                 </button>
               )}
               <span className="spacer" />
@@ -334,4 +431,3 @@ function EntryDialog({ project, emp, date, entry, onClose }: { project: Project;
     </Portal>
   );
 }
-

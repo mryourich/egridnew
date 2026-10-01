@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { fmt, today } from "@/lib/date";
 import type { SheetView } from "@/lib/timesheet-excel";
-import { fmtHours, type SheetData, type timesheetSettings } from "@/lib/timesheet";
+import { absenceSummary, fmtHours, type SheetData, type timesheetSettings } from "@/lib/timesheet";
 import { useStore } from "@/lib/store";
 
 type S = ReturnType<typeof timesheetSettings>;
@@ -68,15 +68,29 @@ export function DesignedSheet({ sd, s }: { sd: SheetData; s: S }) {
           </tr>
         </thead>
         <tbody>
-          {sd.rows.map((r) => (
-            <tr key={r.id}>
-              {cols.map((c) => (
-                <td key={c.key} className={c.key === "stunden" || c.key === "pause" ? "num" : c.key === "taetigkeit" ? "wide" : ""}>
-                  {cell(c.key, r)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {sd.rows.map((r) => {
+            if (r.absence) {
+              // Urlaub / Krank / ZA: day and date, then the reason across the remaining columns
+              const lead = cols.findIndex((c) => c.key !== "wochentag" && c.key !== "datum");
+              return (
+                <tr key={r.id} className={`tsd-abs abs-${r.absence}`}>
+                  {cols.slice(0, lead === -1 ? cols.length : lead).map((c) => (
+                    <td key={c.key}>{cell(c.key, r)}</td>
+                  ))}
+                  {lead !== -1 && <td colSpan={cols.length - lead}>{r.activity}</td>}
+                </tr>
+              );
+            }
+            return (
+              <tr key={r.id}>
+                {cols.map((c) => (
+                  <td key={c.key} className={c.key === "stunden" || c.key === "pause" ? "num" : c.key === "taetigkeit" ? "wide" : ""}>
+                    {cell(c.key, r)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
           {sd.rows.length === 0 && (
             <tr>
               <td colSpan={cols.length}>Keine Zeiten in diesem Zeitraum.</td>
@@ -93,6 +107,7 @@ export function DesignedSheet({ sd, s }: { sd: SheetData; s: S }) {
           )}
         </tbody>
       </table>
+      {sd.absences.length > 0 && <p className="tsd-absum">Abwesenheiten: {absenceSummary(sd.absences)}</p>}
       {s.note && <p className="tsd-note">{s.note}</p>}
       <Signatures labels={s.signatures} />
       <footer className="doc-foot">
@@ -143,7 +158,8 @@ export function AgencySummary({ sheets, s, agency }: { sheets: SheetData[]; s: S
           <tr>
             <th>Mitarbeiter</th>
             <th>Pers.-Nr.</th>
-            <th className="num">Tage</th>
+            <th className="num">Arbeitstage</th>
+            <th>Abwesend</th>
             <th className="num">Stunden</th>
           </tr>
         </thead>
@@ -152,12 +168,13 @@ export function AgencySummary({ sheets, s, agency }: { sheets: SheetData[]; s: S
             <tr key={sd.employee!.id}>
               <td>{sd.employee!.name}</td>
               <td>{sd.employee!.staffNo || "–"}</td>
-              <td className="num">{sd.rows.length}</td>
+              <td className="num">{sd.rows.filter((r) => !r.absence).length}</td>
+              <td>{absenceSummary(sd.absences) || "–"}</td>
               <td className="num">{fmtHours(sd.total)}</td>
             </tr>
           ))}
           <tr className="tsd-sum">
-            <td colSpan={3}>Summe</td>
+            <td colSpan={4}>Summe</td>
             <td className="num">{fmtHours(sheets.reduce((n, sd) => n + sd.total, 0))} h</td>
           </tr>
         </tbody>

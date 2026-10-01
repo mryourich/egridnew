@@ -228,6 +228,15 @@ function withDemoTrail(data: Data): Data {
     leasingCompany: e.id === "e6" || e.id === "e8" ? "Trenkwalder Personaldienste" : undefined
   }));
   const todayIso = new Date().toISOString().slice(0, 10);
+  // some days off last week: Urlaub, Krank, Zeitausgleich
+  const now = new Date(`${todayIso}T12:00:00`);
+  const lastMon = next(todayIso, -((now.getDay() + 6) % 7) - 7);
+  data.absences.push(
+    { id: "ab-u", employeeId: "e8", type: "urlaub", start: next(lastMon, 3), end: next(lastMon, 4), note: "" },
+    { id: "ab-k", employeeId: "e4", type: "krank", start: lastMon, end: lastMon, note: "Krankmeldung liegt vor" },
+    { id: "ab-z", employeeId: "e6", type: "za", start: next(lastMon, 2), end: next(lastMon, 2), note: "" }
+  );
+  const off = (id: string, date: string) => data.absences.some((a) => a.employeeId === id && a.start <= date && a.end >= date);
   const work = ["Kabeltrasse montiert", "Kabelzug", "Leuchten gesetzt", "Verteiler verdrahtet", "Befestigungen geprüft", "Durchbrüche abgedichtet", "Beschriftung", "Messung und Prüfprotokoll"];
   let tn = 0;
   for (const p of data.projects) {
@@ -238,6 +247,7 @@ function withDemoTrail(data: Data): Data {
       if (wd === 0 || wd === 6) continue;
       crew.forEach((e, i) => {
         if ((back + i) % 7 === 3) return; // the odd day elsewhere
+        if (off(e!.id, date)) return;
         const job = data.jobs.find((j) => j.projectId === p.id && j.employeeId === e!.id && !j.symbol && j.start <= date && j.end >= date);
         const late = (back + i) % 4 === 0;
         data.times.push({
