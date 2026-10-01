@@ -30,7 +30,7 @@ function usePreviewData(project: Project, period: Period): SheetData {
   const days = [0, 1, 2, 3, 4].map((i) => addDays(period.from, i));
   const rows = days.map((d, i) => {
     const r = { id: `s${i}`, projectId: project.id, employeeId: base.employee?.id ?? "", date: d, start: "07:00", end: i === 4 ? "13:00" : "16:00", pause: i === 4 ? 0 : 30, activity: ["Kabelzug", "Trasse montiert", "Verteiler verdrahtet", "Messung", "Beschriftung"][i] };
-    return { ...r, hours: entryHours(r), weekday: ["Mo", "Di", "Mi", "Do", "Fr"][i] };
+    return { ...r, hours: entryHours(r), weekday: ["Mo", "Di", "Mi", "Do", "Fr"][i], absence: undefined };
   });
   return { ...base, employee: base.employee ?? { id: "x", name: "Max Muster", role: "Monteur", department: "", team: "", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true, staffNo: "1001" }, rows, total: rows.reduce((n, r) => n + r.hours, 0) };
 }

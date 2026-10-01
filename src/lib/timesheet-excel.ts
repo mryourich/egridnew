@@ -1,7 +1,7 @@
 import type { Workbook, Worksheet } from "exceljs";
 import { fmt, today } from "./date";
 import { dataUrlToBytes } from "./files";
-import { fmtHours, type SheetData } from "./timesheet";
+import { absenceSummary, fmtHours, type SheetData } from "./timesheet";
 import type { TemplateColumnField, TemplateHeaderField, TemplateMapping, TimesheetSettings } from "./types";
 
 export const HEADER_FIELDS: Record<TemplateHeaderField, string> = {
@@ -117,6 +117,8 @@ function headerValues(sd: SheetData): Record<TemplateHeaderField, string | numbe
 }
 
 function rowValues(r: SheetData["rows"][number]): Record<TemplateColumnField, string | number> {
+  // Urlaub / Krank / ZA: no times and no hours, the reason goes into the activity
+  if (r.absence) return { datum: fmt(r.date), wochentag: r.weekday, beginn: "", ende: "", pause: "", stunden: "", taetigkeit: r.activity };
   return { datum: fmt(r.date), wochentag: r.weekday, beginn: r.start, ende: r.end, pause: r.pause, stunden: r.hours, taetigkeit: r.activity };
 }
 
@@ -340,6 +342,7 @@ export async function defaultWorkbook(sd: SheetData, s: TimesheetSettings) {
   sc.numFmt = "0.00";
   sc.font = { bold: true };
   sc.border = border;
+  if (sd.absences.length) ws.getCell(`A${sumRow + 1}`).value = `Abwesenheiten: ${absenceSummary(sd.absences)}`;
   const sig = sumRow + 4;
   s.signatures.forEach((label, i) => {
     const col = 1 + i * Math.max(2, Math.floor(cols.length / Math.max(1, s.signatures.length)));

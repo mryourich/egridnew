@@ -1,5 +1,5 @@
 import { addDays, fmt, holidayName, inRange, isoWeek, isWeekend, monthLabel, startOfWeek, weekdayShort } from "./date";
-import type { Data, DesignItem, Employee, ISODate, Project, TemplateColumnField, TimeEntry, TimesheetFact, TimesheetSettings } from "./types";
+import type { AbsenceType, Data, DesignItem, Employee, ISODate, Project, TemplateColumnField, TimeEntry, TimesheetFact, TimesheetSettings } from "./types";
 
 export const DEFAULT_TIMESHEET: TimesheetSettings = {
   dayStart: "07:00",
@@ -142,11 +142,40 @@ function addHours(hm: string, h: number) {
   return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
+/** Absence of a person on a day (Urlaub, Krank, ZA …) – absences are per person, not per project. */
+export function absenceOn(data: Data, employeeId: string, date: ISODate) {
+  return data.absences.find((a) => a.employeeId === employeeId && inRange(date, a.start, a.end));
+}
+
+export const ABSENCE_LABEL: Record<AbsenceType, string> = { urlaub: "Urlaub", krank: "Krank", za: "Zeitausgleich", schulung: "Schulung", sonstiges: "Abwesend" };
+
 /** Everything a time sheet needs – used by the PDF and the Excel export. */
 export function sheetData(data: Data, project: Project, employeeId: string, period: Pick<Period, "from" | "to">) {
   const e = data.employees.find((x) => x.id === employeeId);
-  const rows = entriesOf(data, project.id, employeeId, period).map((t) => ({ ...t, hours: entryHours(t), weekday: weekdayShort(t.date) }));
-  const total = rows.reduce((s, r) => s + r.hours, 0);
+  const work = entriesOf(data, project.id, employeeId, period).map((t) => ({ ...t, hours: entryHours(t), weekday: weekdayShort(t.date), absence: undefined as AbsenceType | undefined }));
+  // Urlaub, Krank, ZA … appear as their own lines (working days only, no hours)
+  const off: typeof work = [];
+  for (let d = period.from; d <= period.to; d = addDays(d, 1)) {
+    const a = absenceOn(data, employeeId, d);
+    if (!a || (isWeekend(d) && !work.some((w) => w.date === d)) || holidayName(d)) continue;
+    off.push({
+      id: `a-${a.id}-${d}`,
+      projectId: project.id,
+      employeeId,
+      date: d,
+      start: "",
+      end: "",
+      pause: 0,
+      activity: `${ABSENCE_LABEL[a.type]}${a.type === "za" && a.hours ? ` (${fmtHours(a.hours)} h)` : ""}${a.note ? ` – ${a.note}` : ""}`,
+      hours: 0,
+      weekday: weekdayShort(d),
+      absence: a.type
+    });
+  }
+  const rows = [...work, ...off].sort((a, b) => a.date.localeCompare(b.date) || Number(!!a.absence) - Number(!!b.absence));
+  const total = work.reduce((s, r) => s + r.hours, 0);
+  const days = (t: AbsenceType) => off.filter((r) => r.absence === t).length;
+  const absences = (["urlaub", "krank", "za", "schulung", "sonstiges"] as AbsenceType[]).map((t) => ({ type: t, label: ABSENCE_LABEL[t], days: days(t) })).filter((x) => x.days);
   const bl = data.employees.find((x) => x.id === project.siteManagerId);
   return {
     employee: e,
@@ -156,11 +185,17 @@ export function sheetData(data: Data, project: Project, employeeId: string, peri
     project,
     rows,
     total,
+    absences,
     kw: isoWeek(period.from) === isoWeek(period.to) ? `KW ${isoWeek(period.from)}` : `KW ${isoWeek(period.from)}–${isoWeek(period.to)}`,
     from: period.from,
     to: period.to,
     bauleitung: bl?.name ?? ""
   };
+}
+
+/** "Urlaub 2 Tage · Krank 1 Tag" */
+export function absenceSummary(list: { label: string; days: number }[]) {
+  return list.map((a) => `${a.label} ${a.days} ${a.days === 1 ? "Tag" : "Tage"}`).join(" · ");
 }
 
 export type SheetData = ReturnType<typeof sheetData>;

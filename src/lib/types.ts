@@ -79,7 +79,7 @@ export type Employee = {
   staffNo?: string;
 };
 
-export type AbsenceType = "urlaub" | "krank" | "schulung" | "sonstiges";
+export type AbsenceType = "urlaub" | "krank" | "za" | "schulung" | "sonstiges";
 
 export type Absence = {
   id: string;
@@ -88,6 +88,8 @@ export type Absence = {
   start: ISODate;
   end: ISODate;
   note: string;
+  /** Zeitausgleich of only part of a day (hours); empty = whole day. */
+  hours?: number;
 };
 
 /** Work the site manager hands to a worker on the site schedule (Tom's-Planner style bar). */
