@@ -97,6 +97,22 @@ export default function RegieDoc() {
         </DocSection>
       )}
 
+      {(r.photos ?? []).length > 0 && (
+        <DocSection title="Fotos">
+          <div className="doc-photos">
+            {r.photos!.map((src, i) => (
+              <figure key={i}>
+                <img src={src} alt="" />
+                <figcaption>
+                  <strong>Foto {i + 1}</strong>
+                  <span>Regieschein Nr. {String(r.no).padStart(2, "0")}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </DocSection>
+      )}
+
       <div className="doc-sign tall">
         <div>
           <span />

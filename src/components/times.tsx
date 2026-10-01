@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Download, FileSpreadsheet, FileText, Trash2, Wand2, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { addDays, fmt, fmtShort, holidayName, isWeekend, today, weekdayShort } from "@/lib/date";
 import { downloadBlob, safeName } from "@/lib/files";
@@ -8,6 +9,7 @@ import { currentUser, isManager, projectTeam, uid, useStore } from "@/lib/store"
 import { daysOf, entryHours, fmtHours, isLeasing, monthPeriod, proposeFromPlan, sheetData, timesheetSettings, weekPeriod } from "@/lib/timesheet";
 import type { Employee, Project, TimeEntry } from "@/lib/types";
 import { EmpAvatar } from "./person";
+import { TemplatePanel, TimesheetDesigner } from "./timesheet-designer";
 import { Portal, Segmented } from "./ui";
 
 type Kind = "woche" | "monat";
@@ -22,6 +24,12 @@ export function TimesSection({ project }: { project: Project }) {
   const [filter, setFilter] = useState<"alle" | "eigen" | "leasing">("alle");
   const [edit, setEdit] = useState<{ emp: Employee; date: string; entry?: TimeEntry } | null>(null);
   const [busy, setBusy] = useState(false);
+  const ansicht = useSearchParams().get("ansicht");
+  const [view, setView] = useState<"erfassen" | "design" | "excel">("erfassen");
+  // ?ansicht=design / excel opens a tab directly (e.g. from the settings)
+  useEffect(() => {
+    if (ansicht === "design" || ansicht === "excel") setView(ansicht);
+  }, [ansicht]);
   const s = timesheetSettings(data);
   const period = kind === "woche" ? weekPeriod(anchor) : monthPeriod(anchor);
   const days = daysOf(period);
@@ -79,8 +87,39 @@ export function TimesSection({ project }: { project: Project }) {
     }
   };
 
+  const tabs = manager && (
+    <div className="times-tabs" role="tablist">
+      {(
+        [
+          ["erfassen", "Zeiten erfassen"],
+          ["design", "Zeitschein gestalten"],
+          ["excel", "Excel-Vorlage"]
+        ] as const
+      ).map(([k, l]) => (
+        <button key={k} type="button" role="tab" aria-selected={view === k} className={view === k ? "on" : ""} onClick={() => setView(k)}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+  if (view === "design")
+    return (
+      <div className="stack times">
+        {tabs}
+        <TimesheetDesigner project={project} period={period} />
+      </div>
+    );
+  if (view === "excel")
+    return (
+      <div className="stack times">
+        {tabs}
+        <TemplatePanel project={project} period={period} />
+      </div>
+    );
+
   return (
     <div className="stack times">
+      {tabs}
       <div className="toolbar">
         <span className="btn-group">
           <button type="button" className="btn btn-icon" onClick={() => step(-1)} aria-label="Zurück">
@@ -116,7 +155,7 @@ export function TimesSection({ project }: { project: Project }) {
           </button>
         )}
         <button type="button" className="btn" disabled={!shown.length} onClick={() => openPdf(shown)}>
-          <FileText size={15} /> PDF
+          <FileText size={15} /> PDF{s.pdfSource === "excel" ? " (Vorlage)" : ""}
         </button>
         <button type="button" className="btn btn-primary" disabled={!shown.length || busy} onClick={() => exportExcel(shown)}>
           <FileSpreadsheet size={15} /> Excel{s.template?.mapping ? " (Vorlage)" : ""}
@@ -186,7 +225,7 @@ export function TimesSection({ project }: { project: Project }) {
         </div>
       </div>
       <p className="muted small">
-        Klick auf ein Feld = Zeit eintragen. „Aus Plan übernehmen“ trägt jeden Arbeitstag mit Balken im Plan mit {s.dayStart}–{s.dayEnd} und {s.pause} min Pause ein. Layout und Excel-Vorlage stellst du unter Einstellungen › Zeitscheine ein.
+        Klick auf ein Feld = Zeit eintragen. „Aus Plan übernehmen“ trägt jeden Arbeitstag mit Balken im Plan mit {s.dayStart}–{s.dayEnd} und {s.pause} min Pause ein. Aussehen und Excel-Vorlage stellst du oben unter „Zeitschein gestalten“ und „Excel-Vorlage“ ein.
       </p>
 
       {edit && <EntryDialog project={project} emp={edit.emp} date={edit.date} entry={edit.entry} onClose={() => setEdit(null)} />}

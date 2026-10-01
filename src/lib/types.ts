@@ -46,8 +46,6 @@ export type Project = {
   planRows?: { id: string; name: string }[];
   /** Order of the plan rows (employee ids and free row ids). */
   rowOrder?: string[];
-  /** People who hid the project from their sidebar. */
-  hiddenFor?: string[];
 };
 
 export type Qualification = {
@@ -194,6 +192,8 @@ export type RegieReport = Tracked & {
   workers: { employeeId: string; hours: number }[];
   materials: { artNo: string; name: string; qty: number; unit: string }[];
   authorId: string;
+  /** Photos of the extra work (data URLs). */
+  photos?: string[];
   /** Client signature (data URL) and name. */
   signature: string;
   signedBy: string;
@@ -312,7 +312,20 @@ export type TimesheetSettings = {
   logo?: string;
   /** Customer Excel template. */
   template?: { name: string; dataUrl: string; mapping?: TemplateMapping };
+  /** PDF from the own design or from the uploaded Excel form. */
+  pdfSource?: "design" | "excel";
+  /** Designer: colour, header style, which header facts and columns (order + labels). */
+  accent?: string;
+  headStyle?: "linie" | "balken" | "kasten";
+  fontSize?: "klein" | "normal" | "gross";
+  orientation?: "hoch" | "quer";
+  facts?: DesignItem<TimesheetFact>[];
+  columns?: DesignItem<TemplateColumnField>[];
+  showSummary?: boolean;
 };
+
+export type TimesheetFact = "mitarbeiter" | "personalnummer" | "firma" | "projekt" | "kunde" | "ort" | "bauleitung" | "zeitraum";
+export type DesignItem<K extends string> = { key: K; label: string; on: boolean };
 
 export type Company = {
   /** Tenant id – every company that buys VYSNER gets its own. */

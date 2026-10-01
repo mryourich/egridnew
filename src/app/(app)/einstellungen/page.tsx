@@ -1,12 +1,11 @@
 "use client";
 
-import { Download, RotateCcw, Upload, Users } from "lucide-react";
+import { Clock, Download, RotateCcw, Upload, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
-import { TimesheetSettingsCard } from "@/components/timesheet-settings";
 import { today } from "@/lib/date";
-import { isManager, useStore } from "@/lib/store";
+import { isManager, myProjects, useStore } from "@/lib/store";
 import type { Data } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -64,7 +63,16 @@ export default function SettingsPage() {
             </Link>
           </Card>
         )}
-        {admin && <TimesheetSettingsCard />}
+        {admin && (
+          <Card title="Zeitscheine">
+            <p className="muted small">Zeitschein gestalten oder eure Excel-Vorlage hochladen: in einem Projekt unter „Zeiten“ – die Einstellung gilt für alle Projekte.</p>
+            {myProjects(data)[0] && (
+              <Link href={`/projekte/${myProjects(data)[0].id}/zeiten?ansicht=design`} className="btn">
+                <Clock size={15} /> Zeitschein gestalten
+              </Link>
+            )}
+          </Card>
+        )}
         <Card title="Firma">
           <form
             className="form"

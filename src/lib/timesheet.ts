@@ -1,5 +1,5 @@
 import { addDays, fmt, holidayName, inRange, isoWeek, isWeekend, monthLabel, startOfWeek, weekdayShort } from "./date";
-import type { Data, Employee, ISODate, Project, TimeEntry, TimesheetSettings } from "./types";
+import type { Data, DesignItem, Employee, ISODate, Project, TemplateColumnField, TimeEntry, TimesheetFact, TimesheetSettings } from "./types";
 
 export const DEFAULT_TIMESHEET: TimesheetSettings = {
   dayStart: "07:00",
@@ -12,8 +12,48 @@ export const DEFAULT_TIMESHEET: TimesheetSettings = {
   note: ""
 };
 
-export function timesheetSettings(data: Data): TimesheetSettings {
-  return { ...DEFAULT_TIMESHEET, ...(data.company.timesheet ?? {}) };
+export const DEFAULT_FACTS: DesignItem<TimesheetFact>[] = [
+  { key: "mitarbeiter", label: "Mitarbeiter", on: true },
+  { key: "personalnummer", label: "Pers.-Nr.", on: true },
+  { key: "firma", label: "Firma / Verleiher", on: true },
+  { key: "projekt", label: "Projekt", on: true },
+  { key: "kunde", label: "Kunde", on: true },
+  { key: "ort", label: "Ort", on: false },
+  { key: "bauleitung", label: "Bauleitung", on: false },
+  { key: "zeitraum", label: "Zeitraum", on: false }
+];
+
+export const DEFAULT_COLUMNS: DesignItem<TemplateColumnField>[] = [
+  { key: "wochentag", label: "Tag", on: true },
+  { key: "datum", label: "Datum", on: true },
+  { key: "beginn", label: "Beginn", on: true },
+  { key: "ende", label: "Ende", on: true },
+  { key: "pause", label: "Pause", on: true },
+  { key: "stunden", label: "Stunden", on: true },
+  { key: "taetigkeit", label: "Tätigkeit", on: true }
+];
+
+/** Merges saved items with the defaults, so new fields show up and old saves keep working. */
+function withDefaults<K extends string>(saved: DesignItem<K>[] | undefined, defaults: DesignItem<K>[]) {
+  if (!saved?.length) return defaults;
+  return [...saved.filter((x) => defaults.some((d) => d.key === x.key)), ...defaults.filter((d) => !saved.some((x) => x.key === d.key)).map((d) => ({ ...d, on: false }))];
+}
+
+export function timesheetSettings(data: Data): TimesheetSettings & Required<Pick<TimesheetSettings, "accent" | "headStyle" | "fontSize" | "orientation" | "facts" | "columns" | "pdfSource" | "showSummary">> {
+  const s = { ...DEFAULT_TIMESHEET, ...(data.company.timesheet ?? {}) };
+  // old switches for the pause / activity column still apply when nothing was designed yet
+  const cols = withDefaults(s.columns, DEFAULT_COLUMNS).map((c) => (!s.columns && ((c.key === "pause" && !s.showPause) || (c.key === "taetigkeit" && !s.showActivity)) ? { ...c, on: false } : c));
+  return {
+    ...s,
+    accent: s.accent ?? "#1b57b8",
+    headStyle: s.headStyle ?? "balken",
+    fontSize: s.fontSize ?? "normal",
+    orientation: s.orientation ?? "hoch",
+    facts: withDefaults(s.facts, DEFAULT_FACTS),
+    columns: cols,
+    pdfSource: s.pdfSource === "excel" && s.template?.mapping ? "excel" : "design",
+    showSummary: s.showSummary ?? true
+  };
 }
 
 function minutes(hm: string) {

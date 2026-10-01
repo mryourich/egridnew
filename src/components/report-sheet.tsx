@@ -1,11 +1,12 @@
 "use client";
 
-import { Camera, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { PhotoField } from "./photo-field";
+import { Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { fmt, inRange, isoWeek, today, weekdayLong } from "@/lib/date";
 import { canDelete, projectTeam, uid, useStore } from "@/lib/store";
 import type { DailyReport } from "@/lib/types";
-import { downscale, Portal } from "./ui";
+import { Portal } from "./ui";
 
 /** Daily report as a side panel: what was done, who was there, photos of the day. */
 export function ReportSheet({ report, onClose }: { report: Partial<DailyReport>; onClose: () => void }) {
@@ -26,8 +27,6 @@ export function ReportSheet({ report, onClose }: { report: Partial<DailyReport>;
     authorId: report.authorId ?? data.currentUserId,
     photos: report.photos ?? []
   });
-  const camera = useRef<HTMLInputElement>(null);
-  const gallery = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<DailyReport>) => setV((o) => ({ ...o, ...patch }));
 
   useEffect(() => {
@@ -36,12 +35,6 @@ export function ReportSheet({ report, onClose }: { report: Partial<DailyReport>;
     return () => window.removeEventListener("keydown", key);
   }, [onClose]);
 
-  const add = async (files: FileList | null) => {
-    if (!files?.length) return;
-    const shots: string[] = [];
-    for (const f of Array.from(files)) shots.push(await downscale(f, 1280));
-    setV((o) => ({ ...o, photos: [...o.photos, ...shots] }));
-  };
 
   const submit = () => {
     if (!v.work.trim()) return;
@@ -105,37 +98,8 @@ export function ReportSheet({ report, onClose }: { report: Partial<DailyReport>;
             </label>
           </div>
 
-          <section className="detail-section">
-            <header>
-              <h3>
-                Fotos <span className="tab-count">{v.photos.length}</span>
-              </h3>
-              <span className="row-inline">
-                <button type="button" className="btn btn-sm" onClick={() => gallery.current?.click()}>
-                  <ImagePlus size={14} /> Hochladen
-                </button>
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => camera.current?.click()}>
-                  <Camera size={14} /> Kamera
-                </button>
-              </span>
-              <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => (add(e.target.files), (e.target.value = ""))} />
-              <input ref={gallery} type="file" accept="image/*" multiple hidden onChange={(e) => (add(e.target.files), (e.target.value = ""))} />
-            </header>
-            {v.photos.length ? (
-              <div className="rd-photos">
-                {v.photos.map((src, i) => (
-                  <figure key={i}>
-                    <img src={src} alt="" />
-                    <button type="button" className="icon-btn" aria-label="Foto entfernen" onClick={() => set({ photos: v.photos.filter((_, k) => k !== i) })}>
-                      <X size={13} />
-                    </button>
-                  </figure>
-                ))}
-              </div>
-            ) : (
-              <p className="muted small">Fotos des Tages erscheinen im PDF.</p>
-            )}
-          </section>
+          <PhotoField photos={v.photos} onChange={(photos) => set({ photos })} hint="Fotos des Tages erscheinen im Tagesbericht-PDF." />
+
 
           <footer className="drawer-foot rd-foot">
             {!isNew && canDelete(data) && (
