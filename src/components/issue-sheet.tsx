@@ -98,12 +98,13 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
   }, [onClose]);
 
   const submit = () => {
-    if (!v.title.trim()) return;
+    // a photo alone is enough – the title then comes from the point
+    const title = v.title.trim() || (v.location ? `Mangel – ${v.location}` : `Mangel vom ${fmt(today())}`);
     const done = v.status === "erledigt";
     // who fixed it and when is recorded once; reopening clears it
     const item: Issue = done
-      ? { ...v, title: v.title.trim(), fixNote: v.fixNote?.trim(), fixedAt: v.fixedAt || today(), fixedBy: v.fixedBy || me?.id }
-      : { ...v, title: v.title.trim(), fixedAt: undefined, fixedBy: undefined };
+      ? { ...v, title, fixNote: v.fixNote?.trim(), fixedAt: v.fixedAt || today(), fixedBy: v.fixedBy || me?.id }
+      : { ...v, title, fixedAt: undefined, fixedBy: undefined };
     const was = data.issues.find((i) => i.id === v.id)?.status;
     save("issues", item, isNew ? `Mangel „${item.title}“ gemeldet` : done && was !== "erledigt" ? `Mangel „${item.title}“ behoben` : `Mangel „${item.title}“ aktualisiert`);
     notify(isNew ? "Mangel gemeldet" : done && was !== "erledigt" ? "Als behoben gemeldet ✓" : "Mangel gespeichert");
@@ -286,7 +287,7 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
             <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>
               Abbrechen
             </button>
-            <button type="submit" className="btn btn-sm btn-primary" disabled={!v.title.trim()}>
+            <button type="submit" className="btn btn-sm btn-primary">
               {isNew ? "Melden" : v.status === "erledigt" && data.issues.find((i) => i.id === v.id)?.status !== "erledigt" ? "Behoben melden" : "Speichern"}
             </button>
           </footer>

@@ -22,11 +22,17 @@ export type Project = {
   createdBy: string;
   /** Invited people; only they (and the creator) see the project. */
   members: string[];
-  /** Picture of the client or the site (data URL). */
+  /** Picture of the site (data URL). */
   image?: string;
+  /** Picture or logo of the client (data URL). */
+  clientImage?: string;
   /** Plan groups (e.g. "Takt 1") and which member sits in which group. */
   groups?: { id: string; name: string }[];
   memberGroup?: Record<string, string>;
+  /** Free plan rows (people without an account, subcontractors, crane, deliveries …). */
+  planRows?: { id: string; name: string }[];
+  /** Order of the plan rows (employee ids and free row ids). */
+  rowOrder?: string[];
 };
 
 export type Qualification = {

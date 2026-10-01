@@ -59,7 +59,8 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
       { key: "start", label: "Beginn", type: "date", required: true },
       { key: "end", label: "Ende", type: "date", required: true },
       { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })), full: true },
-      { key: "image", label: "Bild (z. B. Logo des Kunden)", type: "image", full: true },
+      { key: "image", label: "Projektbild (Baustelle)", type: "image", full: true },
+      { key: "clientImage", label: "Bild vom Kunden (Logo, Foto)", type: "image", full: true },
       { key: "description", label: "Beschreibung", type: "textarea" }
     ],
     defaults: (data) => {
@@ -77,6 +78,7 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
         end: addDays(today(), 60),
         color: L.projectColors[data.projects.length % L.projectColors.length],
         image: "",
+        clientImage: "",
         description: "",
         createdBy: data.currentUserId,
         members: []

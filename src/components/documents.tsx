@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRight, Download, File, FileImage, FileSpreadsheet, FileText, Folder, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { ChevronRight, Download, Eye, ExternalLink, X, File, FileImage, FileSpreadsheet, FileText, Folder, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { fmt, today } from "@/lib/date";
 import { canDelete, employeeName, isManager, uid, useStore } from "@/lib/store";
 import type { DocFile, DocFolder } from "@/lib/types";
@@ -30,6 +30,7 @@ const read = (file: globalThis.File) =>
 
 /** Folder tree + file list. projectId "" is the general company store (manuals, guidelines, measuring reports). */
 export function DocBrowser({ projectId }: { projectId: string }) {
+  const [preview, setPreview] = useState<DocFile | null>(null);
   const { data, save, remove, notify } = useStore();
   const manager = isManager(data);
   const folders = data.folders.filter((f) => f.projectId === projectId);
@@ -181,13 +182,16 @@ export function DocBrowser({ projectId }: { projectId: string }) {
               {files.map((f) => (
                 <li key={f.id}>
                   <span className="file-icon">{icon(f)}</span>
-                  <a href={f.dataUrl} target="_blank" rel="noreferrer" download={f.type.includes("pdf") || f.type.startsWith("image/") ? undefined : f.name} className="file-name">
+                  <button type="button" className="file-name" onClick={() => setPreview(f)} title="Vorschau">
                     <strong>{f.name}</strong>
                     <small>
                       {size(f.size)} · {fmt(f.addedAt)} · {employeeName(data, f.addedBy)}
                       {q ? ` · ${folders.find((x) => x.id === f.folderId)?.name ?? ""}` : ""}
                     </small>
-                  </a>
+                  </button>
+                  <button type="button" className="icon-btn" onClick={() => setPreview(f)} title="Vorschau">
+                    <Eye size={15} />
+                  </button>
                   <a className="icon-btn" href={f.dataUrl} download={f.name} title="Herunterladen">
                     <Download size={15} />
                   </a>
@@ -202,6 +206,7 @@ export function DocBrowser({ projectId }: { projectId: string }) {
           )}
         </div>
         <p className="muted small">Dateien bis 4 MB. Größere Pläne folgen mit dem Cloud-Speicher.</p>
+        {preview && <FilePreview file={preview} onClose={() => setPreview(null)} />}
       </section>
 
       {menu && (
@@ -242,5 +247,79 @@ export function DocBrowser({ projectId }: { projectId: string }) {
         </Portal>
       )}
     </div>
+  );
+}
+
+/** Data URLs can't be opened as a page in modern browsers – show them via a blob URL instead. */
+function useBlobUrl(dataUrl: string) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let made = "";
+    fetch(dataUrl)
+      .then((r) => r.blob())
+      .then((b) => setUrl((made = URL.createObjectURL(b))))
+      .catch(() => setUrl(dataUrl));
+    return () => {
+      if (made) URL.revokeObjectURL(made);
+    };
+  }, [dataUrl]);
+  return url;
+}
+
+/** Preview of a document right in the app: PDF, pictures and text; everything else offers the download. */
+function FilePreview({ file, onClose }: { file: DocFile; onClose: () => void }) {
+  const url = useBlobUrl(file.dataUrl);
+  const [text, setText] = useState<string | null>(null);
+  const kind = file.type.includes("pdf") || /\.pdf$/i.test(file.name) ? "pdf" : file.type.startsWith("image/") ? "image" : file.type.startsWith("text/") || /\.(txt|csv|md)$/i.test(file.name) ? "text" : "other";
+  useEffect(() => {
+    if (kind === "text" && url) fetch(url).then((r) => r.text()).then(setText).catch(() => setText(""));
+  }, [kind, url]);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
+  return (
+    <Portal>
+      <div className="preview-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="preview" role="dialog" aria-label={`Vorschau ${file.name}`}>
+          <header>
+            <span className="file-icon">{icon(file)}</span>
+            <strong title={file.name}>{file.name}</strong>
+            <span className="spacer" />
+            {url && (
+              <a className="btn btn-sm" href={url} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} /> <span className="desktop-only">Neuer Tab</span>
+              </a>
+            )}
+            <a className="btn btn-sm" href={file.dataUrl} download={file.name}>
+              <Download size={14} /> <span className="desktop-only">Herunterladen</span>
+            </a>
+            <button type="button" className="icon-btn" onClick={onClose} aria-label="Schließen">
+              <X size={18} />
+            </button>
+          </header>
+          <div className={`preview-body pv-${kind}`}>
+            {!url ? (
+              <p className="muted">Lädt …</p>
+            ) : kind === "pdf" ? (
+              <iframe src={url} title={file.name} />
+            ) : kind === "image" ? (
+              <img src={url} alt={file.name} />
+            ) : kind === "text" ? (
+              <pre>{text ?? "…"}</pre>
+            ) : (
+              <div className="preview-none">
+                {icon(file)}
+                <p>Für diesen Dateityp gibt es keine Vorschau.</p>
+                <a className="btn btn-primary" href={file.dataUrl} download={file.name}>
+                  <Download size={15} /> Herunterladen
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </Portal>
   );
 }

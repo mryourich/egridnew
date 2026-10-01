@@ -43,7 +43,7 @@ export function SitesOverview() {
           <h2>So startest du</h2>
           <ol>
             <li className={data.employees.length > 1 ? "done" : ""}>
-              <strong>Mitarbeiter anlegen</strong> – unter <Link href="/team">Team</Link>, mit Profilbild und Rechten.
+              <strong>Mitarbeiter anlegen</strong> – unter <Link href="/team">Mitarbeiter verwalten</Link> (Menü unten links), mit Profilbild und Rechten.
             </li>
             <li className={sites.length ? "done" : ""}>
               <strong>Projekt anlegen</strong> – es ist privat, bis du jemanden einlädst.{" "}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Download, RotateCcw, Upload } from "lucide-react";
+import { Download, RotateCcw, Upload, Users } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Card, PageHeader } from "@/components/ui";
 import { today } from "@/lib/date";
@@ -54,6 +55,14 @@ export default function SettingsPage() {
     <div className="page page-narrow">
       <PageHeader title="Einstellungen" subtitle="Firmendaten und Datensicherung" />
       <div className="stack">
+        {admin && (
+          <Card title="Mitarbeiter">
+            <p className="muted small">Mitarbeiter anlegen, Profilbild, Abteilung und Rechte vergeben.</p>
+            <Link href="/team" className="btn">
+              <Users size={15} /> Mitarbeiter verwalten
+            </Link>
+          </Card>
+        )}
         <Card title="Firma">
           <form
             className="form"

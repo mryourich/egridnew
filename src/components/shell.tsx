@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarRange, Camera, ClipboardList, FileText, FolderKanban, FolderOpen, Home, ListChecks, LogOut, Package, Settings, StickyNote, Users } from "lucide-react";
+import { AlertTriangle, CalendarRange, Camera, ClipboardList, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, LogOut, Package, Settings, StickyNote, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -36,8 +36,7 @@ function Frame({ children }: { children: ReactNode }) {
     { href: "/dashboard", label: role === "monteur" ? "Heute" : "Start", icon: Home, match: ["/dashboard"], roles: ["pl", "bl", "mk", "monteur"] },
     { href: "/projekte", label: "Projekte", icon: FolderKanban, match: ["/projekte"], roles: ["pl", "bl", "mk", "monteur"] },
     { href: "/notizen", label: "Notizen", icon: StickyNote, match: ["/notizen"], roles: ["pl", "bl", "mk", "monteur"] },
-    { href: "/dokumente", label: "Dokumente", icon: FileText, match: ["/dokumente"], roles: ["pl", "bl", "mk", "monteur"] },
-    { href: "/team", label: "Team", icon: Users, match: ["/team"], roles: ["pl", "bl", "mk"] }
+    { href: "/dokumente", label: "Dokumente", icon: FileText, match: ["/dokumente"], roles: ["pl", "bl", "mk", "monteur"] }
   ];
   const modules = all.filter((m) => m.roles.includes(role));
   const isActive = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -139,10 +138,15 @@ function UserSwitch({ up = false }: { up?: boolean }) {
           <Link href="/einstellungen" className="menu-link" onClick={() => setOpen(false)}>
             <Settings size={15} /> Einstellungen
           </Link>
+          {roleOf(user) !== "monteur" && (
+            <Link href="/team" className="menu-link" onClick={() => setOpen(false)}>
+              <Users size={15} /> Mitarbeiter verwalten
+            </Link>
+          )}
           <small className="menu-title">
             <LogOut size={12} /> Anmelden als (Demo)
           </small>
-          {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Team“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
+          {data.employees.filter((e) => e.active).length < 2 && <p className="menu-hint">Lege unter „Mitarbeiter verwalten“ Mitarbeiter mit Rechten an – dann kannst du hier in ihre Rolle wechseln.</p>}
           {(["pl", "bl", "mk", "monteur"] as Role[])
             .filter((r) => data.employees.some((e) => e.active && roleOf(e) === r))
             .map((r) => (
@@ -180,23 +184,8 @@ const SECTION_ICONS: Record<string, typeof Home> = {
   material: Package,
   berichte: ClipboardList,
   dokumente: FolderOpen,
-  team: Users
+  uebersicht: LayoutDashboard
 };
-
-function useSectionCounts(projectId: string) {
-  const { data } = useStore();
-  const t = new Date().toISOString().slice(0, 10);
-  const of = <T extends { projectId: string }>(list: T[]) => list.filter((x) => x.projectId === projectId);
-  return {
-    plan: of(data.jobs).filter((j) => !j.done && j.end >= t).length,
-    struktur: of(data.siteNodes).filter((n) => n.status !== "erledigt" && !data.siteNodes.some((k) => k.parentId === n.id)).length,
-    fotos: of(data.photos).length,
-    maengel: of(data.issues).filter((i) => i.status !== "erledigt").length,
-    material: of(data.materials).filter((m) => m.status !== "angekommen").length,
-    berichte: of(data.reports).length + of(data.regie).length,
-    dokumente: of(data.files).length
-  } as Record<string, number>;
-}
 
 /** Sidebar: my projects; the open one unfolds into its sections. */
 function ProjectNav({ role }: { role: Role }) {
@@ -205,7 +194,6 @@ function ProjectNav({ role }: { role: Role }) {
   const sites = myProjects(data);
   const [, base, siteId, section] = pathname.split("/");
   const openId = base === "projekte" ? siteId : "";
-  const counts = useSectionCounts(openId ?? "");
   return (
     <div className="side-projects">
       <span className="side-label">Meine Projekte</span>
@@ -228,7 +216,6 @@ function ProjectNav({ role }: { role: Role }) {
                       <Link key={s.key} href={`/projekte/${p.id}/${s.key}`} className={section === s.key ? "active" : ""}>
                         <Icon size={15} />
                         <span>{s.label}</span>
-                        {counts[s.key] ? <em>{counts[s.key]}</em> : null}
                       </Link>
                     );
                   })}
@@ -247,7 +234,6 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
   const pathname = usePathname();
   const role = roleOf(currentUser(data));
   const section = pathname.split("/")[3];
-  const counts = useSectionCounts(projectId);
   return (
     <nav className="proj-tabs" aria-label="Bereiche">
       {siteSections
@@ -258,7 +244,6 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
             <Link key={s.key} href={`/projekte/${projectId}/${s.key}`} className={section === s.key ? "active" : ""}>
               <Icon size={15} />
               {s.label}
-              {counts[s.key] ? <em>{counts[s.key]}</em> : null}
             </Link>
           );
         })}
