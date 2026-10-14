@@ -50,7 +50,7 @@ export default function TeamPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Mitarbeiter"
+        title="Team"
         subtitle="Alle Mitarbeiter mit Profilbild, Rechten, Urlaub und Krankenstand – eingeladen wird im Projekt unter „Team“"
         actions={
           <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: kind[tab] })}>
