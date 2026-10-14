@@ -9,7 +9,7 @@ const OFFICE: Role[] = [...MANAGERS, "buero"];
 
 export const siteSections: { key: SiteSection; label: string; roles: Role[] }[] = [
   { key: "uebersicht", label: "Übersicht", roles: ALL },
-  { key: "plan", label: "Plan", roles: OFFICE },
+  { key: "plan", label: "Zeitplan", roles: OFFICE },
   { key: "struktur", label: "Struktur", roles: ALL },
   { key: "fotos", label: "Fotos", roles: ALL },
   { key: "maengel", label: "Mängel", roles: ALL },
