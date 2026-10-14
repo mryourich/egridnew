@@ -28,6 +28,9 @@ export function SiteStructure({ project }: { project: Project }) {
   const manager = isManager(data);
   const nodes = useMemo(() => data.siteNodes.filter((n) => n.projectId === project.id), [data.siteNodes, project.id]);
   const [area, setArea] = useState("all");
+  // phones: the area list folds away behind one line
+  const [treeOpen, setTreeOpen] = useState(false);
+  useEffect(() => setTreeOpen(false), [area]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [openPoint, setOpenPoint] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
@@ -215,7 +218,12 @@ export function SiteStructure({ project }: { project: Project }) {
 
   return (
     <div className="op">
-      <aside className="op-areas card">
+      <aside className={`op-areas card ${treeOpen ? "open" : ""}`}>
+        <button type="button" className="op-areas-toggle" onClick={() => setTreeOpen((o) => !o)} aria-expanded={treeOpen}>
+          <span>Bereich</span>
+          <strong>{selected ? selected.title : "Alle Punkte"}</strong>
+          <ChevronDown size={16} />
+        </button>
         <header>
           <span>Bereiche</span>
           {manager && (
@@ -252,7 +260,6 @@ export function SiteStructure({ project }: { project: Project }) {
       <section className="op-main">
         <header className="op-head">
           <div>
-            <span className="op-kicker">Checkliste</span>
             <h2>{selected ? selected.title : "Alle Punkte"}</h2>
             {selected && pathOf(nodes, selected.id).length > 1 && (
               <small className="muted">
@@ -266,46 +273,18 @@ export function SiteStructure({ project }: { project: Project }) {
           <SearchInput value={query} onChange={setQuery} placeholder="Punkt suchen…" />
         </header>
 
-        <div className="op-kpis">
-          <div className="op-kpi op-total">
-            <span className="ring" style={{ "--p": pct } as CSSProperties}>
-              <i>{pct}%</i>
-            </span>
-            <span>
-              <strong>
-                {doneCount} / {scope.length}
-              </strong>
-              <small>Punkte erledigt</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#1463ff" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status === "offen").length}</strong>
-              <small>Offen</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#f59e0b" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status === "in_arbeit").length}</strong>
-              <small>In Arbeit</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#ef4444" }} />
-            <span>
-              <strong>{openIssues.length}</strong>
-              <small>Mängel</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#ef4444" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length}</strong>
-              <small>Überfällig</small>
-            </span>
-          </div>
+        <div className="op-sum">
+          <span className="bar">
+            <i style={{ width: `${pct}%` }} />
+          </span>
+          <span>
+            <b>
+              {doneCount} von {scope.length}
+            </b>{" "}
+            erledigt
+            {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length > 0 && <em> · {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length} überfällig</em>}
+            {openIssues.length > 0 && <> · {openIssues.length} {openIssues.length === 1 ? "Mangel" : "Mängel"}</>}
+          </span>
         </div>
 
         <div className="card card-flush op-list">
