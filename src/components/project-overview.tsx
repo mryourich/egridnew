@@ -1,15 +1,15 @@
 "use client";
 
-import { AlertTriangle, Archive, RotateCcw, Building2, Camera, CheckCircle2, ClipboardList, Hammer, History, ImagePlus, Package, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Archive, RotateCcw, Building2, CheckCircle2, ClipboardList, History, ImagePlus, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
-import { fmt, fmtShort, inRange, today } from "@/lib/date";
+import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { projectStats } from "@/lib/overview";
 import { shortPath } from "@/lib/site";
 import { employeeName, fmtStamp, isManager, projectTeam, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
-import { Panel, rowName } from "./dashboard";
+import { Panel } from "./dashboard";
 import { InviteDialog } from "./invite";
 import { EmpAvatar } from "./person";
 import { downscale } from "./ui";
@@ -25,7 +25,6 @@ export function ProjectOverview({ project }: { project: Project }) {
   const s = projectStats(data, project);
   const team = projectTeam(data, project);
   const base = `/projekte/${project.id}`;
-  const absent = team.flatMap((e) => data.absences.filter((a) => a.employeeId === e.id && inRange(t, a.start, a.end)).map((a) => ({ e, a })));
 
   const setClientImage = async (file: File | undefined) => {
     if (!file) return;
@@ -161,41 +160,6 @@ export function ProjectOverview({ project }: { project: Project }) {
       </section>
 
       <Panel
-        title="Heute auf der Baustelle"
-        icon={<Hammer size={16} />}
-        empty={manager ? <>Für heute nichts eingeplant. <Link href={`${base}/plan`}>Zum Plan</Link></> : "Für heute nichts eingeplant."}
-        action={
-          <Link href={`${base}/plan`} className="link-btn">
-            Plan
-          </Link>
-        }
-      >
-        {s.jobsToday.map((j) => (
-          <div key={j.id} className="dl-item">
-            {data.employees.some((e) => e.id === j.employeeId) ? <EmpAvatar id={j.employeeId} size={28} /> : <i className="dl-bar" style={{ background: j.color }} />}
-            <span>
-              <strong>{j.title || "Aufgabe"}</strong>
-              <small>
-                {rowName(data, project, j.employeeId)} · bis {fmtShort(j.end)}
-              </small>
-            </span>
-            <i className="dl-swatch" style={{ background: j.color }} />
-          </div>
-        ))}
-        {absent.map(({ e, a }) => (
-          <div key={a.id} className="dl-item dl-absent">
-            <EmpAvatar id={e.id} size={28} />
-            <span>
-              <strong>{e.name}</strong>
-              <small className="text-red">
-                {L.absenceType[a.type].label} bis {fmtShort(a.end)}
-              </small>
-            </span>
-          </div>
-        ))}
-      </Panel>
-
-      <Panel
         title="Team"
         icon={<Users size={16} />}
         empty="Noch niemand im Projekt."
@@ -264,71 +228,13 @@ export function ProjectOverview({ project }: { project: Project }) {
         ))}
       </Panel>
 
-      <Panel
-        title="Neueste Fotos"
-        icon={<Camera size={16} />}
-        empty="Noch keine Fotos."
-        action={
-          <Link href={`${base}/fotos`} className="link-btn">
-            Alle
-          </Link>
-        }
-      >
-        {s.photos.length ? (
-          <div className="ov-photos">
-            {s.photos.slice(0, 8).map((ph) => (
-              <Link key={ph.id} href={`${base}/fotos`}>
-                <img src={ph.dataUrl} alt={ph.caption} />
-              </Link>
-            ))}
-          </div>
-        ) : null}
-      </Panel>
-
-      <Panel
-        title="Material"
-        icon={<Package size={16} />}
-        empty="Nichts offen oder bestellt."
-        action={
-          <Link href={`${base}/material`} className="link-btn">
-            Alle
-          </Link>
-        }
-      >
-        {[...s.materialOrdered, ...s.materialOpen].slice(0, 6).map((m) => (
-          <Link key={m.id} href={`${base}/material`} className="dl-item">
-            <span className="dl-qty">
-              {m.qty} {m.unit}
-            </span>
-            <span>
-              <strong>{m.name}</strong>
-              <small>{L.materialStatus[m.status].label}</small>
-            </span>
-          </Link>
-        ))}
-      </Panel>
-
-      {s.lastReport && (
-        <Panel title="Letzter Tagesbericht" icon={<ClipboardList size={16} />} empty="">
-          <Link href={`${base}/berichte`} className="dl-item ov-report">
-            <span className="dl-date">{fmtShort(s.lastReport.date)}</span>
-            <span>
-              <strong>
-                {s.lastReport.crew} Personen · {s.lastReport.hours} Std. · {employeeName(data, s.lastReport.authorId)}
-              </strong>
-              <small>{s.lastReport.work || "–"}</small>
-            </span>
-          </Link>
-        </Panel>
-      )}
-
-      <section className="card dash-panel wide ov-log">
-        <header className="card-header">
+      <details className="card dash-panel wide ov-log">
+        <summary className="card-header">
           <h2>
             <History size={16} /> Protokoll
           </h2>
-          <span className="muted small">Wer hat wann was gemacht</span>
-        </header>
+          <span className="muted small">Wer hat wann was gemacht · {s.activity.length} Einträge</span>
+        </summary>
         {s.activity.length ? (
           <table className="log-table">
             <thead>
@@ -356,7 +262,7 @@ export function ProjectOverview({ project }: { project: Project }) {
             Alle {s.activity.length} Einträge anzeigen
           </button>
         )}
-      </section>
+      </details>
 
       {invite && <InviteDialog project={project} onClose={() => setInvite(false)} />}
     </div>

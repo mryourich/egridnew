@@ -1,18 +1,16 @@
 "use client";
 
-import { Activity, AlertTriangle, ArrowRight, CalendarClock, Camera, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, FileText, Image as ImageIcon, ListChecks, Package, Plus, ShoppingCart, TrendingUp, UserPlus, Users } from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, CalendarClock, Camera, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, FileText, Image as ImageIcon, ListChecks, Plus, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { addDays, fmt, fmtShort, inRange, startOfWeek, today, weekdayLong, weekdayShort } from "@/lib/date";
+import { fmt, fmtShort, today, weekdayLong } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { ago, projectStats } from "@/lib/overview";
-import { hasModule, sectionsFor } from "@/lib/sections";
-import { currentUser, employeeName, isManager, myProjects, projectTeam, roleOf, useStore } from "@/lib/store";
+import { sectionsFor } from "@/lib/sections";
+import { currentUser, employeeName, isManager, myProjects, roleOf, useStore } from "@/lib/store";
 import { myTasks } from "@/lib/tasks";
 import type { Data, Project } from "@/lib/types";
-import { InviteDialog } from "./invite";
 import { TaskList } from "./my-tasks";
-import { EmpAvatar } from "./person";
 import { useEditor } from "./shell";
 
 function greeting() {
@@ -40,25 +38,6 @@ function MiniBars({ values, color }: { values: number[]; color: string }) {
 }
 
 /** Soft area line for the progress tile. */
-function MiniArea({ values, color }: { values: number[]; color: string }) {
-  const v = values.length > 1 ? values : [0, ...(values.length ? values : [0])];
-  const w = 120;
-  const pts = v.map((x, i) => [(i / (v.length - 1)) * w, 36 - (x / 100) * 30] as const);
-  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  return (
-    <svg className="kpi-area" viewBox={`0 0 ${w} 40`} preserveAspectRatio="none" aria-hidden>
-      <defs>
-        <linearGradient id="kpiArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={color} stopOpacity="0.28" />
-          <stop offset="1" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${d} L${w},40 L0,40 Z`} fill="url(#kpiArea)" />
-      <path d={d} fill="none" stroke={color} strokeWidth="2" />
-    </svg>
-  );
-}
-
 function Kpi2({ icon, tone, label, value, hint, chart, href }: { icon: ReactNode; tone: string; label: string; value: ReactNode; hint: string; chart: ReactNode; href?: string }) {
   const body = (
     <>
@@ -103,9 +82,7 @@ export function Dashboard() {
   const rows = projects.map((p) => ({ p, s: projectStats(data, p) }));
   const byId = new Map(projects.map((p) => [p.id, p]));
   const sum = (f: (s: (typeof rows)[number]["s"]) => number) => rows.reduce((n, r) => n + f(r.s), 0);
-  const avg = rows.length ? Math.round(sum((s) => s.progress) / rows.length) : 0;
   const [featuredId, setFeaturedId] = useState("");
-  const [invite, setInvite] = useState(false);
   useEffect(() => {
     try {
       setFeaturedId(window.localStorage.getItem(FEATURED_KEY) ?? "");
@@ -132,7 +109,6 @@ export function Dashboard() {
   const crew = new Set(rows.flatMap((r) => r.s.jobsToday.map((j) => j.employeeId))).size;
   const tasks = myTasks(data);
   const defects = rows.flatMap(({ p, s }) => s.openIssues.map((i) => ({ p, i }))).slice(0, 4);
-  const photos = rows.flatMap(({ p, s }) => s.photos.map((ph) => ({ p, ph }))).sort((a, b) => b.ph.takenAt.localeCompare(a.ph.takenAt));
   const activity = data.activity.filter((a) => byId.has(a.projectId)).slice(0, 6);
   const role = roleOf(me);
 
@@ -155,11 +131,9 @@ export function Dashboard() {
       </header>
 
       <div className="k2-row">
-        <Kpi2 icon={<TrendingUp size={18} />} tone="blue" label="Fortschritt" value={`${avg} %`} hint="über alle Projekte" chart={<MiniArea values={rows.map((r) => r.s.progress)} color="#1a5cff" />} href="/projekte" />
         <Kpi2 icon={<ClipboardList size={18} />} tone="green" label="Offene Punkte" value={sum((s) => s.openPoints.length)} hint={`${sum((s) => s.inWork.length)} in Arbeit`} chart={<MiniBars values={rows.map((r) => r.s.openPoints.length)} color="#10b981" />} />
         <Kpi2 icon={<AlertTriangle size={18} />} tone="red" label="Offene Mängel" value={sum((s) => s.openIssues.length)} hint={`${sum((s) => s.criticalIssues.length)} kritisch / hoch`} chart={<MiniBars values={rows.map((r) => r.s.openIssues.length)} color="#ef4444" />} />
         <Kpi2 icon={<CalendarClock size={18} />} tone="amber" label="Überfällig" value={sum((s) => s.overduePoints.length + s.overdueIssues.length)} hint="Punkte und Mängel" chart={<MiniBars values={rows.map((r) => r.s.overduePoints.length + r.s.overdueIssues.length)} color="#ef4444" />} />
-        <Kpi2 icon={<Package size={18} />} tone="violet" label="Material" value={sum((s) => s.materialOpen.length + s.materialOrdered.length)} hint={`${sum((s) => s.materialOrdered.length)} bestellt`} chart={<MiniBars values={rows.map((r) => r.s.materialOpen.length + r.s.materialOrdered.length)} color="#8b5cf6" />} />
         <Kpi2 icon={<Users size={18} />} tone="blue" label="Heute im Einsatz" value={crew} hint="Mitarbeiter" chart={<MiniBars values={rows.map((r) => r.s.crewToday)} color="#1a5cff" />} />
       </div>
 
@@ -280,78 +254,6 @@ export function Dashboard() {
             </section>
           )}
 
-          {featured && (
-            <section className="card d-over">
-              <header className="card-header">
-                <h2>Projektübersicht</h2>
-                <Link href={`/projekte/${featured.p.id}/struktur`} className="link-btn">
-                  Details <ArrowRight size={13} />
-                </Link>
-              </header>
-              <div className="ov4">
-                <span>
-                  <b className="t-blue">{featured.s.areas.length}</b>
-                  <small>Bereiche</small>
-                </span>
-                <span>
-                  <b className="t-blue">{featured.s.inWork.length}</b>
-                  <small>in Arbeit</small>
-                </span>
-                <span>
-                  <b className="t-red">{featured.s.overduePoints.length}</b>
-                  <small>Überfällig</small>
-                </span>
-                <span>
-                  <b>{featured.s.duePoints.length}</b>
-                  <small>bald fällig</small>
-                </span>
-              </div>
-              <ul className="ov-bars">
-                {featured.s.areas.slice(0, 4).map(({ node, progress }) => (
-                  <li key={node.id}>
-                    <span title={node.title}>{node.title}</span>
-                    <span className="bar">
-                      <i style={{ width: `${progress}%` }} />
-                    </span>
-                    <b>{progress} %</b>
-                  </li>
-                ))}
-                {featured.s.areas.length === 0 && <li className="dl-empty">Noch keine Bereiche.</li>}
-              </ul>
-            </section>
-          )}
-
-          {featured && hasModule(data, "grid") && <WeekPlan project={featured.p} />}
-
-          {featured && (
-            <section className="card d-team">
-              <header className="card-header">
-                <h2>Team auf der Baustelle</h2>
-                <Link href={`/projekte/${featured.p.id}/plan`} className="link-btn">
-                  Plan <ArrowRight size={13} />
-                </Link>
-              </header>
-              <div className="team-grid">
-                {projectTeam(data, featured.p)
-                  .slice(0, 9)
-                  .map((e) => (
-                    <span key={e.id} className="tg-m" title={`${e.name} · ${e.role}`}>
-                      <EmpAvatar id={e.id} size={40} />
-                      <small>{e.name.split(" ")[0]}</small>
-                    </span>
-                  ))}
-                {manager && (
-                  <button type="button" className="tg-m tg-add" onClick={() => setInvite(true)}>
-                    <span>
-                      <UserPlus size={16} />
-                    </span>
-                    <small>Einladen</small>
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
-
           <section className="card d-act">
             <header className="card-header">
               <h2>Letzte Aktivitäten</h2>
@@ -419,71 +321,9 @@ export function Dashboard() {
             </ul>
           </section>
 
-          <section className="card d-photos">
-            <header className="card-header">
-              <h2>
-                <Camera size={16} /> Neueste Fotos
-              </h2>
-              {featured && (
-                <Link href={`/projekte/${featured.p.id}/fotos`} className="link-btn">
-                  Alle <ArrowRight size={13} />
-                </Link>
-              )}
-            </header>
-            {photos.length === 0 && <p className="dl-empty">Noch keine Fotos.</p>}
-            <div className="ph-grid">
-              {photos.slice(0, 6).map(({ p, ph }, i) => (
-                <Link key={ph.id} href={`/projekte/${p.id}/fotos`} title={ph.caption}>
-                  <img src={ph.dataUrl} alt={ph.caption} />
-                  {i === 5 && photos.length > 6 && <span>+{photos.length - 6}</span>}
-                </Link>
-              ))}
-            </div>
-          </section>
         </div>
       )}
-      {invite && featured && <InviteDialog project={featured.p} onClose={() => setInvite(false)} />}
     </div>
-  );
-}
-
-/** This week of a project: who works when (from the plan). */
-function WeekPlan({ project }: { project: Project }) {
-  const { data } = useStore();
-  const mon = startOfWeek(today());
-  const days = [0, 1, 2, 3, 4].map((i) => addDays(mon, i));
-  const t = today();
-  const jobs = data.jobs.filter((j) => j.projectId === project.id && !j.symbol && j.end >= mon && j.start <= days[4]);
-  const people = [...new Set(jobs.map((j) => j.employeeId))].slice(0, 6);
-  return (
-    <section className="card d-plan">
-      <header className="card-header">
-        <h2>Wochenplan</h2>
-        <Link href={`/projekte/${project.id}/plan`} className="link-btn">
-          Plan öffnen <ArrowRight size={13} />
-        </Link>
-      </header>
-      <div className="wp">
-        <div className="wp-head">
-          <span />
-          {days.map((d) => (
-            <span key={d} className={d === t ? "now" : ""}>
-              {weekdayShort(d)}
-            </span>
-          ))}
-        </div>
-        {people.length === 0 && <p className="dl-empty">Diese Woche ist nichts eingeplant.</p>}
-        {people.map((id) => (
-          <div key={id} className="wp-row">
-            <span className="wp-name">{rowName(data, project, id).split(" ")[0]}</span>
-            {days.map((d) => {
-              const j = jobs.find((x) => x.employeeId === id && inRange(d, x.start, x.end));
-              return <span key={d} className={`wp-cell ${d === t ? "now" : ""}`}>{j && <i style={{ background: j.color }} title={j.title} />}</span>;
-            })}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 

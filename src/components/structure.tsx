@@ -266,7 +266,7 @@ export function SiteStructure({ project }: { project: Project }) {
           <SearchInput value={query} onChange={setQuery} placeholder="Punkt suchen…" />
         </header>
 
-        <div className="op-kpis">
+        <div className="op-kpis op-kpis-slim">
           <div className="op-kpi op-total">
             <span className="ring" style={{ "--p": pct } as CSSProperties}>
               <i>{pct}%</i>
@@ -275,35 +275,11 @@ export function SiteStructure({ project }: { project: Project }) {
               <strong>
                 {doneCount} / {scope.length}
               </strong>
-              <small>Punkte erledigt</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#1463ff" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status === "offen").length}</strong>
-              <small>Offen</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#f59e0b" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status === "in_arbeit").length}</strong>
-              <small>In Arbeit</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#ef4444" }} />
-            <span>
-              <strong>{openIssues.length}</strong>
-              <small>Mängel</small>
-            </span>
-          </div>
-          <div className="op-kpi">
-            <i className="kdot" style={{ background: "#ef4444" }} />
-            <span>
-              <strong>{scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length}</strong>
-              <small>Überfällig</small>
+              <small>
+                Punkte erledigt
+                {openIssues.length > 0 && ` · ${openIssues.length} ${openIssues.length === 1 ? "Mangel" : "Mängel"}`}
+                {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length > 0 && <em> · {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length} überfällig</em>}
+              </small>
             </span>
           </div>
         </div>

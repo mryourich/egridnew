@@ -1,11 +1,12 @@
 "use client";
 
-import { AlertTriangle, Camera, CheckCircle2, Trash2, X } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { addDays, fmt, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { nodeOptions } from "@/lib/site";
-import { canDelete, currentUser, employeeName, plannable, uid, useStore } from "@/lib/store";
+import { canDelete, currentUser, employeeName, plannable, roleOf, uid, useStore } from "@/lib/store";
+import { sectionsFor } from "@/lib/sections";
 import type { Issue, IssueStatus, Severity } from "@/lib/types";
 import { ISSUE_LABELS, Trail } from "./trail";
 import { downscale, Portal } from "./ui";
@@ -83,12 +84,15 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
     fixedAt: issue.fixedAt,
     fixedBy: issue.fixedBy
   });
+  // short form for new defects; details open on demand or when already filled
+  const [more, setMore] = useState(!isNew || !!issue.nodeId || !!issue.description);
   const photoInput = useRef<HTMLInputElement>(null);
   const fixInput = useRef<HTMLInputElement>(null);
   const me = currentUser(data);
   const set = (patch: Partial<Issue>) => setV((o) => ({ ...o, ...patch }));
   const project = data.projects.find((p) => p.id === v.projectId);
   const planOf = v.plan ? data.plans.find((p) => p.id === v.plan!.planId) : undefined;
+  const plansOn = sectionsFor(data, roleOf(me)).some((x) => x.key === "plaene");
 
   useEffect(() => {
     if (photo) setV((o) => ({ ...o, photo }));
@@ -176,7 +180,7 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
             ))}
           </div>
 
-          {v.plan && planOf && (
+          {v.plan && planOf && plansOn && (
             <div className="issue-plan" title={planOf.name}>
               <img src={planOf.dataUrl} alt={planOf.name} />
               <i style={{ left: `${v.plan.x * 100}%`, top: `${v.plan.y * 100}%` }} />
@@ -184,6 +188,30 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
             </div>
           )}
 
+          <div className="job-grid">
+            <label>
+              <span>Zuständig</span>
+              <select value={v.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
+                <option value="">–</option>
+                {plannable(data).map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Frist</span>
+              <input type="date" value={v.due} onChange={(e) => set({ due: e.target.value })} />
+            </label>
+          </div>
+
+          {!more && (
+            <button type="button" className="link-btn more-toggle" onClick={() => setMore(true)}>
+              <Plus size={13} /> Mehr Angaben (Bereich, Beschreibung)
+            </button>
+          )}
+          {more && (
           <div className="job-grid">
             <label className="full">
               <span>Bereich / Punkt</span>
@@ -196,26 +224,12 @@ export function IssueSheet({ issue, photo, onClose }: { issue: Partial<Issue>; p
                 ))}
               </select>
             </label>
-            <label>
-              <span>Zuständig</span>
-              <select value={v.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}>
-                <option value="">–</option>
-                {plannable(data).map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              <span>Frist</span>
-              <input type="date" value={v.due} onChange={(e) => set({ due: e.target.value })} />
-            </label>
             <label className="full">
               <span>Beschreibung</span>
               <textarea rows={2} value={v.description} onChange={(e) => set({ description: e.target.value })} placeholder="optional" />
             </label>
           </div>
+          )}
 
           {!isNew && (
             <div className="status-switch" role="group" aria-label="Status">

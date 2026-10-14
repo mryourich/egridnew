@@ -11556,3 +11556,148 @@ a.k2:hover {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ================================================================ v15: less per page (same look) */
+.k2-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.dash-grid2 {
+  grid-template-columns: 1.2fr 0.95fr 1.1fr;
+  grid-template-areas:
+    "proj proj task"
+    "proj proj def"
+    "act  act  act";
+}
+@media (max-width: 1500px) {
+  .k2-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .dash-grid2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "proj proj task"
+      "proj proj def"
+      "act  act  act";
+  }
+}
+@media (max-width: 1100px) {
+  .k2-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dash-grid2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "proj proj"
+      "task def"
+      "act  act";
+  }
+}
+@media (max-width: 700px) {
+  .dash-grid2 {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "proj" "task" "def" "act";
+  }
+}
+
+/* project header: quick actions next to the progress */
+.ph-quick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+.ph-quick .btn {
+  height: 40px;
+}
+
+/* structure: one summary tile instead of five */
+.op-kpis.op-kpis-slim {
+  display: flex !important;
+  grid-template-columns: none !important;
+}
+.op-kpis-slim .op-kpi.op-total {
+  flex: 0 1 auto;
+  min-width: 280px;
+}
+.op-kpis-slim small em {
+  color: #ef4444;
+  font-style: normal;
+  font-weight: 650;
+}
+
+/* project overview: protocol folded */
+details.ov-log > summary {
+  cursor: pointer;
+  list-style: none;
+}
+details.ov-log > summary::-webkit-details-marker {
+  display: none;
+}
+details.ov-log:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+/* forms: rarely needed fields behind one link */
+.more-toggle {
+  align-self: flex-start;
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+.issue-sheet .more-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 8px;
+}
+@media (max-width: 960px) {
+  .ph-quick .btn {
+    height: 38px;
+    padding: 0 12px;
+  }
+  .op-kpis-slim .op-kpi.op-total {
+    min-width: 0;
+    flex: 1;
+  }
+}
+.def-list a > span.def-noimg {
+  display: block;
+  flex: 0 0 42px !important;
+  width: 42px !important;
+  max-width: 42px;
+}
+.op-kpis.op-kpis-slim {
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+.ov-client-img:not(.has) {
+  display: flex;
+  justify-content: flex-start;
+  height: auto;
+  padding: 10px 12px;
+  gap: 10px;
+}
+.ov-client-img:not(.has) > svg {
+  width: 22px;
+  height: 22px;
+}
+.ov-client-img:not(.has) .ov-img-actions {
+  margin-top: 0;
+}
+.ph-stat b {
+  white-space: nowrap;
+}
+@media (max-width: 960px) {
+  .ph-stats {
+    flex-wrap: wrap;
+  }
+  .ph-quick {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+  .ph-quick .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
