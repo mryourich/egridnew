@@ -148,6 +148,8 @@ export type Field = {
   max?: number;
   step?: number;
   placeholder?: string;
+  /** Rarely needed – folded away under „Mehr Angaben“ until opened or filled. */
+  extra?: boolean;
 };
 
 type Values = Record<string, unknown>;
@@ -191,6 +193,8 @@ export function EntityForm<T extends Values>({
 }) {
   const [values, setValues] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
+  // new entries start short; editing shows everything
+  const [more, setMore] = useState(() => Boolean((initial as Values).id));
   const resolve = (v: T) => (typeof fieldsProp === "function" ? fieldsProp(v) : fieldsProp);
   const fields = resolve(values);
   const set = (key: string, value: unknown) =>
@@ -215,7 +219,7 @@ export function EntityForm<T extends Values>({
   return (
     <form className="form" onSubmit={submit}>
       <div className="form-grid">
-        {fields.map((f) => {
+        {fields.filter((f) => more || !f.extra).map((f) => {
           const v = values[f.key];
           const id = `f-${f.key}`;
           let input: ReactNode;
@@ -298,6 +302,11 @@ export function EntityForm<T extends Values>({
           );
         })}
       </div>
+      {!more && fields.some((f) => f.extra) && (
+        <button type="button" className="link-btn more-toggle" onClick={() => setMore(true)}>
+          + Mehr Angaben ({fields.filter((f) => f.extra).map((f) => f.label.split(" (")[0]).join(", ")})
+        </button>
+      )}
       {error && <p className="form-error">{error}</p>}
       <footer className="form-footer">
         {onDelete && (

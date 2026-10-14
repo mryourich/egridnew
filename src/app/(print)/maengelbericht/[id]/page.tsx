@@ -6,7 +6,8 @@ import { DocFrame, DocSection } from "@/components/doc";
 import { fmt, isoWeek, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { pathLabel } from "@/lib/site";
-import { employeeName, useStore } from "@/lib/store";
+import { currentUser, employeeName, roleOf, useStore } from "@/lib/store";
+import { sectionsFor } from "@/lib/sections";
 import type { Issue } from "@/lib/types";
 
 const RANK = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
@@ -15,6 +16,7 @@ function DefectReport() {
   const { id } = useParams<{ id: string }>();
   const q = useSearchParams();
   const { data } = useStore();
+  const plansOn = sectionsFor(data, roleOf(currentUser(data))).some((x) => x.key === "plaene");
   const project = data.projects.find((p) => p.id === id);
   if (!project) return <p style={{ padding: 40 }}>Baustelle nicht gefunden.</p>;
   const t = today();
@@ -124,7 +126,7 @@ function DefectReport() {
       <DocSection title={`Offene Mängel (${open.length})`}>{open.length ? open.map((i, n) => item(i, n + 1)) : <p className="doc-text">Keine offenen Mängel.</p>}</DocSection>
       {!onlyOpen && fixed.length > 0 && <DocSection title={`Behobene Mängel (${fixed.length})`}>{fixed.map((i, n) => item(i, open.length + n + 1))}</DocSection>}
       {data.plans
-        .filter((pl) => pl.projectId === project.id)
+        .filter((pl) => plansOn && pl.projectId === project.id)
         .map((pl) => {
           const listed = [...open, ...(onlyOpen ? [] : fixed)];
           const pins = listed.filter((i) => i.plan?.planId === pl.id);

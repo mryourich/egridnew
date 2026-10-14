@@ -13,7 +13,8 @@ export const siteSections: { key: SiteSection; label: string; roles: Role[] }[] 
   { key: "struktur", label: "Struktur", roles: ALL },
   { key: "fotos", label: "Fotos", roles: ALL },
   { key: "maengel", label: "Mängel", roles: ALL },
-  { key: "plaene", label: "Pläne", roles: ALL },
+  // Pläne (floor plans with defect pins) hidden for now – code stays in components/plans.tsx
+  { key: "plaene", label: "Pläne", roles: [] },
   { key: "material", label: "Material", roles: ALL },
   // Zeiterfassung is parked for now (code stays in components/times.tsx) – no role sees it
   { key: "zeiten", label: "Zeiten", roles: [] },

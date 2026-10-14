@@ -50,18 +50,18 @@ const defs: Record<Exclude<EditorKind, "issue" | "report">, Def> = {
     noun: "Projekt",
     fields: (data) => [
       { key: "name", label: "Bezeichnung", required: true, full: true, placeholder: "z. B. Tunnel Nord – Elektroinstallation" },
-      { key: "code", label: "Projekt-Nr.", required: true },
-      { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true },
       { key: "client", label: "Auftraggeber" },
       { key: "location", label: "Ort / Adresse" },
-      { key: "managerId", label: "Projektleitung", type: "select", options: roleOptions(data, ["pl"]) },
-      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]) },
       { key: "start", label: "Beginn", type: "date", required: true },
       { key: "end", label: "Ende", type: "date", required: true },
-      { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })), full: true },
-      { key: "image", label: "Projektbild (Baustelle)", type: "image", full: true },
-      { key: "clientImage", label: "Bild vom Kunden (Logo, Foto)", type: "image", full: true },
-      { key: "description", label: "Beschreibung", type: "textarea" }
+      { key: "code", label: "Projekt-Nr.", required: true, extra: true },
+      { key: "status", label: "Status", type: "select", options: L.options(L.projectStatus), required: true, extra: true },
+      { key: "managerId", label: "Projektleitung", type: "select", options: roleOptions(data, ["pl"]), extra: true },
+      { key: "siteManagerId", label: "Bauleitung", type: "select", options: roleOptions(data, ["bl", "pl"]), extra: true },
+      { key: "color", label: "Farbe", type: "color", options: L.projectColors.map((c) => ({ value: c, label: c })), full: true, extra: true },
+      { key: "image", label: "Projektbild (Baustelle)", type: "image", full: true, extra: true },
+      { key: "clientImage", label: "Bild vom Kunden (Logo, Foto)", type: "image", full: true, extra: true },
+      { key: "description", label: "Beschreibung", type: "textarea", extra: true }
     ],
     defaults: (data) => {
       const me = data.employees.find((e) => e.id === data.currentUserId);

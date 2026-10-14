@@ -1,16 +1,17 @@
 "use client";
 
-import { CalendarDays, MoreHorizontal, Pencil, Users } from "lucide-react";
+import { MoreHorizontal, Pencil, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { InviteDialog } from "@/components/invite";
+import { IssueButton } from "@/components/issue-sheet";
+import { PhotoAddButton } from "@/components/site";
 import { ProjectTabs, useEditor } from "@/components/shell";
 import { Empty } from "@/components/ui";
-import { inRange, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { siteProgress } from "@/lib/site";
-import { employeeName, isManager, myProjects, projectTeam, useStore } from "@/lib/store";
+import { employeeName, isManager, myProjects, useStore } from "@/lib/store";
 
 /** Progress ring for the header. */
 function Ring({ value }: { value: number }) {
@@ -49,10 +50,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const t = today();
   const progress = siteProgress(data, project.id);
-  const team = projectTeam(data, project);
-  const busyToday = new Set(data.jobs.filter((j) => j.projectId === project.id && !j.symbol && inRange(t, j.start, j.end)).map((j) => j.employeeId)).size;
   const manager = isManager(data);
 
   return (
@@ -68,6 +66,10 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           <p>{[project.client, project.location, project.siteManagerId ? `Bauleitung: ${employeeName(data, project.siteManagerId)}` : ""].filter(Boolean).join(" · ")}</p>
         </div>
         <div className="ph-stats">
+          <span className="ph-quick">
+            <IssueButton projectId={project.id} className="btn btn-primary" label="Mangel melden" />
+            <PhotoAddButton projectId={project.id} nodeId="" className="btn" label="Foto" />
+          </span>
           <div className="ph-stat">
             <Ring value={progress} />
             <span>
@@ -75,20 +77,6 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
               <small>Fortschritt</small>
             </span>
           </div>
-          <button type="button" className="ph-stat" onClick={() => setInvite(true)} title={team.map((e) => e.name).join(", ")}>
-            <Users size={20} />
-            <span>
-              <b>{team.length}</b>
-              <small>Team</small>
-            </span>
-          </button>
-          <Link href={`/projekte/${project.id}/plan`} className="ph-stat">
-            <CalendarDays size={20} />
-            <span>
-              <b>{busyToday}</b>
-              <small>heute</small>
-            </span>
-          </Link>
           {manager && (
             <div className="ph-more" ref={menuRef}>
               <button type="button" className="ph-stat" onClick={() => setMenu((m) => !m)} aria-label="Mehr">

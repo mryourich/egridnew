@@ -9,7 +9,6 @@ import { employeeName, isManager, projectTeam, roleLabel, roleOf, useStore } fro
 import type { IssueStatus, Project, RegieReport } from "@/lib/types";
 import { RegieList, RegieSheet } from "./regie";
 import { ISSUE_LABELS, Trail } from "./trail";
-import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
 import { EmpAvatar } from "./person";
 import { Badge, Empty, SearchInput, Segmented } from "./ui";
@@ -55,7 +54,6 @@ export function DefectsSection({ projectId }: { projectId: string }) {
         <a className="btn" href={`/maengelbericht/${projectId}`} target="_blank" rel="noreferrer">
           <FileText size={15} /> Mängelbericht
         </a>
-        <IssueButton projectId={projectId} className="btn btn-primary" label="Mangel melden" />
       </div>
       {list.length === 0 ? (
         <Empty>
@@ -86,7 +84,6 @@ export function DefectsSection({ projectId }: { projectId: string }) {
                 <div className="issue-main">
                   <div className="row-inline">
                     {i.kind !== "mangel" && <Badge tone={L.issueKind[i.kind].tone}>{L.issueKind[i.kind].label}</Badge>}
-                    {i.plan && <Badge tone="blue">auf Plan</Badge>}
                     <Badge tone={L.severity[i.severity].tone}>{L.severity[i.severity].label}</Badge>
                     <strong>{i.title}</strong>
                   </div>
