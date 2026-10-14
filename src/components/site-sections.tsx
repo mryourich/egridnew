@@ -8,10 +8,11 @@ import { shortPath } from "@/lib/site";
 import { employeeName, isManager, projectTeam, roleLabel, roleOf, useStore } from "@/lib/store";
 import type { IssueStatus, Project, RegieReport } from "@/lib/types";
 import { RegieList, RegieSheet } from "./regie";
+import { ISSUE_LABELS, Trail } from "./trail";
 import { IssueButton } from "./issue-sheet";
 import { useEditor } from "./shell";
 import { EmpAvatar } from "./person";
-import { Empty, SearchInput, Segmented } from "./ui";
+import { Badge, Empty, SearchInput, Segmented } from "./ui";
 
 const of = <T extends { projectId: string }>(list: T[], id: string) => list.filter((x) => x.projectId === id);
 
@@ -51,7 +52,7 @@ export function DefectsSection({ projectId }: { projectId: string }) {
         />
         <SearchInput value={query} onChange={setQuery} />
         <span className="spacer" />
-        <a className="btn report-link" href={`/maengelbericht/${projectId}`} target="_blank" rel="noreferrer">
+        <a className="btn" href={`/maengelbericht/${projectId}`} target="_blank" rel="noreferrer">
           <FileText size={15} /> Mängelbericht
         </a>
         <IssueButton projectId={projectId} className="btn btn-primary" label="Mangel melden" />
@@ -83,21 +84,17 @@ export function DefectsSection({ projectId }: { projectId: string }) {
                   </span>
                 )}
                 <div className="issue-main">
-                  <strong className="issue-title">{i.title}</strong>
-                  <small className="muted issue-facts">
-                    {[
-                      i.kind !== "mangel" ? L.issueKind[i.kind].label : "",
-                      L.severity[i.severity].label,
-                      i.nodeId ? shortPath(data.siteNodes, i.nodeId) : i.location,
-                      i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen",
-                      i.due ? <span className={overdue ? "text-red" : ""}>bis {fmt(i.due)}</span> : "",
-                      i.plan ? "auf Plan" : ""
-                    ]
-                      .filter(Boolean)
-                      .map((part, n) => (
-                        <span key={n}>{part}</span>
-                      ))}
+                  <div className="row-inline">
+                    {i.kind !== "mangel" && <Badge tone={L.issueKind[i.kind].tone}>{L.issueKind[i.kind].label}</Badge>}
+                    {i.plan && <Badge tone="blue">auf Plan</Badge>}
+                    <Badge tone={L.severity[i.severity].tone}>{L.severity[i.severity].label}</Badge>
+                    <strong>{i.title}</strong>
+                  </div>
+                  <small className="muted">
+                    {i.nodeId ? shortPath(data.siteNodes, i.nodeId) : i.location || "ohne Ort"} · {i.assigneeId ? employeeName(data, i.assigneeId) : "nicht zugewiesen"} ·{" "}
+                    <span className={overdue ? "text-red" : ""}>Frist {fmt(i.due)}</span>
                   </small>
+                  <Trail item={i} labels={ISSUE_LABELS} created="Gemeldet" compact />
                   {i.description && <p>{i.description}</p>}
                   {i.status === "erledigt" && (i.fixPhoto || i.fixNote || i.fixedAt) && (
                     <p className="issue-fix">

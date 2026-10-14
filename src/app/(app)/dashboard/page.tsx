@@ -1,8 +1,11 @@
 "use client";
 
-import { Home } from "@/components/home";
+import { MyWork } from "@/components/my-work";
+import { Dashboard } from "@/components/dashboard";
+import { currentUser, roleOf, useStore } from "@/lib/store";
 
-/** Same calm start for every role: my tasks, my projects, what happened. */
+/** Workers start with their day; everybody else with the dashboard of all their projects. */
 export default function DashboardPage() {
-  return <Home />;
+  const { data } = useStore();
+  return roleOf(currentUser(data)) === "monteur" ? <MyWork /> : <Dashboard />;
 }

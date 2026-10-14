@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronDown, ChevronRight, FileText, FolderKanban, Home, ListTodo, LogOut, MoreHorizontal, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
+import { AlertTriangle, Bell, Map as MapIcon, CalendarRange, Camera, ClipboardList, Clock, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, ListTodo, LogOut, Package, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { sectionsFor, type SiteSection } from "@/lib/sections";
+import { sectionsFor } from "@/lib/sections";
 import { shortPath } from "@/lib/site";
-import { currentUser, isManager, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
+import { currentUser, employeeName, fmtStamp, isManager, myProjects, roleLabel, roleOf, StoreProvider, useStore, type Role } from "@/lib/store";
 import { myTasks } from "@/lib/tasks";
 import { Editor, type EditorTarget } from "./editors";
 import { OfflineSupport } from "./offline";
@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-type Module = { href: string; label: string; icon: typeof Home; match: string[]; badge?: number; phone?: boolean };
+type Module = { href: string; label: string; icon: typeof Home; match: string[]; roles: Role[]; badge?: number };
 
 function Frame({ children }: { children: ReactNode }) {
   const { data, toast } = useStore();
@@ -34,26 +34,19 @@ function Frame({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<EditorTarget | null>(null);
   const role = roleOf(currentUser(data));
   const tasks = myTasks(data).length;
+  const everyone: Role[] = ["admin", "pl", "bl", "mk", "buero", "monteur"];
 
-  // the three things a site needs every day …
-  const main: Module[] = [
-    { href: "/dashboard", label: "Start", icon: Home, match: ["/dashboard"] },
-    { href: "/aufgaben", label: "Aufgaben", icon: ListTodo, match: ["/aufgaben"], badge: tasks },
-    { href: "/projekte", label: "Projekte", icon: FolderKanban, match: ["/projekte"] }
-  ];
-  // … and the rest, quietly below
-  const more: Module[] = [
-    { href: "/dokumente", label: "Dokumente", icon: FileText, match: ["/dokumente"] },
-    { href: "/notizen", label: "Notizen", icon: StickyNote, match: ["/notizen"] },
-    ...(role !== "monteur"
-      ? [
-          { href: "/team", label: "Mitarbeiter", icon: Users, match: ["/team"] },
-          { href: "/einstellungen", label: "Einstellungen", icon: Settings, match: ["/einstellungen"] }
-        ]
-      : [])
-  ];
+  const modules: Module[] = (
+    [
+      { href: "/dashboard", label: role === "monteur" ? "Heute" : "Dashboard", icon: Home, match: ["/dashboard"], roles: everyone },
+      { href: "/aufgaben", label: "Meine Aufgaben", icon: ListTodo, match: ["/aufgaben"], roles: everyone, badge: tasks },
+      { href: "/projekte", label: "Projekte", icon: FolderKanban, match: ["/projekte"], roles: everyone },
+      { href: "/dokumente", label: "Dokumente", icon: FileText, match: ["/dokumente"], roles: everyone },
+      { href: "/notizen", label: "Notizen", icon: StickyNote, match: ["/notizen"], roles: everyone }
+    ] as Module[]
+  ).filter((m) => m.roles.includes(role));
   const isActive = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const inMore = isActive(["/mehr", ...more.flatMap((m) => m.match)]);
+  const current = modules.find((m) => isActive(m.match));
 
   return (
     <EditorContext.Provider value={setTarget}>
@@ -63,10 +56,9 @@ function Frame({ children }: { children: ReactNode }) {
             <img className="brand-mark" src="/brand/vysner-mark-small.png" alt="" />
             <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
           </Link>
-          <GlobalSearch />
           <nav className="side-nav" aria-label="Module">
-            {main.map((m) => (
-              <Link key={m.href} href={m.href} className={isActive(m.match) ? "active" : ""}>
+            {modules.map((m) => (
+              <Link key={m.href} href={m.href} className={current === m ? "active" : ""}>
                 <m.icon size={18} />
                 <span>{m.label}</span>
                 {m.badge ? <em className="side-badge">{m.badge}</em> : null}
@@ -74,15 +66,13 @@ function Frame({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <ProjectNav />
-          <nav className="side-more" aria-label="Weitere">
-            {more.map((m) => (
-              <Link key={m.href} href={m.href} className={isActive(m.match) ? "active" : ""}>
-                <m.icon size={16} />
-                <span>{m.label}</span>
-              </Link>
-            ))}
-          </nav>
           <div className="side-foot">
+            {role !== "monteur" && (
+              <Link href="/einstellungen" className={`side-link ${isActive(["/einstellungen", "/team"]) ? "active" : ""}`}>
+                <Settings size={18} />
+                <span>Einstellungen</span>
+              </Link>
+            )}
             <UserSwitch up />
           </div>
         </aside>
@@ -94,21 +84,25 @@ function Frame({ children }: { children: ReactNode }) {
               <img className="brand-word" src="/brand/vysner-word.png" alt="VYSNER" />
             </Link>
             <span className="spacer" />
+            <GlobalSearch compact />
+            <Notifications />
+            <UserSwitch />
+          </header>
+          <header className="topbar-v">
+            <GlobalSearch />
+            <span className="spacer" />
+            <Notifications />
             <UserSwitch />
           </header>
           <main className="content">{children}</main>
           <nav className="tabbar" aria-label="Module">
-            {main.map((m) => (
-              <Link key={m.href} href={m.href} className={isActive(m.match) ? "active" : ""}>
-                <m.icon size={21} />
-                <span>{m.label}</span>
+            {modules.map((m) => (
+              <Link key={m.href} href={m.href} className={current === m ? "active" : ""}>
+                <m.icon size={20} />
+                <span>{m.href === "/aufgaben" ? "Aufgaben" : m.label}</span>
                 {m.badge ? <em className="tab-badge">{m.badge}</em> : null}
               </Link>
             ))}
-            <Link href="/mehr" className={inMore ? "active" : ""}>
-              <MoreHorizontal size={21} />
-              <span>Mehr</span>
-            </Link>
           </nav>
         </div>
 
@@ -117,50 +111,6 @@ function Frame({ children }: { children: ReactNode }) {
         <OfflineSupport />
       </div>
     </EditorContext.Provider>
-  );
-}
-
-/** Phone: everything that is not one of the three main tabs. */
-export function MorePage() {
-  const { data } = useStore();
-  const role = roleOf(currentUser(data));
-  const user = currentUser(data);
-  const links = [
-    { href: "/dokumente", label: "Dokumente", text: "Firmenweite Ablage", icon: FileText },
-    { href: "/notizen", label: "Notizen", text: "Deine Zettel", icon: StickyNote },
-    ...(role !== "monteur"
-      ? [
-          { href: "/team", label: "Mitarbeiter", text: "Leute, Rollen, Zugänge", icon: Users },
-          { href: "/einstellungen", label: "Einstellungen", text: "Firma, Vorlagen, Module", icon: Settings }
-        ]
-      : [])
-  ];
-  return (
-    <div className="page more-page">
-      <h1>Mehr</h1>
-      <div className="search-row">
-        <GlobalSearch compact />
-      </div>
-      <ul className="rows box">
-        {links.map((l) => (
-          <li key={l.href}>
-            <Link href={l.href} className="prow">
-              <l.icon size={18} className="more-ic" />
-              <span className="row-main">
-                <strong>{l.label}</strong>
-                <small>{l.text}</small>
-              </span>
-              <ChevronRight size={16} className="prow-go" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {user && (
-        <p className="more-user">
-          Angemeldet als <strong>{user.name}</strong> · {roleLabel[role]}
-        </p>
-      )}
-    </div>
   );
 }
 
@@ -239,7 +189,7 @@ function GlobalSearch({ compact }: { compact?: boolean }) {
           if (e.key === "Enter" && hits[sel]) go(hits[sel]);
           if (e.key === "Escape") (setOpen(false), input.current?.blur());
         }}
-        placeholder="Suchen …"
+        placeholder={compact ? "Suchen …" : "Projekte, Punkte, Mängel, Dokumente suchen …"}
         aria-label="Suchen"
       />
       {!compact && <kbd>Strg K</kbd>}
@@ -254,6 +204,74 @@ function GlobalSearch({ compact }: { compact?: boolean }) {
                 <small>{h.sub}</small>
               </button>
             </Fragment>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SEEN_KEY = "vysner:benachrichtigungen-gelesen";
+
+/** Bell with what happened in my projects since I last looked. */
+function Notifications() {
+  const { data } = useStore();
+  const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState("");
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    try {
+      setSeen(window.localStorage.getItem(`${SEEN_KEY}:${data.currentUserId}`) ?? "");
+    } catch {
+      setSeen("");
+    }
+  }, [data.currentUserId]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  const mine = new Set(myProjects(data).map((p) => p.id));
+  const feed = data.activity.filter((a) => mine.has(a.projectId) && a.by !== data.currentUserId).slice(0, 15);
+  const unread = feed.filter((a) => a.at > seen).length;
+  const markRead = () => {
+    const now = feed[0]?.at ?? "";
+    setSeen(now);
+    try {
+      window.localStorage.setItem(`${SEEN_KEY}:${data.currentUserId}`, now);
+    } catch {
+      // private mode – fine
+    }
+  };
+  return (
+    <div className="notif" ref={box}>
+      <button type="button" className="icon-btn notif-btn" aria-label={`Benachrichtigungen${unread ? ` (${unread} neu)` : ""}`} onClick={() => setOpen((o) => !o)}>
+        <Bell size={18} />
+        {unread > 0 && <i>{unread > 9 ? "9+" : unread}</i>}
+      </button>
+      {open && (
+        <div className="notif-pop">
+          <header>
+            <strong>Benachrichtigungen</strong>
+            {unread > 0 && (
+              <button type="button" className="link-btn" onClick={markRead}>
+                Alle gelesen
+              </button>
+            )}
+          </header>
+          {feed.length === 0 && <p className="gs-empty">Noch nichts Neues.</p>}
+          {feed.map((a) => (
+            <Link key={a.id} href={`/projekte/${a.projectId}`} className={a.at > seen ? "new" : ""} onClick={() => setOpen(false)}>
+              {a.by ? <Avatar name={employeeName(data, a.by)} photo={data.employees.find((e) => e.id === a.by)?.photo} size={28} /> : <span className="notif-dot" />}
+              <span>
+                <strong>{a.text}</strong>
+                <small>
+                  {a.by ? `${employeeName(data, a.by)} · ` : ""}
+                  {fmtStamp(a.at)}
+                </small>
+              </span>
+            </Link>
           ))}
         </div>
       )}
@@ -337,7 +355,20 @@ function UserSwitch({ up = false }: { up?: boolean }) {
   );
 }
 
-/** Sidebar: my projects as a calm list. */
+const SECTION_ICONS: Record<string, typeof Home> = {
+  plan: CalendarRange,
+  struktur: ListChecks,
+  fotos: Camera,
+  maengel: AlertTriangle,
+  material: Package,
+  berichte: ClipboardList,
+  dokumente: FolderOpen,
+  uebersicht: LayoutDashboard,
+  zeiten: Clock,
+  plaene: MapIcon
+};
+
+/** Sidebar: my projects with their picture. */
 function ProjectNav() {
   const { data } = useStore();
   const pathname = usePathname();
@@ -347,69 +378,43 @@ function ProjectNav() {
   const openId = base === "projekte" ? siteId : "";
   return (
     <div className="side-projects">
-      <span className="side-label">
-        Meine Projekte
-        {isManager(data) && (
-          <button type="button" className="side-add" onClick={() => openEditor({ kind: "project" })} aria-label="Neues Projekt" title="Neues Projekt">
-            <Plus size={14} />
-          </button>
-        )}
-      </span>
+      <span className="side-label">Meine Projekte</span>
       {sites.length === 0 && <span className="side-empty">Noch keine Projekte</span>}
       {sites.map((p) => (
-        <Link key={p.id} href={`/projekte/${p.id}`} className={`sp-row ${p.id === openId ? "active" : ""}`} title={p.name}>
-          <i style={{ background: p.color }} />
-          <span>{p.name}</span>
+        <Link key={p.id} href={`/projekte/${p.id}`} className={`sp-card ${p.id === openId ? "active" : ""}`} title={p.name}>
+          {p.image ? <img src={p.image} alt="" /> : <i style={{ background: p.color }}>{p.name.slice(0, 1)}</i>}
+          <span>
+            <strong>{p.name}</strong>
+            <small>{p.code}</small>
+          </span>
         </Link>
       ))}
+      {isManager(data) && (
+        <button type="button" className="sp-new" onClick={() => openEditor({ kind: "project" })}>
+          <Plus size={15} /> Neues Projekt
+        </button>
+      )}
     </div>
   );
 }
 
-/** The sections people use every day are tabs; the rest sits behind „Mehr“. */
-const PRIMARY: SiteSection[] = ["uebersicht", "struktur", "maengel", "fotos", "plaene"];
-
+/** Section tabs of a project, across the top of the project page. */
 export function ProjectTabs({ projectId }: { projectId: string }) {
   const { data } = useStore();
   const pathname = usePathname();
   const role = roleOf(currentUser(data));
   const section = pathname.split("/")[3];
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
-  useEffect(() => setOpen(false), [pathname]);
-  const all = sectionsFor(data, role);
-  const tabs = all.filter((s) => PRIMARY.includes(s.key));
-  const rest = all.filter((s) => !PRIMARY.includes(s.key));
-  const activeRest = rest.find((s) => s.key === section);
   return (
-    <nav className="ptabs" aria-label="Bereiche">
-      {tabs.map((s) => (
-        <Link key={s.key} href={`/projekte/${projectId}/${s.key}`} className={section === s.key ? "active" : ""}>
-          {s.label}
-        </Link>
-      ))}
-      {rest.length > 0 && (
-        <div className="ptabs-more" ref={box}>
-          <button type="button" className={activeRest ? "active" : ""} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-            {activeRest ? activeRest.label : "Mehr"} <ChevronDown size={14} />
-          </button>
-          {open && (
-            <div className="menu ptabs-menu">
-              {rest.map((s) => (
-                <Link key={s.key} href={`/projekte/${projectId}/${s.key}`} className={`menu-link ${section === s.key ? "on" : ""}`}>
-                  {s.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+    <nav className="proj-tabs" aria-label="Bereiche">
+      {sectionsFor(data, role).map((s) => {
+          const Icon = SECTION_ICONS[s.key];
+          return (
+            <Link key={s.key} href={`/projekte/${projectId}/${s.key}`} className={section === s.key ? "active" : ""}>
+              <Icon size={16} />
+              {s.label}
+            </Link>
+          );
+        })}
     </nav>
   );
 }
