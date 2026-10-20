@@ -1,7 +1,7 @@
 "use client";
 
-import { SitesOverview } from "@/components/sites-overview";
+import { SiteList } from "@/ui/sites";
 
-export default function SitesPage() {
-  return <SitesOverview />;
+export default function Page() {
+  return <SiteList />;
 }

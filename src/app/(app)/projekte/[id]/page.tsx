@@ -2,14 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { defaultSection } from "@/lib/sections";
-import { currentUser, roleOf, useStore } from "@/lib/store";
 
-export default function SiteIndex() {
+export default function Page() {
   const { id } = useParams<{ id: string }>();
-  const { data } = useStore();
   const router = useRouter();
-  const section = defaultSection(roleOf(currentUser(data)));
-  useEffect(() => router.replace(`/projekte/${id}/${section}`), [id, section, router]);
+  useEffect(() => router.replace(`/projekte/${id}/checkliste`), [id, router]);
   return null;
 }
