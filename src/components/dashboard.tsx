@@ -11,6 +11,7 @@ import { currentUser, employeeName, isManager, myProjects, roleOf, useStore } fr
 import { myTasks } from "@/lib/tasks";
 import type { Data, Project } from "@/lib/types";
 import { TaskList } from "./my-tasks";
+import { TeamWeek } from "./team-week";
 import { useEditor } from "./shell";
 
 function greeting() {
@@ -129,6 +130,8 @@ export function Dashboard() {
           </button>
         )}
       </header>
+
+      <TeamWeek />
 
       <div className="k2-row">
         <Kpi2 icon={<ClipboardList size={18} />} tone="green" label="Offene Punkte" value={sum((s) => s.openPoints.length)} hint={`${sum((s) => s.inWork.length)} in Arbeit`} chart={<MiniBars values={rows.map((r) => r.s.openPoints.length)} color="#10b981" />} />

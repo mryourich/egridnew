@@ -1,7 +1,7 @@
 import type { Data, ModuleKey } from "./types";
 import type { Role } from "./store";
 
-export type SiteSection = "uebersicht" | "zeiten" | "plaene" | "plan" | "struktur" | "fotos" | "maengel" | "material" | "berichte" | "dokumente";
+export type SiteSection = "uebersicht" | "regie" | "zeiten" | "plaene" | "plan" | "struktur" | "fotos" | "maengel" | "material" | "berichte" | "dokumente";
 
 const ALL: Role[] = ["admin", "pl", "bl", "mk", "buero", "monteur"];
 const MANAGERS: Role[] = ["admin", "pl", "bl", "mk"];
@@ -13,6 +13,7 @@ export const siteSections: { key: SiteSection; label: string; roles: Role[] }[] 
   { key: "struktur", label: "Struktur", roles: ALL },
   { key: "fotos", label: "Fotos", roles: ALL },
   { key: "maengel", label: "Mängel", roles: ALL },
+  { key: "regie", label: "Regie", roles: ALL },
   // Pläne (floor plans with defect pins) hidden for now – code stays in components/plans.tsx
   { key: "plaene", label: "Pläne", roles: [] },
   { key: "material", label: "Material", roles: ALL },

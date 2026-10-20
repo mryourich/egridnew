@@ -67,6 +67,7 @@ export default function SettingsPage() {
         )}
         {admin && (
           <Card title="Module (Lizenz)">
+            <LicenseSummary />
             <ul className="mod-list">
               {MODULES.map((m) => {
                 const on = m.key === "tech" || hasModule(data, m.key);
@@ -182,6 +183,23 @@ export default function SettingsPage() {
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The pricing idea: one fixed price for the company, workers come in free. */
+function LicenseSummary() {
+  const { data } = useStore();
+  const active = data.employees.filter((e) => e.active);
+  const workers = active.filter((e) => roleOf(e) === "monteur").length;
+  const office = active.length - workers;
+  return (
+    <div className="license">
+      <strong>Firmenlizenz · ein Fixpreis</strong>
+      <span>
+        {office} {office === 1 ? "Zugang" : "Zugänge"} für Büro und Leitung inklusive · <b>{workers} Monteure kostenlos</b>
+      </span>
+      <small>Monteure kosten nie extra – die Firma zahlt einen festen Monatspreis, egal wie groß die Partie ist.</small>
     </div>
   );
 }

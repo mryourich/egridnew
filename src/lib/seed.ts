@@ -100,7 +100,9 @@ export function createSeed(): Data {
       { id: "ab2", employeeId: "e5", type: "urlaub", start: d(14), end: d(18), note: "" },
       { id: "ab3", employeeId: "e8", type: "krank", start: d(9), end: d(10), note: "" },
       { id: "ab4", employeeId: "e1", type: "urlaub", start: d(21), end: d(25), note: "" },
-      { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" }
+      { id: "ab5", employeeId: "e12", type: "urlaub", start: d(-4), end: d(-3), note: "" },
+      { id: "ab6", employeeId: "e3", type: "krank", start: d(-1), end: d(1), note: "" },
+      { id: "ab7", employeeId: "e17", type: "urlaub", start: d(2), end: d(3), note: "" }
     ],
     issues: [
       { id: "i1", projectId: "p2", plan: { planId: "pl1", x: 0.62, y: 0.27 }, kind: "mangel", title: "Befestigung Kabeltrasse lose", description: "Abschnitt B, km 1,2 – zwei Konsolen nicht fest verschraubt.", location: "Abschnitt B / km 1,2", severity: "hoch", status: "offen", assigneeId: "e8", due: d(2), createdAt: d(-2), photo: "/demo/foto3.jpg", nodeId: "n7" },
@@ -119,7 +121,13 @@ export function createSeed(): Data {
       { id: "j7", projectId: "p2", employeeId: "e4", title: "Leuchten Abschnitt A", color: "#ca8a04", start: d(7), end: d(11), nodeId: "n14", note: "", done: false },
       { id: "j8", projectId: "p2", employeeId: "e13", title: "Notbeleuchtung", color: "#db2777", start: d(8), end: d(15), nodeId: "n15", note: "", done: false },
       { id: "j9", projectId: "p3", employeeId: "e5", title: "Wallboxen Reihe 1–4", color: "#2563eb", start: d(0), end: d(6), nodeId: "n25", note: "", done: false },
-      { id: "j10", projectId: "p3", employeeId: "e7", title: "Kabelbefestigung", color: "#16a34a", start: d(0), end: d(4), nodeId: "n26", note: "", done: false }
+      { id: "j10", projectId: "p3", employeeId: "e7", title: "Kabelbefestigung", color: "#16a34a", start: d(0), end: d(4), nodeId: "n26", note: "", done: false },
+      // half days: the strength of the plan for small crews
+      { id: "j11", projectId: "p1", employeeId: "e4", title: "Erdung Feld 2", color: "#0f766e", start: d(0), end: d(1), endAm: true, nodeId: "n21", note: "", done: false },
+      { id: "j12", projectId: "p1", employeeId: "e4", title: "Wandler montieren", color: "#ca8a04", start: d(1), startPm: true, end: d(3), nodeId: "n22", note: "", done: false },
+      { id: "j13", projectId: "p1", employeeId: "e1", title: "Abnahme Feld 1", color: "#1463ff", start: d(0), startPm: true, end: d(0), nodeId: "n16", note: "mit Energie AG", done: false },
+      { id: "j14", projectId: "p2", employeeId: "e2", title: "Baubesprechung Portal Nord", color: "#475569", start: d(1), end: d(1), endAm: true, nodeId: "", note: "", done: false },
+      { id: "j15", projectId: "p1", employeeId: "e11", title: "Inbetriebnahme Feld 1", color: "#7c3aed", start: d(1), end: d(3), nodeId: "n16", note: "", done: false }
     ],
     siteNodes: [
       node("n1", "p2", "", "Elektroinstallation Tunnelabschnitt Nord", "in_arbeit", "e2", "", "Kabelwege, Verteiler und Erstprüfung."),

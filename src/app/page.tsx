@@ -12,31 +12,42 @@ import {
   FolderKanban,
   HardHat,
   ListChecks,
+  PenLine,
   ShieldCheck,
   Smartphone,
   Users,
-  Wrench
+  WifiOff
 } from "lucide-react";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "VYSNER – Baustellen im Griff" },
-  description: "Das Baustellen-Tool für Bauleiter und Monteure: Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren und Tagesberichte als PDF."
+  title: { absolute: "VYSNER – Wer macht heute was? Einteilung und Regieschein für Bau und Handwerk" },
+  description: "Für kleine Bau- und Handwerksbetriebe: Mitarbeiter in halben Tagen einteilen, Urlaub und Krankenstand im Blick, Regiescheine am Handy unterschreiben lassen – auch ohne Netz. Fixpreis pro Firma, Monteure gratis."
 };
 
 const flow = [
-  { icon: CalendarRange, name: "Planen", who: "Bauleitung", text: "Team einteilen, Aufgaben per Rechtsklick in den Plan ziehen – in halben Tagen." },
-  { icon: Smartphone, name: "Ausführen", who: "Monteure", text: "Jeder sieht am Handy, was heute zu tun ist, und hakt ab." },
-  { icon: Camera, name: "Dokumentieren", who: "alle", text: "Fotos und Mängel direkt mit der Kamera – sortiert nach Bereich." },
-  { icon: FileText, name: "Berichten", who: "Bauleitung", text: "Tages-, Foto- und Mängelbericht als PDF für den Auftraggeber." }
+  { icon: CalendarRange, name: "Einteilen", who: "Chef / Büro", text: "Wer macht heute was – in halben Tagen, mit Urlaub und Krankenstand." },
+  { icon: Smartphone, name: "Arbeiten", who: "Monteure", text: "Jeder sieht am Handy seinen Tag, hakt ab und macht Fotos." },
+  { icon: PenLine, name: "Unterschreiben", who: "Kunde", text: "Regieschein mit Stunden und Material – direkt am Handy unterschrieben." },
+  { icon: FileText, name: "Abrechnen", who: "Büro", text: "Freigeben, PDF dazu, fertig. Später direkt als Rechnung." }
 ];
 
 const features = [
   {
+    kicker: "Einteilung",
+    title: "Wer macht heute was? Auf einen Blick.",
+    text: "Die Frage, die sich jeden Morgen stellt – beantwortet, bevor das Telefon läutet. Für kleine Partien, ohne Planungs-Studium.",
+    points: ["Einteilen in halben Tagen – Vormittag, Nachmittag", "Urlaub, Krankenstand und Zeitausgleich direkt im Plan", "Sofort sichtbar, wer heute noch frei ist", "Feiertage und Kalenderwochen eingebaut"],
+    img: "/landing/einteilung.jpg",
+    w: 1590,
+    h: 860,
+    alt: "Wochen-Einteilung in VYSNER"
+  },
+  {
     kicker: "Plan",
-    title: "Der Baustellenplan, den Bauleiter wirklich benutzen.",
+    title: "Der Baustellenplan, den man wirklich benutzt.",
     text: "Aufgaben wie auf Papier – nur schneller. Ziehen, verlängern, umbenennen, fertig.",
-    points: ["Verschieben in halben Tagen", "Rechtsklick: Aufgabe oder Symbol mit Farbpalette", "Urlaub und Krankenstand direkt im Plan", "Kalenderwochen und Feiertage"],
+    points: ["Verschieben in halben Tagen", "Rechtsklick: Aufgabe oder Symbol mit Farbpalette", "Mehrere Baustellen, eine Partie", "Monteure sehen nur ihren Teil"],
     img: "/landing/plan.jpg",
     w: 2040,
     h: 990,
@@ -53,16 +64,6 @@ const features = [
     alt: "Mängelliste in VYSNER"
   },
   {
-    kicker: "Struktur",
-    title: "Jeder Bereich, jeder Punkt – abhakbar.",
-    text: "Gliedern Sie die Baustelle so, wie Sie sie im Kopf haben: Gebäude, Geschoß, Raum, Punkt.",
-    points: ["Beliebig tiefe Struktur", "Fortschritt je Bereich in Prozent", "Fotos und Mängel hängen am richtigen Punkt", "Ein Klick öffnet alles zu einem Punkt"],
-    img: "/landing/struktur.jpg",
-    w: 2040,
-    h: 990,
-    alt: "Baustellenstruktur in VYSNER"
-  },
-  {
     kicker: "Berichte",
     title: "Berichte, die Auftraggeber gern lesen.",
     text: "Aus dem, was ohnehin erfasst wird, entsteht der Bericht – sauber, mit Logo, als PDF.",
@@ -76,12 +77,12 @@ const features = [
 ];
 
 const parts = [
-  { icon: CalendarRange, name: "Plan", text: "Aufgaben und Symbole je Person" },
+  { icon: CalendarRange, name: "Einteilung", text: "Halbe Tage, Urlaub, Krankenstand" },
+  { icon: PenLine, name: "Regieschein", text: "Stunden, Material, Unterschrift, PDF" },
   { icon: ListChecks, name: "Struktur", text: "Bereiche und Punkte zum Abhaken" },
   { icon: Camera, name: "Fotos", text: "Galerie je Bereich, ZIP und PDF" },
   { icon: AlertTriangle, name: "Mängel", text: "Mit Frist, Zuständigkeit und Nachweis" },
-  { icon: ClipboardList, name: "Tagesberichte", text: "Wetter, Team, Arbeiten, PDF" },
-  { icon: Users, name: "Team", text: "Einteilen, Urlaub, Krankenstand" }
+  { icon: ClipboardList, name: "Tagesberichte", text: "Wetter, Team, Arbeiten, PDF" }
 ];
 
 export default function Landing() {
@@ -94,8 +95,9 @@ export default function Landing() {
           </Link>
           <nav className="lp-links" aria-label="Seite">
             <a href="#ablauf">Ablauf</a>
+            <a href="#regie">Regieschein</a>
             <a href="#funktionen">Funktionen</a>
-            <a href="#umfang">Umfang</a>
+            <a href="#preis">Preis</a>
           </nav>
           <span className="lp-spacer" />
           <Link href="/dashboard" className="lp-btn lp-btn-ghost">
@@ -111,12 +113,12 @@ export default function Landing() {
         <div className="lp-wrap lp-hero-in">
           <div className="lp-hero-copy">
             <span className="lp-pill">
-              <HardHat size={14} /> Für Bauleiter, Poliere und Monteure
+              <HardHat size={14} /> Für kleine Bau- und Handwerksbetriebe
             </span>
             <h1>
-              Baustellen im Griff. <span className="lp-grad">Vom Plan bis zur Abnahme.</span>
+              Wer macht heute was? <span className="lp-grad">Eingeteilt, unterschrieben, abgerechnet.</span>
             </h1>
-            <p className="lp-lead">Aufgaben planen, Mängel erfassen und beheben, Fotos dokumentieren, Tagesberichte als PDF – in einer App, die auf der Baustelle jeder sofort versteht.</p>
+            <p className="lp-lead">Mitarbeiter in halben Tagen einteilen, Urlaub und Krankenstand im Blick, Regiescheine direkt am Handy vom Kunden unterschreiben lassen – auch im Keller ohne Netz.</p>
             <div className="lp-cta">
               <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
                 Demo ansehen <ArrowRight size={18} />
@@ -127,13 +129,13 @@ export default function Landing() {
             </div>
             <ul className="lp-ticks">
               <li>
+                <Check size={15} /> Monteure gratis
+              </li>
+              <li>
+                <Check size={15} /> Funktioniert offline
+              </li>
+              <li>
                 <Check size={15} /> Ohne Installation
-              </li>
-              <li>
-                <Check size={15} /> Am PC und am Handy
-              </li>
-              <li>
-                <Check size={15} /> In 5 Minuten startklar
               </li>
             </ul>
           </div>
@@ -145,10 +147,10 @@ export default function Landing() {
                 <i />
                 <span>vysner.com</span>
               </div>
-              <img src="/landing/plan.jpg" alt="" width={2040} height={990} />
+              <img src="/landing/einteilung.jpg" alt="" width={1590} height={860} />
             </div>
             <div className="lp-phone lp-phone-hero">
-              <img src="/landing/handy-heute.jpg" alt="" width={780} height={1560} />
+              <img src="/landing/handy-regie.jpg" alt="" width={780} height={1560} />
             </div>
           </div>
         </div>
@@ -157,16 +159,16 @@ export default function Landing() {
       <section className="lp-strip">
         <div className="lp-wrap lp-strip-in">
           <span>
-            <Wrench size={16} /> Mängel mit Vorher/Nachher
+            <CalendarRange size={16} /> Einteilung in halben Tagen
           </span>
           <span>
-            <FileText size={16} /> Berichte als PDF
+            <PenLine size={16} /> Regieschein mit Unterschrift
           </span>
           <span>
-            <Camera size={16} /> Kamera direkt am Handy
+            <WifiOff size={16} /> Funktioniert ohne Netz
           </span>
           <span>
-            <CalendarRange size={16} /> Kalenderwochen und Feiertage
+            <Users size={16} /> Monteure gratis
           </span>
           <span>
             <ShieldCheck size={16} /> Monteure können nichts löschen
@@ -178,8 +180,8 @@ export default function Landing() {
         <div className="lp-wrap">
           <div className="lp-head lp-head-dark">
             <span className="lp-kicker">Ein Ablauf</span>
-            <h2>Vom Plan bis zum Bericht – ohne Zettel und Chat-Gruppen.</h2>
-            <p>Die Bauleitung plant, die Monteure arbeiten und dokumentieren am Handy. Alles landet automatisch an der richtigen Stelle – und am Ende im Bericht.</p>
+            <h2>Von der Einteilung bis zur Abrechnung – ohne Zettel und Chat-Gruppen.</h2>
+            <p>Der Chef teilt ein, die Monteure arbeiten und dokumentieren am Handy, der Kunde unterschreibt vor Ort. Das Büro hat am Abend alles beisammen.</p>
           </div>
           <ol className="lp-chain">
             {flow.map((r, i) => (
@@ -194,6 +196,63 @@ export default function Landing() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section id="regie" className="lp-features lp-regie">
+        <div className="lp-wrap">
+          <article className="lp-feature lp-mobile">
+            <div className="lp-feature-copy">
+              <span className="lp-kicker">Digitaler Regieschein</span>
+              <h2>Unterschrift statt Zettelwirtschaft.</h2>
+              <p>Der Monteur trägt Stunden und Material ein, der Kunde sieht alles auf einen Blick und unterschreibt mit dem Finger. Daraus wird sofort ein sauberes PDF – kein Abtippen, kein verlorener Zettel.</p>
+              <ul>
+                <li>
+                  <Check size={16} /> Stunden je Mitarbeiter und Material mit Menge
+                </li>
+                <li>
+                  <Check size={16} /> Vorher/Nachher-Fotos im PDF
+                </li>
+                <li>
+                  <Check size={16} /> Nach der Unterschrift gesperrt – nichts wird nachträglich geändert
+                </li>
+                <li>
+                  <Check size={16} /> Büro gibt frei – bereit für die Rechnung
+                </li>
+              </ul>
+            </div>
+            <div className="lp-phones" aria-hidden>
+              <div className="lp-phone">
+                <img src="/landing/handy-regie.jpg" alt="" loading="lazy" width={780} height={1560} />
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="lp-why">
+        <div className="lp-wrap lp-why-in">
+          <div>
+            <span className="lp-why-icon">
+              <WifiOff size={22} />
+            </span>
+            <strong>Funktioniert ohne Netz</strong>
+            <p>Im Keller, in der Trafostation, am Land: VYSNER läuft weiter. Einteilung ansehen, Fotos machen, Regieschein unterschreiben lassen – alles wird sofort am Gerät gespeichert.</p>
+          </div>
+          <div>
+            <span className="lp-why-icon">
+              <Users size={22} />
+            </span>
+            <strong>Monteure gratis</strong>
+            <p>Kein Preis pro Kopf. Die Firma zahlt einen Fixpreis – jeder Monteur kommt kostenlos dazu, auch Leiharbeiter und Subunternehmer.</p>
+          </div>
+          <div>
+            <span className="lp-why-icon">
+              <Smartphone size={22} />
+            </span>
+            <strong>In 5 Minuten startklar</strong>
+            <p>Ohne Installation, am PC und am Handy. Leute anlegen, Baustelle anlegen, einteilen – fertig.</p>
+          </div>
         </div>
       </section>
 
@@ -255,8 +314,8 @@ export default function Landing() {
         <div className="lp-wrap">
           <div className="lp-head">
             <span className="lp-kicker">Umfang</span>
-            <h2>Alles, was auf die Baustelle gehört. Nicht mehr.</h2>
-            <p>VYSNER ist kein überladenes ERP. Sechs Bereiche je Baustelle – und jeder davon funktioniert auch am Handy.</p>
+            <h2>Alles, was ein kleiner Betrieb braucht. Nicht mehr.</h2>
+            <p>VYSNER ist kein überladenes ERP. Sechs Bereiche – und jeder davon funktioniert auch am Handy und ohne Netz.</p>
           </div>
           <div className="lp-module-grid lp-module-grid-3">
             {parts.map((m) => (
@@ -275,10 +334,44 @@ export default function Landing() {
             </span>
             <div>
               <strong>
-                Projektleitung <em>bald</em>
+                Von der Baustelle zur Rechnung <em>bald</em>
               </strong>
-              <p>Mehrere Baustellen und Bauleiter überblicken und planen – als nächster Schritt.</p>
+              <p>Regiestunden und Material landen direkt in VYSNER One – Baustelle und Rechnung aus einer Hand.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="preis" className="lp-price">
+        <div className="lp-wrap">
+          <div className="lp-head">
+            <span className="lp-kicker">Preis</span>
+            <h2>Ein Fixpreis für die Firma. Monteure gratis.</h2>
+            <p>Große Tools rechnen pro Nutzer ab – das wird für kleine Betriebe schnell teuer. Bei VYSNER zahlt die Firma einen festen Monatspreis.</p>
+          </div>
+          <div className="lp-price-card">
+            <div>
+              <strong>Firmenlizenz</strong>
+              <span className="lp-price-tag">Fixpreis pro Monat</span>
+              <small>Preis auf Anfrage – abhängig von der Zahl der Büro-Zugänge, nie von den Monteuren.</small>
+            </div>
+            <ul>
+              <li>
+                <Check size={16} /> Chef, Büro und Bauleitung inklusive
+              </li>
+              <li>
+                <Check size={16} /> Monteure unbegrenzt und kostenlos
+              </li>
+              <li>
+                <Check size={16} /> Einteilung, Regieschein, Mängel, Fotos, Berichte
+              </li>
+              <li>
+                <Check size={16} /> Offline am Handy, am PC im Browser
+              </li>
+            </ul>
+            <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
+              Kostenlos testen <ArrowRight size={18} />
+            </Link>
           </div>
         </div>
       </section>
@@ -293,7 +386,7 @@ export default function Landing() {
             <li>
               <span>1</span>
               <strong>Team anlegen</strong>
-              <p>Monteure und Bauleiter eintragen und die Rechte vergeben – Bauleitung oder Monteur.</p>
+              <p>Monteure und Büro eintragen und die Rechte vergeben – Monteure kosten nichts extra.</p>
             </li>
             <li>
               <span>2</span>
@@ -302,8 +395,8 @@ export default function Landing() {
             </li>
             <li>
               <span>3</span>
-              <strong>Loslegen</strong>
-              <p>Aufgaben verteilen, die Monteure sehen sie am Handy – Fotos, Mängel und Berichte kommen von selbst zurück.</p>
+              <strong>Einteilen</strong>
+              <p>Wer macht wann was – die Monteure sehen es am Handy, Regiescheine und Fotos kommen von selbst zurück.</p>
             </li>
           </ol>
         </div>
@@ -313,7 +406,7 @@ export default function Landing() {
         <div className="lp-wrap lp-final-in">
           <div>
             <h2>Sehen Sie selbst, wie einfach es ist.</h2>
-            <p>Die Demo-Firma ist sofort startklar – mit Baustellen, Team, Plan, Fotos und Mängeln.</p>
+            <p>Die Demo-Firma ist sofort startklar – mit Einteilung, Baustellen, Regiescheinen, Fotos und Mängeln.</p>
           </div>
           <div className="lp-cta">
             <Link href="/demo" className="lp-btn lp-btn-white lp-btn-lg">
@@ -329,7 +422,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
           <Image src="/brand/vysner-logo.png" alt="VYSNER" width={125} height={25} />
-          <span>Baustellen im Griff.</span>
+          <span>Einteilung und Regie für Bau und Handwerk.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
           <Link href="/dashboard">Anmelden</Link>

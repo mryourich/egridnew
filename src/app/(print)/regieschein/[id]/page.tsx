@@ -125,7 +125,7 @@ export default function RegieDoc() {
         </div>
         <div>
           <span>{r.signature && <img className="doc-signature" src={r.signature} alt="Unterschrift" />}</span>
-          Auftraggeber{r.signedBy ? `: ${r.signedBy}` : ""}
+          Auftraggeber{r.signedBy ? `: ${r.signedBy}` : ""}{r.signedAt ? ` · ${fmtStamp(r.signedAt)}` : ""}
         </div>
       </div>
     </DocFrame>

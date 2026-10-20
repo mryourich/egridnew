@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Bell, Map as MapIcon, CalendarRange, Camera, ClipboardList, Clock, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, ListTodo, LogOut, Package, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
+import { AlertTriangle, Bell, Map as MapIcon, CalendarRange, Camera, ClipboardList, Clock, FileText, FolderKanban, FolderOpen, Home, LayoutDashboard, ListChecks, ListTodo, LogOut, Package, PenLine, Plus, Search, Settings, StickyNote, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -365,7 +365,8 @@ const SECTION_ICONS: Record<string, typeof Home> = {
   dokumente: FolderOpen,
   uebersicht: LayoutDashboard,
   zeiten: Clock,
-  plaene: MapIcon
+  plaene: MapIcon,
+  regie: PenLine
 };
 
 /** Sidebar: my projects with their picture. */

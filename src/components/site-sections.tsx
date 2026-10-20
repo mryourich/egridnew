@@ -6,8 +6,7 @@ import { fmt, inRange, isoWeek, today, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { shortPath } from "@/lib/site";
 import { employeeName, isManager, projectTeam, roleLabel, roleOf, useStore } from "@/lib/store";
-import type { IssueStatus, Project, RegieReport } from "@/lib/types";
-import { RegieList, RegieSheet } from "./regie";
+import type { IssueStatus, Project } from "@/lib/types";
 import { ISSUE_LABELS, Trail } from "./trail";
 import { useEditor } from "./shell";
 import { EmpAvatar } from "./person";
@@ -148,34 +147,18 @@ export function DefectsSection({ projectId }: { projectId: string }) {
 export function ReportsSection({ project }: { project: Project }) {
   const { data } = useStore();
   const openEditor = useEditor();
-  const [kind, setKind] = useState<"tag" | "regie">("tag");
-  const [regie, setRegie] = useState<Partial<RegieReport> | null>(null);
   const list = of(data.reports, project.id).sort((a, b) => b.date.localeCompare(a.date));
-  const regieCount = data.regie.filter((r) => r.projectId === project.id).length;
 
   return (
     <div className="stack">
       <div className="toolbar">
-        <Segmented
-          options={[
-            { value: "tag", label: `Tagesberichte (${list.length})` },
-            { value: "regie", label: `Regiescheine (${regieCount})` }
-          ]}
-          value={kind}
-          onChange={setKind}
-        />
+        <strong className="toolbar-title">Tagesberichte ({list.length})</strong>
         <span className="spacer" />
-        <button className="btn" type="button" onClick={() => (setKind("regie"), setRegie({ projectId: project.id }))}>
-          <Plus size={16} /> Regieschein
-        </button>
         <button className="btn btn-primary" type="button" onClick={() => openEditor({ kind: "report", item: { projectId: project.id } })}>
           <Plus size={16} /> Tagesbericht
         </button>
       </div>
-      {regie && <RegieSheet regie={regie} onClose={() => setRegie(null)} />}
-      {kind === "regie" ? (
-        <RegieList project={project} onOpen={setRegie} />
-      ) : list.length === 0 ? (
+      {list.length === 0 ? (
         <Empty>Noch keine Tagesberichte.</Empty>
       ) : (
         <div className="report-list">
