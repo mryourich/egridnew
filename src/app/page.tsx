@@ -44,20 +44,30 @@ const features = [
     alt: "Wochen-Einteilung in VYSNER"
   },
   {
-    kicker: "Checkliste",
-    title: "Was zu tun ist – zum Abhaken.",
-    text: "Je Baustelle eine einfache Liste. Punkt hinschreiben, jemanden zuteilen, abhaken. Fertig.",
-    points: ["Neuer Punkt mit einer Zeile", "Zuständig und Frist, wenn nötig", "Jeder sieht seine offenen Punkte am Handy", "Erledigtes wandert nach unten"],
+    kicker: "Bauzeitenplan",
+    title: "Der Plan je Baustelle – wie auf Papier, nur schneller.",
+    text: "Für die, die es genauer brauchen: Balken ziehen, verlängern, umbenennen. In halben Tagen, mit Urlaub und Krankenstand.",
+    points: ["Tag, Woche, Monat, Quartal", "Rechtsklick: Aufgabe oder Symbol mit Farbe", "Gruppen und eigene Zeilen (Kran, Lieferung, Sub)", "Kalenderwochen und Feiertage"],
+    img: "/landing/gantt.jpg",
+    w: 2040,
+    h: 990,
+    alt: "Bauzeitenplan in VYSNER"
+  },
+  {
+    kicker: "Offene Punkte",
+    title: "Jeder Bereich, jeder Punkt – abhakbar.",
+    text: "Gliedern Sie die Baustelle so, wie Sie sie im Kopf haben: Gebäude, Geschoß, Raum, Punkt.",
+    points: ["Beliebig tiefe Bereiche", "Fortschritt je Bereich in Prozent", "Zuständig, Frist, Mängel und Fotos je Punkt", "Bereiche duplizieren"],
     img: "/landing/struktur.jpg",
     w: 2040,
     h: 990,
-    alt: "Checkliste einer Baustelle in VYSNER"
+    alt: "Offene Punkte einer Baustelle in VYSNER"
   },
   {
     kicker: "Mängel",
     title: "Erfassen. Beheben. Nachweisen.",
     text: "Kein Mangel geht mehr verloren – und jede Behebung ist mit Foto belegt.",
-    points: ["Foto, kurzer Text, wer kümmert sich – gemeldet", "Überfälliges in Rot", "Erledigt mit Nachher-Foto", "Mängelbericht als PDF"],
+    points: ["Foto zuerst – am Handy geht sofort die Kamera auf", "Priorität, Zuständig und Frist, Überfälliges in Rot", "Behoben mit Nachher-Foto und Verlauf", "Mängelbericht mit Vorher/Nachher als PDF"],
     img: "/landing/maengel.jpg",
     w: 2040,
     h: 990,
@@ -79,8 +89,8 @@ const features = [
 const parts = [
   { icon: CalendarRange, name: "Einteilung", text: "Halbe Tage, Urlaub, Krankenstand" },
   { icon: PenLine, name: "Regieschein", text: "Stunden, Material, Unterschrift, PDF" },
-  { icon: ListChecks, name: "Checkliste", text: "Was zu tun ist – zum Abhaken" },
-  { icon: Camera, name: "Fotos", text: "Direkt aus der Kamera, als PDF" },
+  { icon: ListChecks, name: "Offene Punkte", text: "Bereiche und Punkte zum Abhaken" },
+  { icon: Camera, name: "Fotos", text: "Je Bereich, als ZIP und PDF" },
   { icon: AlertTriangle, name: "Mängel", text: "Mit Frist, Zuständigkeit und Nachweis" },
   { icon: ClipboardList, name: "Tagesbericht", text: "Was, wer, wie lange – als PDF" }
 ];
@@ -314,8 +324,8 @@ export default function Landing() {
         <div className="lp-wrap">
           <div className="lp-head">
             <span className="lp-kicker">Umfang</span>
-            <h2>Alles, was ein kleiner Betrieb braucht. Nicht mehr.</h2>
-            <p>VYSNER ist kein überladenes ERP. Vier Menüpunkte: Heute, Planung, Baustellen, Team – am PC, am Handy und ohne Netz.</p>
+            <h2>Einfach zu bedienen. Alles drin.</h2>
+            <p>Vier Menüpunkte: Heute, Planung, Baustellen, Team. Dahinter alles, was eine Baustelle braucht – am PC, am Handy und ohne Netz.</p>
           </div>
           <div className="lp-module-grid lp-module-grid-3">
             {parts.map((m) => (

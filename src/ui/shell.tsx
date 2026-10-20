@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineSupport } from "@/components/offline";
+import { EditorHost } from "@/components/shell";
 import { StoreProvider, useStore } from "@/lib/store";
 import { activePeople, me, SIMPLE_LABEL, simpleRole, type Simple } from "./access";
 import { Face } from "./kit";
@@ -20,7 +21,9 @@ const NAV = [
 export function AppFrame({ children }: { children: ReactNode }) {
   return (
     <StoreProvider>
-      <Frame>{children}</Frame>
+      <EditorHost>
+        <Frame>{children}</Frame>
+      </EditorHost>
     </StoreProvider>
   );
 }

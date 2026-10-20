@@ -2,38 +2,48 @@
 
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
-import { Checklist } from "@/ui/checklist";
-import { Defects } from "@/ui/defects";
-import { Documents } from "@/ui/documents";
-import { MaterialList } from "@/ui/material";
-import { Photos } from "@/ui/photos";
+import { DocBrowser } from "@/components/documents";
+import { MaterialSection } from "@/components/material";
+import { PhotoGallery } from "@/components/site";
+import { SiteGantt } from "@/components/site-gantt";
+import { DefectsSection, ReportsSection } from "@/components/site-sections";
+import { SiteStructure } from "@/components/structure";
+import { useStore } from "@/lib/store";
+import { canPlan } from "@/ui/access";
 import { Regie } from "@/ui/regie";
-import { Reports } from "@/ui/reports";
 
 function Tab() {
   const { id, section } = useParams<{ id: string; section: string }>();
+  const { data } = useStore();
+  const project = data.projects.find((p) => p.id === id);
+  if (!project) return null;
+  const office = canPlan(data);
   switch (section) {
-    case "fotos":
-      return <Photos projectId={id} />;
+    case "plan":
+      return office ? <SiteGantt project={project} /> : <SiteStructure project={project} />;
     case "maengel":
-      return <Defects projectId={id} />;
+      return <DefectsSection projectId={id} />;
+    case "fotos":
+      return <PhotoGallery project={project} />;
     case "regie":
       return <Regie projectId={id} />;
     case "material":
-      return <MaterialList projectId={id} />;
-    case "tagesbericht":
-      return <Reports projectId={id} />;
+      return <MaterialSection project={project} />;
+    case "berichte":
+      return office ? <ReportsSection project={project} /> : <SiteStructure project={project} />;
     case "dokumente":
-      return <Documents projectId={id} />;
+      return <DocBrowser projectId={id} />;
     default:
-      return <Checklist projectId={id} />;
+      return <SiteStructure project={project} />;
   }
 }
 
 export default function Page() {
   return (
-    <Suspense>
-      <Tab />
-    </Suspense>
+    <div className="v-legacy">
+      <Suspense>
+        <Tab />
+      </Suspense>
+    </div>
   );
 }
