@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DefectsSection, ReportsSection } from "@/components/site-sections";
+import { RegieSection } from "@/components/regie";
 import { ProjectOverview } from "@/components/project-overview";
 import { TimesSection } from "@/components/times";
 import { PlansSection } from "@/components/plans";
@@ -39,6 +40,8 @@ export default function SiteSectionPage() {
       return <PhotoGallery project={project} />;
     case "maengel":
       return <DefectsSection projectId={project.id} />;
+    case "regie":
+      return <RegieSection project={project} />;
     case "berichte":
       return <ReportsSection project={project} />;
     case "material":

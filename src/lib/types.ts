@@ -214,9 +214,10 @@ export type RegieReport = Tracked & {
   /** Released by the office / project management. */
   approvedBy?: string;
   approvedAt?: string;
-  /** Client signature (data URL) and name. */
+  /** Client signature (data URL), name and when it was signed. */
   signature: string;
   signedBy: string;
+  signedAt?: string;
 };
 
 export type MaterialStatus = "offen" | "bestellt" | "angekommen";

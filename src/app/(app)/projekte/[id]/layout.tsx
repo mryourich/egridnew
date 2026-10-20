@@ -1,11 +1,13 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Users } from "lucide-react";
+import { MoreHorizontal, PenLine, Pencil, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { InviteDialog } from "@/components/invite";
 import { IssueButton } from "@/components/issue-sheet";
+import { RegieSheet } from "@/components/regie";
+import type { RegieReport } from "@/lib/types";
 import { PhotoAddButton } from "@/components/site";
 import { ProjectTabs, useEditor } from "@/components/shell";
 import { Empty } from "@/components/ui";
@@ -30,6 +32,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   const { data } = useStore();
   const openEditor = useEditor();
   const [invite, setInvite] = useState(false);
+  const [regie, setRegie] = useState<Partial<RegieReport> | null>(null);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const project = data.projects.find((p) => p.id === id);
@@ -68,6 +71,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         <div className="ph-stats">
           <span className="ph-quick">
             <IssueButton projectId={project.id} className="btn btn-primary" label="Mangel melden" />
+            <button type="button" className="btn" onClick={() => setRegie({ projectId: project.id })}>
+              <PenLine size={15} /> Regieschein
+            </button>
             <PhotoAddButton projectId={project.id} nodeId="" className="btn" label="Foto" />
           </span>
           <div className="ph-stat">
@@ -98,6 +104,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       </section>
       <ProjectTabs projectId={project.id} />
       {children}
+      {regie && <RegieSheet regie={regie} onClose={() => setRegie(null)} />}
       {invite && <InviteDialog project={project} onClose={() => setInvite(false)} />}
     </div>
   );

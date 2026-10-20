@@ -1,7 +1,7 @@
 "use client";
 
 import { PhotoField } from "./photo-field";
-import { CheckCircle2, Eraser, FileText, Plus, Trash2, X } from "lucide-react";
+import { CheckCircle2, Eraser, FileText, PenLine, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { fmt, isoWeek, today, weekdayShort } from "@/lib/date";
 import { canDelete, canRelease, employeeName, fmtStamp, nowStamp, projectTeam, uid, useStore } from "@/lib/store";
@@ -172,13 +172,19 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
     date: regie.date ?? today(),
     orderedBy: regie.orderedBy ?? "",
     description: regie.description ?? "",
-    workers: regie.workers ?? [],
+    // whoever writes it was usually there – prefilled with a full day
+    workers: regie.workers ?? (team.some((e) => e.id === data.currentUserId) ? [{ employeeId: data.currentUserId, hours: 8 }] : []),
     materials: regie.materials ?? [],
     authorId: regie.authorId ?? data.currentUserId,
     signature: regie.signature ?? "",
     signedBy: regie.signedBy ?? "",
+    signedAt: regie.signedAt,
     photos: regie.photos ?? []
   });
+  // once the client signed, the content is final – only the office can lift it
+  const [locked, setLocked] = useState(!!regie.signature);
+  const [signing, setSigning] = useState(false);
+  const release = canRelease(data);
   const set = (patch: Partial<RegieReport>) => setV((o) => ({ ...o, ...patch }));
   const hours = v.workers.reduce((s, w) => s + (w.hours || 0), 0);
 
@@ -201,13 +207,14 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
     set({ materials: next });
   };
 
-  const submit = () => {
+  const submit = (patch: Partial<RegieReport> = {}) => {
     if (!v.description.trim()) return;
     const materials = v.materials.filter((m) => m.name.trim() || m.artNo.trim());
-    save("regie", { ...v, description: v.description.trim(), materials }, `Regieschein Nr. ${v.no} ${isNew ? "erstellt" : "geändert"}`);
+    const signedNow = !!patch.signature;
+    save("regie", { ...v, ...patch, description: v.description.trim(), materials }, signedNow ? `Regieschein Nr. ${v.no} vom Auftraggeber unterschrieben` : `Regieschein Nr. ${v.no} ${isNew ? "erstellt" : "geändert"}`);
     for (const m of materials)
       if (m.artNo.trim() && !data.articles.some((a) => a.artNo === m.artNo.trim())) save("articles", { id: uid("ar"), artNo: m.artNo.trim(), name: m.name.trim(), unit: m.unit || "Stk" });
-    notify("Regieschein gespeichert");
+    notify(signedNow ? "Unterschrieben ✓ – das PDF ist fertig" : "Regieschein gespeichert");
     onClose();
   };
 
@@ -233,6 +240,12 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
             submit();
           }}
         >
+          {locked && (
+            <p className="regie-locked">
+              <CheckCircle2 size={15} /> Vom Auftraggeber unterschrieben – nicht mehr änderbar.
+            </p>
+          )}
+          <fieldset className="regie-fields" disabled={locked}>
           <div className="inline-fields">
             <label>
               <span>Datum</span>
@@ -306,17 +319,39 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
             ))}
           </section>
 
+          </fieldset>
+
           <section className="detail-section">
             <header>
               <h3>Unterschrift Auftraggeber</h3>
             </header>
-            <SignaturePad value={v.signature} onChange={(signature) => set({ signature })} />
-            <div className="inline-fields">
-              <label className="full">
-                <span>Name in Blockschrift</span>
-                <input value={v.signedBy} onChange={(e) => set({ signedBy: e.target.value })} placeholder="z. B. M. Leitner" />
-              </label>
-            </div>
+            {v.signature ? (
+              <div className="regie-signed">
+                <img src={v.signature} alt="Unterschrift" />
+                <span>
+                  <strong>{v.signedBy || "Auftraggeber"}</strong>
+                  {v.signedAt && <small>unterschrieben am {fmtStamp(v.signedAt)}</small>}
+                </span>
+                {release && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => {
+                      if (!window.confirm("Unterschrift entfernen? Der Regieschein kann dann wieder geändert werden.")) return;
+                      set({ signature: "", signedBy: "", signedAt: undefined });
+                      setLocked(false);
+                    }}
+                  >
+                    <Eraser size={13} /> Entfernen
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button type="button" className="btn btn-primary regie-sign-btn" disabled={!v.description.trim()} onClick={() => setSigning(true)}>
+                <PenLine size={17} /> Vom Kunden unterschreiben lassen
+              </button>
+            )}
+            {!v.signature && !v.description.trim() && <small className="muted">Zuerst die ausgeführte Arbeit eintragen.</small>}
           </section>
 
           <footer className="drawer-foot rd-foot">
@@ -342,13 +377,110 @@ export function RegieSheet({ regie, onClose }: { regie: Partial<RegieReport>; on
             <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>
               Abbrechen
             </button>
-            <button type="submit" className="btn btn-sm btn-primary" disabled={!v.description.trim()}>
-              Speichern
-            </button>
+            {!locked && (
+              <button type="submit" className="btn btn-sm btn-primary" disabled={!v.description.trim()}>
+                Speichern
+              </button>
+            )}
           </footer>
           <p className="muted small">Erstellt von {employeeName(data, v.authorId)}</p>
         </form>
       </aside>
+      {signing && (
+        <SignMode
+          regie={v}
+          projectName={project.name}
+          onCancel={() => setSigning(false)}
+          onSign={(signature, signedBy) => submit({ signature, signedBy, signedAt: nowStamp() })}
+        />
+      )}
     </Portal>
+  );
+}
+
+/** Full screen for the client: everything at a glance, then sign with the finger. */
+function SignMode({ regie, projectName, onCancel, onSign }: { regie: RegieReport; projectName: string; onCancel: () => void; onSign: (signature: string, name: string) => void }) {
+  const { data } = useStore();
+  const [sig, setSig] = useState("");
+  const [name, setName] = useState(regie.orderedBy);
+  const hours = regie.workers.reduce((s, w) => s + (w.hours || 0), 0);
+  const materials = regie.materials.filter((m) => m.name.trim() || m.artNo.trim());
+  return (
+    <div className="sign-mode" role="dialog" aria-label="Regieschein unterschreiben">
+      <header>
+        <strong>Regieschein Nr. {String(regie.no).padStart(2, "0")}</strong>
+        <small>
+          {projectName} · {fmt(regie.date)}
+        </small>
+      </header>
+      <div className="sign-body">
+        <section>
+          <h3>Ausgeführte Arbeit</h3>
+          <p>{regie.description}</p>
+        </section>
+        {regie.workers.length > 0 && (
+          <section>
+            <h3>Stunden · {hours} h</h3>
+            <ul>
+              {regie.workers.map((w) => (
+                <li key={w.employeeId}>
+                  <span>{employeeName(data, w.employeeId)}</span>
+                  <b>{w.hours} h</b>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {materials.length > 0 && (
+          <section>
+            <h3>Material</h3>
+            <ul>
+              {materials.map((m, i) => (
+                <li key={i}>
+                  <span>{m.name || m.artNo}</span>
+                  <b>
+                    {m.qty} {m.unit}
+                  </b>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section>
+          <h3>Unterschrift Auftraggeber</h3>
+          <SignaturePad value={sig} onChange={setSig} />
+          <label className="sign-name">
+            <span>Name in Blockschrift</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. M. Leitner" />
+          </label>
+        </section>
+      </div>
+      <footer>
+        <button type="button" className="btn" onClick={onCancel}>
+          Zurück
+        </button>
+        <button type="button" className="btn btn-primary" disabled={!sig || !name.trim()} onClick={() => onSign(sig, name.trim())}>
+          <PenLine size={16} /> Unterschreiben
+        </button>
+      </footer>
+    </div>
+  );
+}
+
+/** Project tab: every Regieschein of the site – workers create and get them signed, the office releases them. */
+export function RegieSection({ project }: { project: Project }) {
+  const [open, setOpen] = useState<Partial<RegieReport> | null>(null);
+  return (
+    <div className="stack">
+      <div className="toolbar">
+        <p className="muted small toolbar-hint">Zusatzarbeit mit Stunden und Material erfassen, am Handy vom Kunden unterschreiben lassen – fertig ist das PDF.</p>
+        <span className="spacer" />
+        <button className="btn btn-primary" type="button" onClick={() => setOpen({ projectId: project.id })}>
+          <Plus size={16} /> Neuer Regieschein
+        </button>
+      </div>
+      <RegieList project={project} onOpen={setOpen} />
+      {open && <RegieSheet regie={open} onClose={() => setOpen(null)} />}
+    </div>
   );
 }
