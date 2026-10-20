@@ -3,6 +3,7 @@
 import { AlertTriangle, Camera, ChevronRight, PenLine } from "lucide-react";
 import Link from "next/link";
 import { addDays, fmt, isWeekend, today, weekdayLong, weekdayShort } from "@/lib/date";
+import { useEditor } from "@/components/shell";
 import { useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
 import { activePeople, canPlan, dayText, me, visibleSites } from "./access";
@@ -48,7 +49,7 @@ export function Today() {
                     notify("Erledigt ✓");
                   }}
                 />
-                <Link href={`/projekte/${n.projectId}/checkliste`} className="v-list-main">
+                <Link href={`/projekte/${n.projectId}/struktur?punkt=${n.id}`} className="v-list-main">
                   <strong>{n.title}</strong>
                   <small>{siteName(n.projectId)}</small>
                 </Link>
@@ -115,6 +116,7 @@ function TeamToday() {
 /** Workers: my site today with the three things I do there, and my week. */
 function MyDay() {
   const { data } = useStore();
+  const openEditor = useEditor();
   const t = today();
   const user = me(data);
   if (!user) return null;
@@ -156,9 +158,9 @@ function MyDay() {
               <Link href={`/projekte/${p.id}/fotos`} className="v-btn">
                 <Camera size={17} /> Foto
               </Link>
-              <Link href={`/projekte/${p.id}/maengel?neu=1`} className="v-btn">
+              <button type="button" className="v-btn" onClick={() => openEditor({ kind: "issue", item: { projectId: p.id } })}>
                 <AlertTriangle size={17} /> Mangel
-              </Link>
+              </button>
               <Link href={`/projekte/${p.id}/regie?neu=1`} className="v-btn primary">
                 <PenLine size={17} /> Regie
               </Link>

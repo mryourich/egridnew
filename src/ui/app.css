@@ -37,9 +37,9 @@
   font: inherit;
   cursor: pointer;
 }
-.v-app input,
-.v-app select,
-.v-app textarea,
+.v-app input:not(.v-legacy *),
+.v-app select:not(.v-legacy *),
+.v-app textarea:not(.v-legacy *),
 .v-sheet-bg input,
 .v-sheet-bg select,
 .v-sheet-bg textarea,
@@ -55,9 +55,9 @@
   font-size: 15px;
   outline: none;
 }
-.v-app input:focus,
-.v-app select:focus,
-.v-app textarea:focus,
+.v-app input:not(.v-legacy *):focus,
+.v-app select:not(.v-legacy *):focus,
+.v-app textarea:not(.v-legacy *):focus,
 .v-sheet-bg input:focus,
 .v-sheet-bg select:focus,
 .v-sheet-bg textarea:focus,
@@ -1596,4 +1596,13 @@ button.v-list-main:disabled {
   display: inline-block;
   margin-left: 10px;
   vertical-align: 0.2em;
+}
+
+/* full-featured site sections (points, plan, defects …) use the whole width */
+.v-page:has(.v-legacy) {
+  max-width: none;
+}
+.v-legacy {
+  min-width: 0;
+  font-size: 14px;
 }

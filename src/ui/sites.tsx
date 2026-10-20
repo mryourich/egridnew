@@ -6,19 +6,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { addDays, today } from "@/lib/date";
 import * as L from "@/lib/labels";
+import { projectFolders } from "@/lib/seed";
 import { uid, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
 import { canPlan, canRemove, dayText, me, visibleSites } from "./access";
 import { Empty, Field, PageHead, Sheet } from "./kit";
 
 export const TABS = [
-  { key: "checkliste", label: "Checkliste" },
-  { key: "fotos", label: "Fotos" },
-  { key: "maengel", label: "Mängel" },
-  { key: "regie", label: "Regie" },
-  { key: "material", label: "Material" },
-  { key: "tagesbericht", label: "Tagesbericht" },
-  { key: "dokumente", label: "Dokumente" }
+  { key: "struktur", label: "Offene Punkte", office: false },
+  { key: "plan", label: "Plan", office: true },
+  { key: "maengel", label: "Mängel", office: false },
+  { key: "fotos", label: "Fotos", office: false },
+  { key: "regie", label: "Regie", office: false },
+  { key: "material", label: "Material", office: false },
+  { key: "berichte", label: "Berichte", office: true },
+  { key: "dokumente", label: "Dokumente", office: false }
 ] as const;
 export type TabKey = (typeof TABS)[number]["key"];
 
@@ -129,7 +131,7 @@ export function SiteSheet({ site, onClose }: { site: Partial<Project>; onClose: 
       : (site as Project);
     const item = { ...base, name: name.trim(), client: client.trim(), location: location.trim(), description: description.trim() };
     save("projects", item, isNew ? `Baustelle ${item.name} angelegt` : `Baustelle ${item.name} geändert`);
-    if (isNew) save("folders", { id: uid("fo"), projectId: item.id, parentId: "", name: "Dokumente" });
+    if (isNew) for (const f of projectFolders(item.id)) save("folders", f);
     notify(isNew ? "Baustelle angelegt" : "Gespeichert");
     onClose();
     if (isNew) router.push(`/projekte/${item.id}`);
@@ -210,7 +212,7 @@ export function SiteFrame({ id, children }: { id: string; children: ReactNode })
         </Empty>
       </div>
     );
-  const tab = path.split("/")[3] ?? "checkliste";
+  const tab = path.split("/")[3] ?? "struktur";
   const t = today();
   const here = data.employees.filter((e) => e.active && [dayText(data, e.id, t).am, dayText(data, e.id, t).pm].some((s) => s.kind === "job" && s.job.projectId === id));
 
@@ -239,7 +241,7 @@ export function SiteFrame({ id, children }: { id: string; children: ReactNode })
         )}
       </header>
       <nav className="v-site-tabs" aria-label="Bereiche">
-        {TABS.map((x) => (
+        {TABS.filter((x) => !x.office || canPlan(data)).map((x) => (
           <Link key={x.key} href={`/projekte/${id}/${x.key}`} className={tab === x.key ? "on" : ""}>
             {x.label}
           </Link>
