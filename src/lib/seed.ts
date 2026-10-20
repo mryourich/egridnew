@@ -8,6 +8,8 @@ function demoPhoto(label: string, hue: number) {
 }
 
 export const DATA_VERSION = 6;
+/** Bump when the demo firm changes – browsers with an older demo get the new one on load. */
+export const SEED_VERSION = 10;
 
 /** Starting folders of the general document store. */
 export function generalFolders() {
@@ -68,6 +70,7 @@ export function createSeed(): Data {
 
   const seed: Data = {
     version: DATA_VERSION,
+    seedVersion: SEED_VERSION,
     currentUserId: "e2",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
