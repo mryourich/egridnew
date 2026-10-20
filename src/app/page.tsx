@@ -37,27 +37,27 @@ const features = [
     kicker: "Einteilung",
     title: "Wer macht heute was? Auf einen Blick.",
     text: "Die Frage, die sich jeden Morgen stellt – beantwortet, bevor das Telefon läutet. Für kleine Partien, ohne Planungs-Studium.",
-    points: ["Einteilen in halben Tagen – Vormittag, Nachmittag", "Urlaub, Krankenstand und Zeitausgleich direkt im Plan", "Sofort sichtbar, wer heute noch frei ist", "Feiertage und Kalenderwochen eingebaut"],
+    points: ["Ein Klick aufs Feld – eingeteilt", "Halbe Tage: Vormittag, Nachmittag", "Urlaub, Krankenstand und Zeitausgleich im selben Plan", "Sofort sichtbar, wer heute noch frei ist"],
     img: "/landing/einteilung.jpg",
-    w: 1590,
-    h: 860,
+    w: 2040,
+    h: 990,
     alt: "Wochen-Einteilung in VYSNER"
   },
   {
-    kicker: "Plan",
-    title: "Der Baustellenplan, den man wirklich benutzt.",
-    text: "Aufgaben wie auf Papier – nur schneller. Ziehen, verlängern, umbenennen, fertig.",
-    points: ["Verschieben in halben Tagen", "Rechtsklick: Aufgabe oder Symbol mit Farbpalette", "Mehrere Baustellen, eine Partie", "Monteure sehen nur ihren Teil"],
-    img: "/landing/plan.jpg",
+    kicker: "Checkliste",
+    title: "Was zu tun ist – zum Abhaken.",
+    text: "Je Baustelle eine einfache Liste. Punkt hinschreiben, jemanden zuteilen, abhaken. Fertig.",
+    points: ["Neuer Punkt mit einer Zeile", "Zuständig und Frist, wenn nötig", "Jeder sieht seine offenen Punkte am Handy", "Erledigtes wandert nach unten"],
+    img: "/landing/struktur.jpg",
     w: 2040,
     h: 990,
-    alt: "Baustellenplan in VYSNER"
+    alt: "Checkliste einer Baustelle in VYSNER"
   },
   {
     kicker: "Mängel",
     title: "Erfassen. Beheben. Nachweisen.",
     text: "Kein Mangel geht mehr verloren – und jede Behebung ist mit Foto belegt.",
-    points: ["Foto zuerst – am Handy geht sofort die Kamera auf", "Zuständig und Frist, Überfälliges in Rot", "Monteur meldet „Behoben“ mit Nachher-Foto", "Mängelbericht mit Vorher/Nachher als PDF"],
+    points: ["Foto, kurzer Text, wer kümmert sich – gemeldet", "Überfälliges in Rot", "Erledigt mit Nachher-Foto", "Mängelbericht als PDF"],
     img: "/landing/maengel.jpg",
     w: 2040,
     h: 990,
@@ -67,7 +67,7 @@ const features = [
     kicker: "Berichte",
     title: "Berichte, die Auftraggeber gern lesen.",
     text: "Aus dem, was ohnehin erfasst wird, entsteht der Bericht – sauber, mit Logo, als PDF.",
-    points: ["Tagesbericht mit KW, Wetter, Team und Fortschritt", "Fotobericht je Bereich, Export als ZIP", "Mängelbericht mit Vorher/Nachher-Fotos", "Drucken oder als PDF speichern"],
+    points: ["Tagesbericht: was, wer, wie lange", "Fotobericht mit allen Fotos", "Mängelbericht mit Vorher/Nachher-Fotos", "Regieschein mit Unterschrift"],
     img: "/landing/bericht.jpg",
     w: 1190,
     h: 1140,
@@ -79,10 +79,10 @@ const features = [
 const parts = [
   { icon: CalendarRange, name: "Einteilung", text: "Halbe Tage, Urlaub, Krankenstand" },
   { icon: PenLine, name: "Regieschein", text: "Stunden, Material, Unterschrift, PDF" },
-  { icon: ListChecks, name: "Struktur", text: "Bereiche und Punkte zum Abhaken" },
-  { icon: Camera, name: "Fotos", text: "Galerie je Bereich, ZIP und PDF" },
+  { icon: ListChecks, name: "Checkliste", text: "Was zu tun ist – zum Abhaken" },
+  { icon: Camera, name: "Fotos", text: "Direkt aus der Kamera, als PDF" },
   { icon: AlertTriangle, name: "Mängel", text: "Mit Frist, Zuständigkeit und Nachweis" },
-  { icon: ClipboardList, name: "Tagesberichte", text: "Wetter, Team, Arbeiten, PDF" }
+  { icon: ClipboardList, name: "Tagesbericht", text: "Was, wer, wie lange – als PDF" }
 ];
 
 export default function Landing() {
@@ -147,7 +147,7 @@ export default function Landing() {
                 <i />
                 <span>vysner.com</span>
               </div>
-              <img src="/landing/einteilung.jpg" alt="" width={1590} height={860} />
+              <img src="/landing/einteilung.jpg" alt="" width={2040} height={990} />
             </div>
             <div className="lp-phone lp-phone-hero">
               <img src="/landing/handy-regie.jpg" alt="" width={780} height={1560} />
@@ -282,16 +282,16 @@ export default function Landing() {
             <div className="lp-feature-copy">
               <span className="lp-kicker">Am Handy</span>
               <h2>Für die Baustelle gebaut.</h2>
-              <p>Große Knöpfe, wenig Text. Foto drücken – die Kamera geht auf. Mangel behoben – Nachher-Foto, fertig.</p>
+              <p>Große Knöpfe, wenig Text. Der Monteur sieht seine Baustelle für heute – und hat Foto, Mangel und Regieschein mit einem Tipp.</p>
               <ul>
                 <li>
-                  <Check size={16} /> „Heute zu tun“ für jeden Monteur
+                  <Check size={16} /> „Heute“: wo und was, Vormittag und Nachmittag
                 </li>
                 <li>
-                  <Check size={16} /> Eigene Mängel mit Knopf „Behoben“
+                  <Check size={16} /> Mängel melden mit einem Foto
                 </li>
                 <li>
-                  <Check size={16} /> Fotos nach Bereich, direkt aus der Kamera
+                  <Check size={16} /> Fotos direkt aus der Kamera
                 </li>
                 <li>
                   <Check size={16} /> Monteure erfassen und haken ab, löschen aber nichts
@@ -315,7 +315,7 @@ export default function Landing() {
           <div className="lp-head">
             <span className="lp-kicker">Umfang</span>
             <h2>Alles, was ein kleiner Betrieb braucht. Nicht mehr.</h2>
-            <p>VYSNER ist kein überladenes ERP. Sechs Bereiche – und jeder davon funktioniert auch am Handy und ohne Netz.</p>
+            <p>VYSNER ist kein überladenes ERP. Vier Menüpunkte: Heute, Planung, Baustellen, Team – am PC, am Handy und ohne Netz.</p>
           </div>
           <div className="lp-module-grid lp-module-grid-3">
             {parts.map((m) => (
@@ -391,7 +391,7 @@ export default function Landing() {
             <li>
               <span>2</span>
               <strong>Baustelle anlegen</strong>
-              <p>Name, Ort, Zeitraum – dann die Leute einteilen und die Struktur anlegen.</p>
+              <p>Name, Kunde, Ort – mehr braucht es nicht.</p>
             </li>
             <li>
               <span>3</span>
