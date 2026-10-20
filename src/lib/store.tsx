@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createEmpty, createSeed, DATA_VERSION } from "./seed";
+import { createEmpty, createSeed, DATA_VERSION, SEED_VERSION } from "./seed";
 import type { AccessRole, Company, CollectionKey, Data, Item, Project } from "./types";
 
 const STORAGE_KEY = "vysnpro:data";
@@ -51,6 +51,12 @@ function load(): Data {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Data;
+      // an older demo firm is replaced by the current demo (own company data is never touched)
+      if (parsed.company?.tenantId === "muster" && parsed.seedVersion !== SEED_VERSION) {
+        const seed = createSeed();
+        const keep = seed.employees.some((e) => e.id === parsed.currentUserId);
+        return keep ? { ...seed, currentUserId: parsed.currentUserId } : seed;
+      }
       if (parsed.version === DATA_VERSION) return { ...createEmpty(), ...parsed };
     }
   } catch {

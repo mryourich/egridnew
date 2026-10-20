@@ -7,7 +7,17 @@ import { useEffect, useState } from "react";
 export function OfflineSupport() {
   const [offline, setOffline] = useState(false);
   useEffect(() => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    if ("serviceWorker" in navigator) {
+      // when a new version takes over, reload once – so old and new files never mix
+      const hadWorker = !!navigator.serviceWorker.controller;
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadWorker || reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
+      navigator.serviceWorker.register(`/sw.js?v=${process.env.NEXT_PUBLIC_BUILD_ID ?? "dev"}`, { updateViaCache: "none" }).catch(() => undefined);
+    }
     const update = () => setOffline(!navigator.onLine);
     update();
     window.addEventListener("online", update);

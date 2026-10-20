@@ -363,6 +363,8 @@ export type Company = {
 
 export type Data = {
   version: number;
+  /** Demo firm only: which demo content it was created from (refreshed when the demo changes). */
+  seedVersion?: number;
   company: Company;
   /** Signed-in user (demo: switchable in the header). */
   currentUserId: string;
@@ -385,6 +387,6 @@ export type Data = {
   activity: ActivityEntry[];
 };
 
-export type CollectionKey = Exclude<keyof Data, "version" | "company" | "currentUserId">;
+export type CollectionKey = Exclude<keyof Data, "version" | "seedVersion" | "company" | "currentUserId">;
 
 export type Item<K extends CollectionKey> = Data[K][number];
