@@ -23,7 +23,7 @@ export const ROLLE_INFO: Record<Rolle, string> = {
   bereichsleiter: "Legt Baustellen an, plant, bearbeitet Baustellen und Mitarbeiter.",
   teamleiter: "Bearbeitet alles rund um Baustellen und Mitarbeiter, plant sein Team.",
   projektleiter: "Führt seine Projekte: legt Baustellen an, lädt Leute ein, sieht deren Einsätze dort.",
-  koordinator: "Ändert Team und Planung, Baustellen nur ansehen.",
+  koordinator: "Auf Ebene von Team- und Projektleiter: ändert Team und Planung seiner Leute, Baustellen nur ansehen.",
   bauleiter: "Darf in seinen Baustellen alles; Planung und Team nur ansehen.",
   monteur: "Sieht seine Baustellen und die Planung, macht Fotos, meldet Mängel, Regie.",
   lehrling: "Wie Monteur: Baustellen und Planung sehen, Fotos und Mängel.",
@@ -69,7 +69,7 @@ export const RIGHTS: Record<Rolle, Rights> = {
   bereichsleiter: /* */ R(true, true, true, true, true, true, false, true, false),
   teamleiter: /*     */ R(true, true, true, true, true, true, false, true, false),
   projektleiter: /*  */ R(false, true, true, false, true, false, false, true, false),
-  koordinator: /*    */ R(true, false, false, true, true, true, false, true, true),
+  koordinator: /*    */ R(true, false, false, true, true, true, false, true, false),
   bauleiter: /*      */ R(false, false, true, false, true, false, false, true, false),
   monteur: /*        */ R(false, false, false, false, false, false, false, true, false),
   lehrling: /*       */ R(false, false, false, false, false, false, false, true, false),
@@ -161,7 +161,7 @@ export function peopleScope(data: Data): Set<string> | null {
   const ids = subtree(data, root);
   if (!FIELD_ROLES.includes(r)) for (const id of projectPeople(data, me.id)) ids.add(id);
   // nothing set up yet in the organisation chart: show everybody rather than an empty board
-  return ids.size > 1 ? ids : null;
+  return data.employees.some((e) => e.managerId) ? ids : null;
 }
 
 /** Roles someone may hand out: the admin all, others only below the management. */
