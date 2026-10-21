@@ -2045,3 +2045,150 @@ section.v-card {
     order: -1;
   }
 }
+
+/* ---------------------------------------------------------------- compact Gantt (site plan) */
+.v-legacy .site-gantt .pl-row {
+  min-height: 26px !important;
+}
+.v-legacy .site-gantt .sg-cols {
+  display: none !important;
+}
+.v-legacy .site-gantt .sg-corner {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 8px !important;
+}
+.v-legacy .site-gantt .sg-addgroup {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.v-legacy .site-gantt .sg-addgroup input {
+  display: block !important;
+  flex: 1 1 100%;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.v-legacy .site-gantt .sg-addgroup .btn {
+  height: 24px;
+  padding: 0 7px;
+  font-size: 11.5px;
+}
+.v-legacy .site-gantt .sg-left {
+  padding: 0 8px !important;
+}
+.v-legacy .site-gantt .sg-name {
+  gap: 6px;
+  font-size: 12.5px;
+}
+.v-legacy .site-gantt .sg-name .avatar {
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 8.5px !important;
+}
+.v-legacy .site-gantt .sg-grp-left strong {
+  font-size: 11.5px;
+}
+.v-legacy .site-gantt .pl-head,
+.v-legacy .site-gantt .pl-head * {
+  font-size: 11px;
+}
+.v-legacy .sg-bar,
+.v-legacy .site-gantt [class*="bar"] {
+  font-size: 11.5px;
+}
+
+/* ---------------------------------------------------------------- compact week planning */
+.v-wk {
+  --wk-name: 160px;
+  --wk-half: 26px;
+  min-width: 0 !important;
+}
+.v-wk.two {
+  --wk-half: 22px;
+}
+.v-wk-day {
+  padding: 7px 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.v-wk-day.mon,
+.v-wk-cell.mon {
+  border-left-color: #c9d0dc;
+}
+.v-wk-name {
+  padding: 4px 10px;
+}
+.v-wk-name .v-face {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 8.5px !important;
+}
+.v-wk-name span {
+  font-size: 13px;
+}
+.v-wk-cell {
+  min-height: 38px;
+  padding: 2px 6px;
+  font-size: 11.5px;
+}
+.v-wk-cell.job,
+.v-wk-cell.away {
+  margin: 3px 2px;
+  border-radius: 2px;
+}
+.v-wk-cell.job {
+  border-left-width: 3px;
+}
+.v-wk-cell.job b {
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.v-wk-cell.away {
+  font-size: 11.5px;
+}
+.v-wk-cell.holiday {
+  font-size: 10.5px;
+}
+.v-week-nav {
+  gap: 8px;
+}
+.v-legacy .sg-grp-left small {
+  white-space: nowrap;
+}
+.v-legacy .sg-toolbar input,
+.v-legacy .sg-toolbar select {
+  height: 34px !important;
+  min-height: 0 !important;
+  font-size: 13px !important;
+}
+@media (max-width: 900px) {
+  .v-wk {
+    --wk-name: 104px;
+    --wk-half: 26px;
+  }
+  .v-wk.two {
+    --wk-half: 24px;
+  }
+}
+.v-wk-cell.job,
+.v-wk-cell.away {
+  min-height: 32px;
+}
+.v-wk-cell.holiday {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .v-wk-day {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    font-size: 11px;
+    overflow: hidden;
+  }
+}

@@ -8,10 +8,10 @@ import type { ISODate } from "@/lib/types";
 /** Shared time axis for the site plan: zoom levels, header rows and the day grid. */
 
 const ZOOMS = {
-  tag: { label: "Tag", dw: 56, days: 28, step: 7 },
-  woche: { label: "Woche", dw: 30, days: 56, step: 14 },
-  monat: { label: "Monat", dw: 15, days: 112, step: 28 },
-  quartal: { label: "Quartal", dw: 7, days: 196, step: 56 }
+  tag: { label: "Tag", dw: 40, days: 35, step: 7 },
+  woche: { label: "Woche", dw: 22, days: 70, step: 14 },
+  monat: { label: "Monat", dw: 10, days: 140, step: 28 },
+  quartal: { label: "Quartal", dw: 5, days: 252, step: 56 }
 } as const;
 type Zoom = keyof typeof ZOOMS;
 

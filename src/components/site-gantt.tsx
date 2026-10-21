@@ -48,7 +48,7 @@ export function textOn(hex: string) {
 }
 
 /** One lane = one grid row; bars fill it completely. */
-const LANE = 30;
+const LANE = 24;
 const GROUP_H = 28;
 const NEW_COLOR = "#2e75b6";
 
@@ -94,9 +94,9 @@ export function SiteGantt({ project }: { project: Project }) {
   const [details, setDetails] = useState<{ job: Partial<Job>; x: number; y: number } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const longPress = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
-  const [nameW, setNameW] = useState(400);
+  const [nameW, setNameW] = useState(190);
   useEffect(() => {
-    const fit = () => setNameW(window.innerWidth < 640 ? 132 : window.innerWidth < 1100 ? 230 : 400);
+    const fit = () => setNameW(window.innerWidth < 640 ? 120 : 190);
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
