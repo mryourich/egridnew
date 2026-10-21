@@ -1,40 +1,39 @@
 import { holidayName, inRange, today } from "@/lib/date";
-import { currentUser, roleOf } from "@/lib/store";
-import type { AccessRole, Absence, Data, Employee, Job, Project } from "@/lib/types";
+import { isField, peopleScope, rightsOf } from "@/lib/roles";
+import { currentUser } from "@/lib/store";
+import type { Absence, Data, Job, Project } from "@/lib/types";
 
-/** Four roles a small company understands. */
-export type Simple = "chef" | "buero" | "bauleiter" | "monteur";
-
-export function simpleRole(e: Employee | undefined): Simple {
-  const r = roleOf(e);
-  if (r === "admin") return "chef";
-  if (r === "buero") return "buero";
-  if (r === "monteur") return "monteur";
-  return "bauleiter";
-}
-
-export const SIMPLE_LABEL: Record<Simple, string> = { chef: "Chef", buero: "Büro", bauleiter: "Bauleiter", monteur: "Monteur" };
-export const SIMPLE_ACCESS: Record<Simple, AccessRole> = { chef: "admin", buero: "buero", bauleiter: "bl", monteur: "monteur" };
+export { ROLLE_INFO, ROLLE_LABEL, ROLLEN, rolleOf, type Rolle } from "@/lib/roles";
 
 export function me(data: Data) {
   return currentUser(data);
 }
 
-/** Everybody but the workers plans, manages sites and the team. */
-export function canPlan(data: Data) {
-  return simpleRole(me(data)) !== "monteur";
-}
+/** Changes the planning boards. */
+export const canPlan = (data: Data) => rightsOf(data).plan;
+/** Creates new sites. */
+export const canCreateSites = (data: Data) => rightsOf(data).createSites;
+/** Changes everything inside the sites they see. */
+export const canEditSites = (data: Data) => rightsOf(data).editSites;
+/** Sees the team menu. */
+export const seesTeam = (data: Data) => rightsOf(data).teamView;
+/** Changes people, roles and absences. */
+export const canEditTeam = (data: Data) => rightsOf(data).team;
+/** Company settings and licence. */
+export const canSettings = (data: Data) => rightsOf(data).settings;
+/** Workers on site (Monteur, Lehrling, Extern). */
+export { isField };
 
-/** Workers only remove nothing; the office keeps everything. */
+/** Deleting belongs to those who manage something; workers and the management only add or look. */
 export function canRemove(data: Data) {
-  const r = simpleRole(me(data));
-  return r === "chef" || r === "bauleiter";
+  const r = rightsOf(data);
+  return r.editSites || r.plan || r.team;
 }
 
-/** Sites someone sees: the office and leaders all, workers those they belong to or are planned on. */
+/** Sites someone sees: management all, everybody else those they belong to or are planned on. */
 export function visibleSites(data: Data, withDone = false) {
   const user = me(data);
-  const all = simpleRole(user) !== "monteur";
+  const all = rightsOf(data).allSites;
   return data.projects
     .filter((p) => withDone || p.status !== "abgeschlossen")
     .filter((p) => all || p.createdBy === user?.id || p.members.includes(user?.id ?? "") || data.jobs.some((j) => j.projectId === p.id && j.employeeId === user?.id))
@@ -43,6 +42,12 @@ export function visibleSites(data: Data, withDone = false) {
 
 export function activePeople(data: Data) {
   return data.employees.filter((e) => e.active).sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+/** The people someone sees in planning and team – their part of the organisation chart. */
+export function scopedPeople(data: Data) {
+  const scope = peopleScope(data);
+  return activePeople(data).filter((e) => !scope || scope.has(e.id));
 }
 
 export type Slot = { kind: "job"; job: Job; project?: Project } | { kind: "absence"; absence: Absence } | { kind: "holiday"; name: string } | { kind: "free" };

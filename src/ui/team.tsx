@@ -5,11 +5,11 @@ import { useState, type CSSProperties } from "react";
 import { addDays, fmt, holidayName, isWeekend, monthLabel, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import { uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Employee } from "@/lib/types";
-import { ABSENCE, activePeople, canPlan, canRemove, dayText, SIMPLE_ACCESS, SIMPLE_LABEL, simpleRole, type Simple } from "./access";
+import { assignableRoles, subtree } from "@/lib/roles";
+import { ABSENCE, activePeople, canEditTeam, canRemove, dayText, ROLLE_INFO, ROLLE_LABEL, ROLLEN, rolleOf, scopedPeople, type Rolle } from "./access";
 import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
-type Tab = "leute" | "abwesend";
-const ROLE_FILTER: (Simple | "alle")[] = ["alle", "monteur", "bauleiter", "buero", "chef"];
+type Tab = "leute" | "org" | "abwesend";
 const ABS_KEYS: AbsenceType[] = ["urlaub", "za", "krank", "schulung"];
 const ABS_SHORT: Record<string, string> = { urlaub: "U", za: "ZA", krank: "K", schulung: "S", sonstiges: "–" };
 
@@ -20,16 +20,17 @@ export function Team() {
   const [person, setPerson] = useState<Partial<Employee> | null>(null);
   const [away, setAway] = useState<Partial<Absence> | null>(null);
   const [query, setQuery] = useState("");
-  const [role, setRole] = useState<Simple | "alle">("alle");
-  const planner = canPlan(data);
+  const [role, setRole] = useState<Rolle | "alle">("alle");
+  const planner = canEditTeam(data);
   const t = today();
-  const people = activePeople(data);
+  const people = scopedPeople(data);
   const q = query.trim().toLowerCase();
   const shown = people
-    .filter((e) => (role === "alle" || simpleRole(e) === role) && (!q || [e.name, e.role, e.phone, e.email, e.team].join(" ").toLowerCase().includes(q)))
+    .filter((e) => (role === "alle" || rolleOf(e) === role) && (!q || [e.name, e.role, e.phone, e.email, e.team].join(" ").toLowerCase().includes(q)))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
   const awayToday = data.absences.filter((a) => a.start <= t && a.end >= t && people.some((e) => e.id === a.employeeId)).length;
-  const count = (r: Simple | "alle") => (r === "alle" ? people.length : people.filter((e) => simpleRole(e) === r).length);
+  const count = (r: Rolle | "alle") => (r === "alle" ? people.length : people.filter((e) => rolleOf(e) === r).length);
+  const roleFilter: (Rolle | "alle")[] = ["alle", ...ROLLEN.filter((r) => count(r) > 0)];
 
   return (
     <div className="v-page">
@@ -51,6 +52,9 @@ export function Team() {
           <button type="button" className={tab === "leute" ? "on" : ""} onClick={() => setTab("leute")}>
             Mitarbeiter
           </button>
+          <button type="button" className={tab === "org" ? "on" : ""} onClick={() => setTab("org")}>
+            Organigramm
+          </button>
           <button type="button" className={tab === "abwesend" ? "on" : ""} onClick={() => setTab("abwesend")}>
             Abwesenheiten
           </button>
@@ -60,9 +64,9 @@ export function Team() {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name, Rolle, Telefon …" aria-label="Suchen" />
         </label>
         <div className="v-chips">
-          {ROLE_FILTER.map((r) => (
+          {roleFilter.map((r) => (
             <button key={r} type="button" className={role === r ? "on" : ""} onClick={() => setRole(r)}>
-              {r === "alle" ? "Alle" : SIMPLE_LABEL[r]} <small>{count(r)}</small>
+              {r === "alle" ? "Alle" : ROLLE_LABEL[r]} <small>{count(r)}</small>
             </button>
           ))}
         </div>
@@ -78,6 +82,7 @@ export function Team() {
                 <tr>
                   <th>Name</th>
                   <th>Rolle</th>
+                  <th className="hide-sm">Vorgesetzt</th>
                   <th className="hide-sm">Telefon</th>
                   <th>Heute</th>
                 </tr>
@@ -93,13 +98,14 @@ export function Team() {
                           <Face id={e.id} size={28} />
                           <span>
                             <strong>{e.name}</strong>
-                            {e.role && e.role !== SIMPLE_LABEL[simpleRole(e)] && <small>{e.role}</small>}
+                            {e.role && e.role !== ROLLE_LABEL[rolleOf(e)] && <small>{e.role}</small>}
                           </span>
                         </span>
                       </td>
                       <td>
-                        <span className={`v-role r-${simpleRole(e)}`}>{SIMPLE_LABEL[simpleRole(e)]}</span>
+                        <span className={`v-role r-${rolleOf(e)}`}>{ROLLE_LABEL[rolleOf(e)]}</span>
                       </td>
+                      <td className="hide-sm muted-ink">{data.employees.find((x) => x.id === e.managerId)?.name ?? "–"}</td>
                       <td className="hide-sm">
                         {e.phone ? (
                           <a href={`tel:${e.phone.replace(/\s/g, "")}`} onClick={(ev) => ev.stopPropagation()} className="v-team-phone">
@@ -117,12 +123,69 @@ export function Team() {
             </table>
           </div>
         )
+      ) : tab === "org" ? (
+        <OrgChart people={people} highlight={q || role !== "alle" ? new Set(shown.map((e) => e.id)) : null} onOpen={(e) => planner && setPerson(e)} />
       ) : (
         <AbsenceCalendar people={shown} onPick={(a) => planner && setAway(a)} />
       )}
 
       {person && <PersonSheet person={person} onClose={() => setPerson(null)} />}
       {away && <AbsenceSheet absence={away} onClose={() => setAway(null)} />}
+    </div>
+  );
+}
+
+/** Organisation chart: who leads whom – it decides what everybody sees in planning and team. */
+function OrgChart({ people, highlight, onOpen }: { people: Employee[]; highlight: Set<string> | null; onOpen: (e: Employee) => void }) {
+  const ids = new Set(people.map((e) => e.id));
+  const byRole = (a: Employee, b: Employee) => ROLLEN.indexOf(rolleOf(a)) - ROLLEN.indexOf(rolleOf(b)) || a.name.localeCompare(b.name, "de");
+  const kids = (id: string) => people.filter((e) => e.managerId === id).sort(byRole);
+  const roots = people.filter((e) => !e.managerId || !ids.has(e.managerId)).sort(byRole);
+  const leads = (list: Employee[]) => list.filter((c) => kids(c.id).length > 0);
+  const leaves = (list: Employee[]) => list.filter((c) => kids(c.id).length === 0);
+  const node = (e: Employee): React.ReactNode => {
+    const k = kids(e.id);
+    return (
+      <li key={e.id}>
+        <button type="button" className={`v-org-card r-${rolleOf(e)} ${highlight && !highlight.has(e.id) ? "dim" : ""}`} onClick={() => onOpen(e)}>
+          <Face id={e.id} size={30} />
+          <span>
+            <strong>{e.name}</strong>
+            <small>{ROLLE_LABEL[rolleOf(e)]}</small>
+          </span>
+          {k.length > 0 && <em>{k.length}</em>}
+        </button>
+        {/* a crew without own leaders stacks vertically – keeps big teams narrow */}
+        {k.length > 0 && leads(k).length === 0 && <ul className="stack">{k.map(node)}</ul>}
+        {leads(k).length > 0 && (
+          <ul>
+            {leaves(k).length > 0 && (
+              <li className="leafs">
+                <ul className="stack inline">{leaves(k).map(node)}</ul>
+              </li>
+            )}
+            {leads(k).map(node)}
+          </ul>
+        )}
+      </li>
+    );
+  };
+  return (
+    <div className="v-panel v-org">
+      <p className="v-org-hint">
+        Wer wen führt, legst du beim Mitarbeiter unter „Vorgesetzt“ fest. Leiter sehen in Planung und Team sich und alle unter sich, Monteure ihr Team.
+      </p>
+      <div
+        className="v-org-scroll"
+        ref={(el) => {
+          if (el && !el.dataset.centred) {
+            el.dataset.centred = "1";
+            el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+          }
+        }}
+      >
+        <ul className="v-org-tree">{roots.map(node)}</ul>
+      </div>
     </div>
   );
 }
@@ -239,7 +302,12 @@ function PersonSheet({ person, onClose }: { person: Partial<Employee>; onClose: 
   const { data, save, notify } = useStore();
   const isNew = !person.id;
   const [name, setName] = useState(person.name ?? "");
-  const [role, setRole] = useState<Simple>(isNew ? "monteur" : simpleRole(person as Employee));
+  const [role, setRole] = useState<Rolle>(isNew ? "monteur" : rolleOf(person as Employee));
+  const [managerId, setManagerId] = useState(person.managerId ?? (isNew ? data.currentUserId : ""));
+  const allowed = assignableRoles(data);
+  // nobody can report to themselves or to someone below them
+  const below = person.id ? subtree(data, person.id) : new Set<string>();
+  const bosses = activePeople(data).filter((e) => !below.has(e.id) && !["monteur", "lehrling", "extern"].includes(rolleOf(e)));
   const [phone, setPhone] = useState(person.phone ?? "");
   const [email, setEmail] = useState(person.email ?? "");
 
@@ -248,7 +316,7 @@ function PersonSheet({ person, onClose }: { person: Partial<Employee>; onClose: 
     const base: Employee = isNew
       ? { id: uid("e"), name: "", role: "", department: "", team: "", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
       : (person as Employee);
-    const item: Employee = { ...base, name: name.trim(), access: SIMPLE_ACCESS[role], role: base.role && !isNew && simpleRole(base) === role ? base.role : SIMPLE_LABEL[role], phone: phone.trim(), email: email.trim() };
+    const item: Employee = { ...base, name: name.trim(), rolle: role, managerId, role: base.role && !isNew && rolleOf(base) === role ? base.role : ROLLE_LABEL[role], phone: phone.trim(), email: email.trim() };
     save("employees", item, isNew ? `${item.name} angelegt` : `${item.name} geändert`);
     notify(isNew ? `${item.name} ist im Team` : "Gespeichert");
     onClose();
@@ -260,7 +328,7 @@ function PersonSheet({ person, onClose }: { person: Partial<Employee>; onClose: 
       onClose={onClose}
       footer={
         <>
-          {!isNew && canRemove(data) && person.id !== data.currentUserId && (
+          {!isNew && canEditTeam(data) && person.id !== data.currentUserId && (
             <button
               type="button"
               className="v-btn ghost danger"
@@ -286,14 +354,24 @@ function PersonSheet({ person, onClose }: { person: Partial<Employee>; onClose: 
       <Field label="Name">
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Vor- und Nachname" />
       </Field>
-      <Field label="Rolle" hint={role === "monteur" ? "Monteure sehen ihre Einteilung und Baustellen und sind kostenlos." : role === "buero" ? "Das Büro sieht alles, plant und gibt Regiescheine frei." : undefined}>
+      <Field label="Rolle" hint={ROLLE_INFO[role]}>
         <div className="v-switch small wrap">
-          {(["monteur", "bauleiter", "buero", "chef"] as Simple[]).map((r) => (
-            <button key={r} type="button" className={role === r ? "on" : ""} onClick={() => setRole(r)}>
-              {SIMPLE_LABEL[r]}
+          {ROLLEN.filter((r) => allowed.includes(r) || r === role).map((r) => (
+            <button key={r} type="button" className={role === r ? "on" : ""} onClick={() => setRole(r)} disabled={!allowed.includes(r)}>
+              {ROLLE_LABEL[r]}
             </button>
           ))}
         </div>
+      </Field>
+      <Field label="Vorgesetzt" hint="Bestimmt den Platz im Organigramm – und damit, wer diese Person in Planung und Team sieht.">
+        <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+          <option value="">– niemand (ganz oben) –</option>
+          {bosses.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name} · {ROLLE_LABEL[rolleOf(e)]}
+            </option>
+          ))}
+        </select>
       </Field>
       <div className="v-row2">
         <Field label="Telefon">

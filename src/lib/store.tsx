@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { rightsOf, rolleOf } from "./roles";
 import { createEmpty, createSeed, DATA_VERSION, SEED_VERSION } from "./seed";
 import type { AccessRole, Company, CollectionKey, Data, Item, Project } from "./types";
 
@@ -38,6 +39,7 @@ export function fmtStamp(ts: string | undefined) {
 
 /** Material status may only be changed by site and project management. */
 export function canSetMaterialStatus(data: Data) {
+  if (rightsOf(data).editSites) return true;
   const r = roleOf(currentUser(data));
   return r === "bl" || r === "pl";
 }
@@ -83,7 +85,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [data]);
 
-  const notify = useCallback((text: string) => {
+  // a "view only" hint stays visible – success messages right after it would be misleading
+  const hold = useRef(0);
+  const notify = useCallback((text: string, sticky = false) => {
+    if (!sticky && Date.now() < hold.current) return;
+    if (sticky) hold.current = Date.now() + 1500;
     setToast(text);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2600);
@@ -92,7 +98,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const withActivity = (d: Data, text: string | undefined, projectId: string) =>
     text ? [{ id: uid("ac"), at: nowStamp(), by: d.currentUserId, text, projectId }, ...d.activity].slice(0, 1000) : d.activity;
 
+  // Geschäftsführung looks at everything but changes nothing (own notes aside)
+  const dataRef = useRef<Data | null>(null);
+  dataRef.current = data;
+  const readOnly = useCallback(
+    (key: string) => {
+      const d = dataRef.current;
+      if (!d || key === "notes" || rolleOf(currentUser(d)) !== "gf") return false;
+      notify("Geschäftsführung: nur Ansicht – ändern können Admin und Leitung.", true);
+      return true;
+    },
+    [notify]
+  );
+
   const save = useCallback(<K extends CollectionKey>(key: K, item: Item<K>, activity?: string) => {
+    if (readOnly(key)) return;
     setData((d) => {
       if (!d) return d;
       const list = d[key] as Item<K>[];
@@ -123,9 +143,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const projectId = "projectId" in item ? String(item.projectId) : key === "projects" ? item.id : "";
       return { ...d, [key]: next, activity: withActivity(d, activity, projectId) };
     });
-  }, []);
+  }, [readOnly]);
 
   const remove = useCallback(<K extends CollectionKey>(key: K, id: string, activity?: string) => {
+    if (readOnly(key)) return;
     setData((d) => {
       if (!d) return d;
       const next: Data = { ...d, [key]: (d[key] as Item<K>[]).filter((x) => x.id !== id), activity: withActivity(d, activity, "") };
@@ -155,7 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  }, []);
+  }, [readOnly]);
 
   const value = useMemo<Store | null>(
     () =>
@@ -163,7 +184,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         data,
         save,
         remove,
-        setCompany: (company) => setData((d) => d && { ...d, company }),
+        setCompany: (company) => !readOnly("company") && setData((d) => d && { ...d, company }),
         setCurrentUser: (id) => setData((d) => d && { ...d, currentUserId: id }),
         replaceAll: (next) => setData({ ...createEmpty(), ...next, version: DATA_VERSION }),
         reset: (kind) =>
@@ -171,14 +192,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             if (kind === "empty") return createEmpty();
             // keep the viewer in the same role when switching to the demo firm
             const seed = createSeed();
-            const role = old ? roleOf(currentUser(old)) : "bl";
-            const same = seed.employees.find((e) => roleOf(e) === role);
+            const role = old ? rolleOf(currentUser(old)) : "teamleiter";
+            const same = seed.employees.find((e) => rolleOf(e) === role);
             return same ? { ...seed, currentUserId: same.id } : seed;
           }),
         notify,
         toast
       },
-    [data, save, remove, notify, toast]
+    [data, save, remove, notify, toast, readOnly]
   );
 
   if (!value) {
@@ -206,9 +227,9 @@ export function currentUser(data: Data) {
   return data.employees.find((e) => e.id === data.currentUserId) ?? data.employees[0];
 }
 
-/** Projects are private: only the creator and invited members see them. Finished ones only on request. */
+/** Projects are private: only the creator and invited members see them – unless the role sees every site. */
 export function myProjects(data: Data, userId = data.currentUserId, withDone = false) {
-  const all = seesAll(roleOf(data.employees.find((e) => e.id === userId)));
+  const all = rightsOf(data, userId).allSites;
   return data.projects.filter((p) => (withDone || p.status !== "abgeschlossen") && (all || isMember(p, userId)));
 }
 
@@ -245,21 +266,14 @@ export function roleOf(e: { role: string; access?: Role } | undefined): Role {
   return "monteur";
 }
 
-/** Workers may add and tick off, but never delete. */
+/** Only those who change sites may delete; workers add and tick off. */
 export function canDelete(data: Data) {
-  const r = roleOf(currentUser(data));
-  return r !== "monteur" && r !== "buero";
-}
-
-/** Admin and office see every project of the company. */
-export function seesAll(role: Role) {
-  return role === "admin" || role === "buero";
+  return rightsOf(data).editSites;
 }
 
 /** Who may release Regieberichte (and later hours). */
 export function canRelease(data: Data) {
-  const r = roleOf(currentUser(data));
-  return r === "admin" || r === "buero" || r === "pl";
+  return rightsOf(data).editSites;
 }
 
 /** People that can be put on a site. */
@@ -269,6 +283,5 @@ export function plannable(data: Data) {
 
 /** Everybody except workers may create projects, invite people and manage the team. */
 export function isManager(data: Data) {
-  const r = roleOf(currentUser(data));
-  return r !== "monteur" && r !== "buero";
+  return rightsOf(data).editSites;
 }

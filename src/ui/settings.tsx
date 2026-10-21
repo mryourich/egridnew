@@ -5,7 +5,8 @@ import { useRef, useState } from "react";
 import { today } from "@/lib/date";
 import { useStore } from "@/lib/store";
 import type { Data } from "@/lib/types";
-import { activePeople, canPlan, simpleRole } from "./access";
+import { FIELD_ROLES } from "@/lib/roles";
+import { activePeople, canSettings, rolleOf } from "./access";
 import { Field, PageHead } from "./kit";
 
 /** Company, licence and the data on this device. */
@@ -14,13 +15,13 @@ export function Settings() {
   const [name, setName] = useState(data.company.name);
   const [address, setAddress] = useState(data.company.address);
   const input = useRef<HTMLInputElement>(null);
-  const planner = canPlan(data);
+  const planner = canSettings(data);
   const people = activePeople(data);
-  const workers = people.filter((e) => simpleRole(e) === "monteur").length;
+  const workers = people.filter((e) => FIELD_ROLES.includes(rolleOf(e))).length;
 
   return (
     <div className="v-page narrow">
-      <PageHead title="Einstellungen" />
+      <PageHead title="Einstellungen" sub={planner ? undefined : "Nur der Admin ändert die Einstellungen."} />
 
       <section className="v-card v-pad-card">
         <h2 className="v-card-title">Firma</h2>
@@ -49,7 +50,7 @@ export function Settings() {
         <p className="v-license">
           <strong>Firmenlizenz – ein Fixpreis</strong>
           <span>
-            {people.length - workers} Zugänge für Chef, Büro und Bauleitung · <b>{workers} Monteure kostenlos</b>
+            {people.length - workers} Zugänge für Leitung, Koordination und Bauleitung · <b>{workers} Monteure, Lehrlinge und Externe kostenlos</b>
           </span>
         </p>
       </section>

@@ -9,7 +9,7 @@ import { Gantt } from "@/ui/gantt";
 import { DefectsSection, ReportsSection } from "@/components/site-sections";
 import { SiteStructure } from "@/components/structure";
 import { useStore } from "@/lib/store";
-import { canPlan } from "@/ui/access";
+import { isField } from "@/ui/access";
 import { Regie } from "@/ui/regie";
 
 function Tab() {
@@ -17,7 +17,7 @@ function Tab() {
   const { data } = useStore();
   const project = data.projects.find((p) => p.id === id);
   if (!project) return null;
-  const office = canPlan(data);
+  const office = !isField(data);
   switch (section) {
     case "plan":
       return office ? <Gantt scope={{ kind: "site", project }} /> : <SiteStructure project={project} />;

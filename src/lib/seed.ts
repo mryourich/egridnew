@@ -1,3 +1,4 @@
+import { rolleOf } from "./roles";
 import { addDays, startOfWeek, today } from "./date";
 import type { Data, SiteNode } from "./types";
 
@@ -9,7 +10,7 @@ function demoPhoto(label: string, hue: number) {
 
 export const DATA_VERSION = 6;
 /** Bump when the demo firm changes – browsers with an older demo get the new one on load. */
-export const SEED_VERSION = 10;
+export const SEED_VERSION = 11;
 
 /** Starting folders of the general document store. */
 export function generalFolders() {
@@ -29,7 +30,7 @@ export function createEmpty(): Data {
     company: { tenantId: "firma", name: "Meine Firma", address: "", workdays: [1, 2, 3, 4, 5] },
     projects: [],
     employees: [
-      { id: "bl", name: "Bauleitung", role: "Bauleitung", access: "bl", department: "Bauleitung", team: "Bauleitung", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
+      { id: "bl", name: "Admin", role: "Admin", rolle: "admin", access: "admin", department: "Leitung", team: "Leitung", phone: "", email: "", hourlyRate: 0, qualifications: [], active: true }
     ],
     absences: [],
     issues: [],
@@ -71,7 +72,7 @@ export function createSeed(): Data {
   const seed: Data = {
     version: DATA_VERSION,
     seedVersion: SEED_VERSION,
-    currentUserId: "e2",
+    currentUserId: "e1",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
       { id: "p1", image: "/demo/band.jpg", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e9", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17"] },
@@ -80,23 +81,23 @@ export function createSeed(): Data {
       { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", description: "Neubau NS-Hauptverteilung inkl. Kompensation.", createdBy: "e10", members: ["e9", "e3", "e4"] }
     ],
     employees: [
-      { id: "e1", name: "Mario Juric", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
-      { id: "e2", name: "Anna Berger", role: "Bauleiterin", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
-      { id: "e3", name: "Lukas Hofer", role: "Elektrotechniker", department: "Montage", team: "Montage A", phone: "+43 660 3456789", email: "lukas@example.at", hourlyRate: 52, qualifications: [{ name: "Hochvolt", validUntil: d(12) }], active: true },
-      { id: "e4", name: "Stefan Maier", role: "Monteur", department: "Montage", team: "Montage A", phone: "+43 660 4567890", email: "stefan@example.at", hourlyRate: 45, qualifications: [{ name: "Staplerschein", validUntil: d(400) }], active: true },
-      { id: "e5", name: "Julia Wimmer", role: "Elektrotechnikerin", department: "Montage", team: "Montage B", phone: "+43 660 5678901", email: "julia@example.at", hourlyRate: 52, qualifications: [{ name: "Hubarbeitsbühne", validUntil: d(-5) }], active: true },
-      { id: "e6", name: "Thomas Gruber", role: "Monteur", department: "Montage", team: "Montage B", phone: "+43 660 6789012", email: "thomas@example.at", hourlyRate: 45, qualifications: [], active: true },
-      { id: "e7", name: "Daniel Huber", role: "Lehrling", department: "Montage", team: "Montage B", phone: "+43 660 7890123", email: "daniel@example.at", hourlyRate: 22, qualifications: [], active: true },
-      { id: "e8", name: "Sabine Leitner", role: "Kabelzieherin", department: "Montage", team: "Montage A", phone: "+43 660 8901234", email: "sabine@example.at", hourlyRate: 44, qualifications: [{ name: "Erste Hilfe", validUntil: d(90) }], active: true },
-      { id: "e10", name: "Markus Brandl", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
-      { id: "e11", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
-      { id: "e12", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
-      { id: "e13", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
-      { id: "e9", name: "Petra Koller", role: "Projektleiterin", access: "pl", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
-      { id: "e17", name: "Thomas Ebner", role: "Montagekoordinator", access: "mk", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
-      { id: "e18", name: "Claudia Fink", role: "Büro / Lohnverrechnung", access: "buero", department: "Büro", team: "Büro", phone: "+43 660 7788990", email: "claudia@example.at", hourlyRate: 0, qualifications: [], active: true },
-      { id: "e19", name: "Gerhard Lindner", role: "Geschäftsführer", access: "admin", department: "Geschäftsführung", team: "Geschäftsführung", phone: "+43 660 9900112", email: "gerhard@example.at", hourlyRate: 0, qualifications: [], active: true },
-      { id: "e14", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
+      { id: "e1", rolle: "teamleiter", managerId: "e9", name: "Mario Juric", role: "Teamleiter Elektro", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
+      { id: "e2", rolle: "bauleiter", managerId: "e1", name: "Anna Berger", role: "Bauleiterin", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 2345678", email: "anna@example.at", hourlyRate: 72, qualifications: [{ name: "SCC**", validUntil: d(20) }, { name: "Erste Hilfe", validUntil: d(180) }], active: true },
+      { id: "e3", rolle: "monteur", managerId: "e2", name: "Lukas Hofer", role: "Elektrotechniker", department: "Montage", team: "Montage A", phone: "+43 660 3456789", email: "lukas@example.at", hourlyRate: 52, qualifications: [{ name: "Hochvolt", validUntil: d(12) }], active: true },
+      { id: "e4", rolle: "monteur", managerId: "e2", name: "Stefan Maier", role: "Monteur", department: "Montage", team: "Montage A", phone: "+43 660 4567890", email: "stefan@example.at", hourlyRate: 45, qualifications: [{ name: "Staplerschein", validUntil: d(400) }], active: true },
+      { id: "e5", rolle: "monteur", managerId: "e10", name: "Julia Wimmer", role: "Elektrotechnikerin", department: "Montage", team: "Montage B", phone: "+43 660 5678901", email: "julia@example.at", hourlyRate: 52, qualifications: [{ name: "Hubarbeitsbühne", validUntil: d(-5) }], active: true },
+      { id: "e6", rolle: "monteur", managerId: "e10", name: "Thomas Gruber", role: "Monteur", department: "Montage", team: "Montage B", phone: "+43 660 6789012", email: "thomas@example.at", hourlyRate: 45, qualifications: [], active: true },
+      { id: "e7", rolle: "lehrling", managerId: "e10", name: "Daniel Huber", role: "Lehrling", department: "Montage", team: "Montage B", phone: "+43 660 7890123", email: "daniel@example.at", hourlyRate: 22, qualifications: [], active: true },
+      { id: "e8", rolle: "monteur", managerId: "e2", name: "Sabine Leitner", role: "Kabelzieherin", department: "Montage", team: "Montage A", phone: "+43 660 8901234", email: "sabine@example.at", hourlyRate: 44, qualifications: [{ name: "Erste Hilfe", validUntil: d(90) }], active: true },
+      { id: "e10", rolle: "bauleiter", managerId: "e1", name: "Markus Brandl", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
+      { id: "e11", rolle: "monteur", managerId: "e1", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
+      { id: "e12", rolle: "monteur", managerId: "e1", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
+      { id: "e13", rolle: "extern", managerId: "e1", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
+      { id: "e9", rolle: "bereichsleiter", managerId: "e19", name: "Petra Koller", role: "Bereichsleiterin Elektro", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
+      { id: "e17", rolle: "koordinator", managerId: "e9", name: "Thomas Ebner", role: "Montagekoordinator", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
+      { id: "e18", rolle: "admin", managerId: "e19", name: "Claudia Fink", role: "Büro / Administration", department: "Büro", team: "Büro", phone: "+43 660 7788990", email: "claudia@example.at", hourlyRate: 0, qualifications: [], active: true },
+      { id: "e19", rolle: "gf", managerId: "", name: "Gerhard Lindner", role: "Geschäftsführer", department: "Geschäftsführung", team: "Geschäftsführung", phone: "+43 660 9900112", email: "gerhard@example.at", hourlyRate: 0, qualifications: [], active: true },
+      { id: "e14", rolle: "extern", managerId: "e1", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     absences: [
       { id: "ab1", employeeId: "e3", type: "schulung", start: d(10), end: d(11), note: "Hochvolt Auffrischung" },
@@ -262,7 +263,7 @@ function withDemoTrail(data: Data): Data {
   const work = ["Kabeltrasse montiert", "Kabelzug", "Leuchten gesetzt", "Verteiler verdrahtet", "Befestigungen geprüft", "Durchbrüche abgedichtet", "Beschriftung", "Messung und Prüfprotokoll"];
   let tn = 0;
   for (const p of data.projects) {
-    const crew = [p.createdBy, ...p.members].map((id) => data.employees.find((e) => e.id === id)).filter((e) => e && !e.access && !/subunternehm|bauleit|projektleit|koordinat/i.test(e.role));
+    const crew = [p.createdBy, ...p.members].map((id) => data.employees.find((e) => e.id === id)).filter((e) => e && (rolleOf(e) === "monteur" || rolleOf(e) === "lehrling"));
     for (let back = 14; back >= 1; back--) {
       const date = next(todayIso, -back);
       const wd = new Date(`${date}T12:00:00`).getDay();
