@@ -2192,3 +2192,38 @@ section.v-card {
     overflow: hidden;
   }
 }
+
+/* ---------------------------------------------------------------- company plan (Gantt) */
+.v-plan .v-plan-search {
+  height: 34px;
+  width: 180px;
+  padding: 0 10px;
+  border: 1px solid var(--line, #d5dbe5);
+  border-radius: 3px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.v-plan .pl-time {
+  cursor: cell;
+}
+.v-plan .ro .pl-time,
+.v-plan .ro .sg-job,
+.v-plan .ro .sg-abs {
+  cursor: default;
+}
+.v-plan .v-plan-job span {
+  font-weight: 600;
+}
+.v-plan .sg-grp-left strong {
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .v-plan .v-plan-search {
+    width: 100%;
+    order: 10;
+  }
+  .v-plan .sg-filter {
+    flex: 1;
+  }
+}
