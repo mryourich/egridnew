@@ -5,7 +5,7 @@ import { useState, type CSSProperties } from "react";
 import { addDays, fmt, holidayName, isWeekend, monthLabel, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import { uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Employee } from "@/lib/types";
-import { assignableRoles, levelView, subtree } from "@/lib/roles";
+import { assignableRoles, levelView, rightsOf, subtree } from "@/lib/roles";
 import { ABSENCE, activePeople, canEditTeam, canRemove, dayText, ROLLE_INFO, ROLLE_LABEL, ROLLEN, rolleOf, scopedPeople, type Rolle } from "./access";
 import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
@@ -152,7 +152,23 @@ export function Team() {
 
 /** Organisation chart: who leads whom – it decides what everybody sees in planning and team. */
 function OrgChart({ people, highlight, onOpen }: { people: Employee[]; highlight: Set<string> | null; onOpen: (e: Employee) => void }) {
+  const { data, save, notify } = useStore();
+  const edit = canEditTeam(data);
+  const top = rightsOf(data).allPeople;
+  const [drag, setDrag] = useState("");
+  const [over, setOver] = useState("");
   const ids = new Set(people.map((e) => e.id));
+  // a person can go below anybody except themselves and their own people
+  const canDrop = (target: string) => !!drag && drag !== target && !subtree(data, drag).has(target) && people.find((e) => e.id === drag)?.managerId !== target;
+  const move = (target: string) => {
+    const e = data.employees.find((x) => x.id === drag);
+    setDrag("");
+    setOver("");
+    if (!e || (target && !canDrop(target))) return;
+    const boss = data.employees.find((x) => x.id === target);
+    save("employees", { ...e, managerId: target }, `${e.name} im Organigramm ${boss ? `unter ${boss.name}` : "ganz oben"}`);
+    notify(boss ? `${e.name} → unter ${boss.name}` : `${e.name} → ganz oben`);
+  };
   const byRole = (a: Employee, b: Employee) => ROLLEN.indexOf(rolleOf(a)) - ROLLEN.indexOf(rolleOf(b)) || a.name.localeCompare(b.name, "de");
   const kids = (id: string) => people.filter((e) => e.managerId === id).sort(byRole);
   const roots = people.filter((e) => !e.managerId || !ids.has(e.managerId)).sort(byRole);
@@ -162,7 +178,32 @@ function OrgChart({ people, highlight, onOpen }: { people: Employee[]; highlight
     const k = kids(e.id);
     return (
       <li key={e.id}>
-        <button type="button" className={`v-org-card r-${rolleOf(e)} ${highlight && !highlight.has(e.id) ? "dim" : ""}`} onClick={() => onOpen(e)}>
+        <button
+          type="button"
+          className={`v-org-card r-${rolleOf(e)} ${highlight && !highlight.has(e.id) ? "dim" : ""} ${drag === e.id ? "dragging" : ""} ${over === e.id ? "over" : ""}`}
+          onClick={() => onOpen(e)}
+          draggable={edit && (top || e.id !== data.currentUserId)}
+          onDragStart={(ev) => {
+            ev.dataTransfer.effectAllowed = "move";
+            ev.dataTransfer.setData("text/plain", e.name);
+            // changing the page inside dragstart cancels the drag in Chrome – mark it right after
+            setTimeout(() => setDrag(e.id));
+          }}
+          onDragEnd={() => (setDrag(""), setOver(""))}
+          onDragOver={(ev) => {
+            if (!canDrop(e.id)) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            setOver(e.id);
+          }}
+          onDragLeave={() => over === e.id && setOver("")}
+          onDrop={(ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            move(e.id);
+          }}
+          title={edit ? "Ziehen und auf eine andere Person fallen lassen = darunter einordnen" : undefined}
+        >
           <Face id={e.id} size={30} />
           <span>
             <strong>{e.name}</strong>
@@ -188,8 +229,18 @@ function OrgChart({ people, highlight, onOpen }: { people: Employee[]; highlight
   return (
     <div className="v-panel v-org">
       <p className="v-org-hint">
-        Wer wen führt, legst du beim Mitarbeiter unter „Vorgesetzt“ fest. Leiter sehen in Planung und Team sich und alle unter sich, Monteure ihr Team.
+        {edit ? "Personen mit der Maus auf eine andere Person ziehen = darunter einordnen. " : ""}Leiter sehen in Planung und Team sich und alle unter sich, Monteure ihr Team.
       </p>
+      {edit && top && drag && (
+        <div
+          className={`v-org-top ${over === "__top" ? "over" : ""}`}
+          onDragOver={(ev) => (ev.preventDefault(), setOver("__top"))}
+          onDragLeave={() => setOver("")}
+          onDrop={(ev) => (ev.preventDefault(), move(""))}
+        >
+          Hier ablegen = ganz oben (ohne Vorgesetzte)
+        </div>
+      )}
       <div
         className="v-org-scroll"
         ref={(el) => {

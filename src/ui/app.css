@@ -4025,3 +4025,28 @@ input.g-status:focus {
   max-width: 100%;
   background: #16a34a;
 }
+.v-org-card[draggable="true"] {
+  cursor: grab;
+}
+.v-org-card.dragging {
+  opacity: 0.4;
+}
+.v-org-card.over {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26, 92, 255, 0.25);
+  background: #f2f6ff;
+}
+.v-org-top {
+  margin: 10px 16px 0;
+  padding: 10px;
+  border: 2px dashed #c3cddb;
+  border-radius: 3px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+.v-org-top.over {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: #f2f6ff;
+}
