@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { addDays, fmt, fmtShort, isoWeek, startOfWeek, today, weekdayShort } from "@/lib/date";
+import { addDays, fmt, fmtShort, isoWeek, isWeekend, startOfWeek, today, weekday, weekdayShort } from "@/lib/date";
 import { uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Job } from "@/lib/types";
 import { ABSENCE, activePeople, canPlan, canRemove, sameSlot, slotOf, visibleSites, type Slot } from "./access";
@@ -19,7 +19,9 @@ export function Planning() {
   const t = today();
   const [monday, setMonday] = useState(() => startOfWeek(t));
   const [edit, setEdit] = useState<Edit | null>(null);
-  const days = [0, 1, 2, 3, 4].map((i) => addDays(monday, i));
+  const [weeks, setWeeks] = useState<1 | 2>(2);
+  // workdays only: Monday to Friday of one or two weeks
+  const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(monday, i)).filter((d) => !isWeekend(d));
   const people = activePeople(data);
   const planner = canPlan(data);
   const scroller = useRef<HTMLDivElement>(null);
@@ -43,11 +45,20 @@ export function Planning() {
     <div className="v-page">
       <PageHead title="Planung" sub={planner ? "Auf ein Feld klicken, um jemanden einzuteilen oder Urlaub und Krankenstand einzutragen." : "Wer arbeitet wann wo."}>
         <div className="v-week-nav">
+          <div className="v-seg">
+            <button type="button" className={weeks === 1 ? "on" : ""} onClick={() => setWeeks(1)}>
+              1 Woche
+            </button>
+            <button type="button" className={weeks === 2 ? "on" : ""} onClick={() => setWeeks(2)}>
+              2 Wochen
+            </button>
+          </div>
           <button type="button" className="v-icon" onClick={() => setMonday(addDays(monday, -7))} aria-label="Vorige Woche">
             <ChevronLeft size={18} />
           </button>
           <button type="button" className="v-btn" onClick={() => setMonday(startOfWeek(t))}>
             KW {isoWeek(monday)}
+            {weeks === 2 ? `–${isoWeek(addDays(monday, 7))}` : ""}
           </button>
           <button type="button" className="v-icon" onClick={() => setMonday(addDays(monday, 7))} aria-label="Nächste Woche">
             <ChevronRight size={18} />
@@ -59,10 +70,10 @@ export function Planning() {
         <Empty>Noch keine Mitarbeiter. Lege sie unter „Team“ an.</Empty>
       ) : (
         <div className="v-card v-wk-scroll" ref={scroller}>
-          <div className="v-wk">
+          <div className={`v-wk ${weeks === 2 ? "two" : ""}`} style={{ gridTemplateColumns: `var(--wk-name) repeat(${days.length * 2}, minmax(var(--wk-half), 1fr))` } as CSSProperties}>
             <div className="v-wk-corner" />
             {days.map((d) => (
-              <div key={d} className={`v-wk-day ${d === t ? "today" : ""}`}>
+              <div key={d} className={`v-wk-day ${d === t ? "today" : ""} ${weekday(d) === 1 ? "mon" : ""}`}>
                 <strong>{weekdayShort(d)}</strong> {fmtShort(d)}
               </div>
             ))}
@@ -77,7 +88,7 @@ export function Planning() {
                   const pm = slotOf(data, e.id, d, true);
                   const parts = sameSlot(am, pm) ? [{ s: am, pm: false, span: 2 }] : [{ s: am, pm: false, span: 1 }, { s: pm, pm: true, span: 1 }];
                   return parts.map(({ s, pm: isPm, span }) => (
-                    <Cell key={`${e.id}${d}${isPm}`} slot={s} span={span} half={span === 1 ? (isPm ? "NM" : "VM") : ""} today={d === t} onClick={planner ? () => open(s, e.id, d, isPm) : undefined} />
+                    <Cell key={`${e.id}${d}${isPm}`} slot={s} span={span} half={span === 1 ? (isPm ? "NM" : "VM") : ""} today={d === t} compact={weeks === 2} onClick={planner ? () => open(s, e.id, d, isPm) : undefined} />
                   ));
                 })}
               </div>
@@ -86,22 +97,22 @@ export function Planning() {
         </div>
       )}
 
-      <p className="v-hint">Ein Feld ist ein Tag. Wer nur einen halben Tag wo ist, bekommt ein halbes Feld (VM = Vormittag, NM = Nachmittag).</p>
+      <p className="v-hint">Ein Feld ist ein Tag, ein halbes Feld ein halber Tag (Vormittag / Nachmittag). Mit der Maus über einem Eintrag siehst du, was zu tun ist.</p>
 
       {edit && <PlanSheet edit={edit} onClose={() => setEdit(null)} />}
     </div>
   );
 }
 
-function Cell({ slot: s, span, half, today: isToday, onClick }: { slot: Slot; span: number; half: string; today: boolean; onClick?: () => void }) {
+function Cell({ slot: s, span, half, today: isToday, compact, onClick }: { slot: Slot; span: number; half: string; today: boolean; compact?: boolean; onClick?: () => void }) {
   const cls = `v-wk-cell span${span} ${isToday ? "today" : ""} ${onClick ? "click" : ""}`;
   if (s.kind === "job") {
     const color = s.project?.color ?? s.job.color ?? "#1a5cff";
     return (
       <button type="button" className={`${cls} job`} style={{ "--c": color } as CSSProperties} onClick={onClick} disabled={!onClick} title={`${s.project?.name ?? ""} · ${s.job.title}`}>
         <b>{s.project?.name ?? "Baustelle"}</b>
-        {s.job.title && <span>{s.job.title}</span>}
-        {half && <i>{half}</i>}
+        {s.job.title && !compact && <span>{s.job.title}</span>}
+        {half && !compact && <i>{half}</i>}
       </button>
     );
   }
