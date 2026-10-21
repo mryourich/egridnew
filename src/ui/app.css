@@ -3975,3 +3975,53 @@ input.g-status:focus {
 .v-org-tree ul.stack.inline::before {
   display: none;
 }
+
+/* ---------------------------------------------------------------- closed branch: load per day */
+.g-group-band {
+  position: relative;
+}
+.g-group-band.sum {
+  cursor: pointer;
+}
+.g-load {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  display: grid;
+  place-items: center;
+  margin-left: 1px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0f172a;
+  background: rgba(22, 163, 74, calc(0.12 + var(--r) * 0.55));
+  border-radius: 2px;
+}
+.g-load.off {
+  box-shadow: inset 0 -2px 0 #dc2626;
+}
+.v-sub {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+.v-sub.warn {
+  display: inline;
+  color: #b91c1c;
+  font-weight: 600;
+}
+.v-load-cell {
+  display: inline-block;
+  width: 60px;
+  height: 6px;
+  margin-right: 8px;
+  vertical-align: middle;
+  background: #edf0f5;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.v-load-cell i {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  background: #16a34a;
+}

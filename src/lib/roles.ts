@@ -1,7 +1,7 @@
 import type { Data, Employee } from "./types";
 
 /** Roles along the organisation chart, from the top down. */
-export const ROLLEN = ["admin", "gf", "bereichsleiter", "teamleiter", "koordinator", "bauleiter", "monteur", "lehrling", "extern"] as const;
+export const ROLLEN = ["admin", "gf", "bereichsleiter", "teamleiter", "projektleiter", "koordinator", "bauleiter", "monteur", "lehrling", "extern"] as const;
 export type Rolle = (typeof ROLLEN)[number];
 
 export const ROLLE_LABEL: Record<Rolle, string> = {
@@ -9,6 +9,7 @@ export const ROLLE_LABEL: Record<Rolle, string> = {
   gf: "Geschäftsführung",
   bereichsleiter: "Bereichsleiter",
   teamleiter: "Teamleiter",
+  projektleiter: "Projektleiter",
   koordinator: "Koordinator",
   bauleiter: "Bauleiter",
   monteur: "Monteur",
@@ -18,9 +19,10 @@ export const ROLLE_LABEL: Record<Rolle, string> = {
 
 export const ROLLE_INFO: Record<Rolle, string> = {
   admin: "Darf alles und richtet VYSNER ein – Firma, Rollen, Lizenz.",
-  gf: "Sieht alles wie der Admin, ändert aber nichts – der Überblick.",
+  gf: "Sieht seine Ebene im Detail und darunter die Zahlen – ändert nichts.",
   bereichsleiter: "Legt Baustellen an, plant, bearbeitet Baustellen und Mitarbeiter.",
   teamleiter: "Bearbeitet alles rund um Baustellen und Mitarbeiter, plant sein Team.",
+  projektleiter: "Führt seine Projekte: legt Baustellen an, lädt Leute ein, sieht deren Einsätze dort.",
   koordinator: "Ändert Team und Planung, Baustellen nur ansehen.",
   bauleiter: "Darf in seinen Baustellen alles; Planung und Team nur ansehen.",
   monteur: "Sieht seine Baustellen und die Planung, macht Fotos, meldet Mängel, Regie.",
@@ -63,9 +65,10 @@ const R = (allSites: boolean, createSites: boolean, editSites: boolean, plan: bo
 //                                    allSites create edit  plan  teamV team  sett  field allPeople
 export const RIGHTS: Record<Rolle, Rights> = {
   admin: /*          */ R(true, true, true, true, true, true, true, true, true),
-  gf: /*             */ R(true, false, false, false, true, false, false, false, true),
+  gf: /*             */ R(true, false, false, false, true, false, false, false, false),
   bereichsleiter: /* */ R(true, true, true, true, true, true, false, true, false),
   teamleiter: /*     */ R(true, true, true, true, true, true, false, true, false),
+  projektleiter: /*  */ R(false, true, true, false, true, false, false, true, false),
   koordinator: /*    */ R(true, false, false, true, true, true, false, true, true),
   bauleiter: /*      */ R(false, false, true, false, true, false, false, true, false),
   monteur: /*        */ R(false, false, false, false, false, false, false, true, false),
@@ -83,11 +86,12 @@ export function rolleOf(e: Pick<Employee, "role" | "access" | "rolle"> | undefin
   const t = (e.role ?? "").toLowerCase();
   if (e.access === "admin") return t.includes("geschäftsf") ? "gf" : "admin";
   if (e.access === "buero") return "koordinator";
-  if (e.access === "pl") return "bereichsleiter";
+  if (e.access === "pl") return t.includes("bereichsleit") ? "bereichsleiter" : "projektleiter";
   if (e.access === "mk") return "koordinator";
   if (e.access === "bl") return "bauleiter";
   if (t.includes("geschäftsf")) return "gf";
-  if (t.includes("bereichsleit") || t.includes("projektleit")) return "bereichsleiter";
+  if (t.includes("bereichsleit")) return "bereichsleiter";
+  if (t.includes("projektleit")) return "projektleiter";
   if (t.includes("teamleit")) return "teamleiter";
   if (t.includes("koordinat") || t.includes("büro")) return "koordinator";
   if (t.includes("bauleit")) return "bauleiter";
@@ -112,6 +116,40 @@ export function subtree(data: Data, id: string) {
   return out;
 }
 
+/** Sites someone leads as Projektleitung or Bauleitung. */
+export function ledSites(data: Data, id = data.currentUserId) {
+  return data.projects.filter((p) => p.status !== "abgeschlossen" && (p.managerId === id || p.siteManagerId === id || p.createdBy === id));
+}
+
+/** People working on the sites someone leads, outside their own branch – they see only those assignments. */
+export function projectPeople(data: Data, id = data.currentUserId) {
+  const mine = subtree(data, id);
+  const sites = new Set(ledSites(data, id).map((p) => p.id));
+  const out = new Set<string>();
+  for (const p of data.projects) if (sites.has(p.id)) for (const m of p.members) if (!mine.has(m)) out.add(m);
+  for (const j of data.jobs) if (sites.has(j.projectId) && !mine.has(j.employeeId)) out.add(j.employeeId);
+  return out;
+}
+
+/**
+ * Step by step: a leader sees the people directly below in detail and every branch further down
+ * as one summarised line (which can be opened). Null for roles that see everybody or only their crew.
+ */
+export function levelView(data: Data) {
+  const me = data.employees.find((e) => e.id === data.currentUserId);
+  if (!me) return null;
+  const r = rolleOf(me);
+  if (RIGHTS[r].allPeople || FIELD_ROLES.includes(r)) return null;
+  const active = data.employees.filter((e) => e.active);
+  const direct = active.filter((e) => e.managerId === me.id);
+  const extra = [...projectPeople(data, me.id)].filter((id) => active.some((e) => e.id === id));
+  if (!direct.length && !extra.length) return null;
+  const branches = direct
+    .map((head) => ({ head, members: [...subtree(data, head.id)].filter((id) => id !== head.id && active.some((e) => e.id === id)) }))
+    .filter((b) => b.members.length > 0);
+  return { me: me.id, direct: direct.map((e) => e.id), branches, extra };
+}
+
 /** Whom someone sees in planning and team: everybody, or their branch of the organisation chart. */
 export function peopleScope(data: Data): Set<string> | null {
   const me = data.employees.find((e) => e.id === data.currentUserId);
@@ -121,6 +159,7 @@ export function peopleScope(data: Data): Set<string> | null {
   // workers see their crew: their leader and everybody under that leader
   const root = FIELD_ROLES.includes(r) && me.managerId ? me.managerId : me.id;
   const ids = subtree(data, root);
+  if (!FIELD_ROLES.includes(r)) for (const id of projectPeople(data, me.id)) ids.add(id);
   // nothing set up yet in the organisation chart: show everybody rather than an empty board
   return ids.size > 1 ? ids : null;
 }
@@ -129,5 +168,5 @@ export function peopleScope(data: Data): Set<string> | null {
 export function assignableRoles(data: Data): Rolle[] {
   const r = rolleOf(data.employees.find((e) => e.id === data.currentUserId));
   if (r === "admin") return [...ROLLEN];
-  return ROLLEN.filter((x) => x !== "admin" && x !== "gf" && (r !== "teamleiter" || x !== "bereichsleiter"));
+  return ROLLEN.filter((x) => x !== "admin" && x !== "gf" && ((r !== "teamleiter" && r !== "projektleiter") || x !== "bereichsleiter"));
 }
