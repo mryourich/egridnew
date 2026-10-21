@@ -167,7 +167,7 @@ export function PlanSheet({
             className={mode === "away" ? "on" : ""}
             onClick={() => setMode("away")}
           >
-            Abwesend
+            Abwesenheit
           </button>
         </div>
       )}
