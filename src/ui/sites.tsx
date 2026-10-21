@@ -10,7 +10,7 @@ import { projectFolders } from "@/lib/seed";
 import { siteProgress } from "@/lib/site";
 import { uid, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
-import { canPlan, canRemove, dayText, me, visibleSites } from "./access";
+import { canCreateSites, canEditSites, dayText, isField, me, visibleSites } from "./access";
 import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
 export const TABS = [
@@ -32,7 +32,7 @@ export function SiteList() {
   const [showDone, setShowDone] = useState(false);
   const sites = visibleSites(data);
   const done = visibleSites(data, true).filter((p) => p.status === "abgeschlossen");
-  const planner = canPlan(data);
+  const planner = canCreateSites(data);
   const t = today();
 
   return (
@@ -180,7 +180,7 @@ export function SiteSheet({ site, onClose }: { site: Partial<Project>; onClose: 
       onClose={onClose}
       footer={
         <>
-          {!isNew && canRemove(data) && (
+          {!isNew && canEditSites(data) && (
             <button
               type="button"
               className="v-btn ghost"
@@ -194,7 +194,7 @@ export function SiteSheet({ site, onClose }: { site: Partial<Project>; onClose: 
               {site.status === "abgeschlossen" ? "Wieder öffnen" : "Abschließen"}
             </button>
           )}
-          {!isNew && canRemove(data) && (
+          {!isNew && canEditSites(data) && (
             <button
               type="button"
               className="v-btn ghost danger"
@@ -271,14 +271,14 @@ export function SiteFrame({ id, children }: { id: string; children: ReactNode })
           </p>
           {site.description && <p className="v-note">{site.description}</p>}
         </div>
-        {canPlan(data) && (
+        {canEditSites(data) && (
           <button type="button" className="v-btn" onClick={() => setEdit(true)}>
             <Pencil size={16} /> Bearbeiten
           </button>
         )}
       </header>
       <nav className="v-site-tabs" aria-label="Bereiche">
-        {TABS.filter((x) => !x.office || canPlan(data)).map((x) => (
+        {TABS.filter((x) => !x.office || !isField(data)).map((x) => (
           <Link key={x.key} href={`/projekte/${id}/${x.key}`} className={tab === x.key ? "on" : ""}>
             {x.label}
           </Link>

@@ -57,10 +57,12 @@ import {
   activePeople,
   canPlan,
   canRemove,
-  SIMPLE_LABEL,
-  simpleRole,
+  ROLLE_LABEL,
+  ROLLEN,
+  rolleOf,
+  scopedPeople,
+  canEditSites,
   visibleSites,
-  type Simple,
 } from "./access";
 import { Face } from "./kit";
 import { PlanSheet, withMember, type PlanEdit } from "./plan-sheet";
@@ -161,14 +163,6 @@ type Zoom = keyof typeof ZOOMS;
 const LANE = 22;
 const GROUP_H = 22;
 const ABS_TYPES: AbsenceType[] = ["urlaub", "za", "krank", "schulung"];
-const ROLE_GROUPS: Simple[] = ["bauleiter", "monteur", "buero", "chef"];
-const ROLE_GROUP_NAME: Record<Simple, string> = {
-  bauleiter: "Bauleitung",
-  monteur: "Monteure",
-  buero: "Büro",
-  chef: "Geschäftsführung",
-};
-
 /* Half-day positions: day * 2, +1 for the afternoon. */
 function halves(
   from: ISODate,
@@ -247,7 +241,7 @@ export function Gantt({ scope }: { scope: Scope }) {
     if (site) save("projects", { ...site, ...patch }, activity);
     else setCompany({ ...data.company, plan: { ...layout, ...patch } });
   };
-  const edit = canPlan(data);
+  const edit = canPlan(data) || (!!site && canEditSites(data));
   const sites = visibleSites(data);
 
   const [zoom, setZoom] = useState<Zoom>("woche");
@@ -336,7 +330,23 @@ export function Gantt({ scope }: { scope: Scope }) {
 
   /* ---------------------------------------------------------------- rows and groups */
   const freeRows = layout.planRows ?? [];
-  const people = site ? projectTeam(data, site) : activePeople(data);
+  const people = site ? projectTeam(data, site) : scopedPeople(data);
+  // company board follows the organisation chart: top down, every leader's people as one group
+  const orgRank = new Map<string, number>();
+  if (!site) {
+    const byRole = (a: Employee, b: Employee) => ROLLEN.indexOf(rolleOf(a)) - ROLLEN.indexOf(rolleOf(b)) || a.name.localeCompare(b.name, "de");
+    const ids = new Set(people.map((e) => e.id));
+    const queue = people.filter((e) => !e.managerId || !ids.has(e.managerId)).sort(byRole);
+    while (queue.length) {
+      const e = queue.shift()!;
+      orgRank.set(e.id, orgRank.size);
+      queue.push(...people.filter((x) => x.managerId === e.id).sort(byRole));
+    }
+  }
+  const teamName = (e: Employee) => {
+    const boss = people.find((x) => x.id === e.managerId);
+    return boss ? `Team ${boss.name}` : "Leitung";
+  };
   const order = layout.rowOrder ?? [];
   const pos = (id: string) => (order.includes(id) ? order.indexOf(id) : 1e6);
   const items: Item[] = (
@@ -344,8 +354,8 @@ export function Gantt({ scope }: { scope: Scope }) {
       ...people.map((e) => ({
         id: e.id,
         name: e.name,
-        info: e.role || SIMPLE_LABEL[simpleRole(e)],
-        auto: site ? e.team || "Team" : ROLE_GROUP_NAME[simpleRole(e)],
+        info: ROLLE_LABEL[rolleOf(e)],
+        auto: site ? e.team || "Team" : teamName(e),
         emp: e,
       })),
       ...freeRows.map((r) => ({
@@ -362,15 +372,14 @@ export function Gantt({ scope }: { scope: Scope }) {
         pos(a.it.id) - pos(b.it.id) ||
         (site
           ? 0
-          : ROLE_GROUPS.indexOf(a.it.emp ? simpleRole(a.it.emp) : "chef") -
-            ROLE_GROUPS.indexOf(b.it.emp ? simpleRole(b.it.emp) : "chef")) ||
+          : (orgRank.get(a.it.id) ?? 1e5) - (orgRank.get(b.it.id) ?? 1e5)) ||
         a.i - b.i,
     )
     .map((x) => x.it);
   const own = layout.groups ?? [];
   const autoNames = site
     ? [...new Set(items.map((it) => it.auto))]
-    : [...ROLE_GROUPS.map((r) => ROLE_GROUP_NAME[r]), "Weitere"];
+    : [...new Set([...items.filter((it) => it.emp).map((it) => it.auto), "Weitere"])];
   const groups = own.length
     ? [...own, { id: "", name: "Ohne Gruppe" }]
     : autoNames.map((n) => ({ id: `auto:${n}`, name: n }));

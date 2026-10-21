@@ -68,6 +68,10 @@ export type Employee = {
   role: string;
   /** Access rights; derived from the job title when missing. */
   access?: AccessRole;
+  /** Role in the organisation chart (admin … extern); derived from access when missing. */
+  rolle?: import("./roles").Rolle;
+  /** Superior in the organisation chart. */
+  managerId?: string;
   department: string;
   team: string;
   phone: string;

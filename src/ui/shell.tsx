@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineSupport } from "@/components/offline";
 import { EditorHost } from "@/components/shell";
 import { StoreProvider, useStore } from "@/lib/store";
-import { activePeople, me, SIMPLE_LABEL, simpleRole, type Simple } from "./access";
+import { activePeople, canSettings, me, ROLLE_LABEL, ROLLEN, rolleOf, seesTeam } from "./access";
 import { Face } from "./kit";
 import "./app.css";
 
@@ -29,7 +29,8 @@ export function AppFrame({ children }: { children: ReactNode }) {
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  const { toast } = useStore();
+  const { toast, data } = useStore();
+  const nav = NAV.filter((n) => n.href !== "/team" || seesTeam(data));
   const path = usePathname();
   const active = (href: string) => path === href || path.startsWith(`${href}/`);
   return (
@@ -40,7 +41,7 @@ function Frame({ children }: { children: ReactNode }) {
           <img src="/brand/vysner-word.png" alt="VYSNER" className="v-word" />
         </Link>
         <nav aria-label="Menü">
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <Link key={n.href} href={n.href} className={active(n.href) ? "on" : ""}>
               <n.icon size={19} />
               {n.label}
@@ -63,7 +64,7 @@ function Frame({ children }: { children: ReactNode }) {
       <main className="v-main">{children}</main>
 
       <nav className="v-tabs" aria-label="Menü">
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <Link key={n.href} href={n.href} className={active(n.href) ? "on" : ""}>
             <n.icon size={21} />
             <span>{n.label}</span>
@@ -92,29 +93,31 @@ function UserMenu({ up }: { up?: boolean }) {
   }, [open]);
   const user = me(data);
   if (!user) return null;
-  const groups: Simple[] = ["chef", "buero", "bauleiter", "monteur"];
+
   return (
     <div className={`v-user ${up ? "up" : ""}`} ref={box}>
       <button type="button" className="v-user-btn" onClick={() => setOpen((o) => !o)} aria-label="Benutzer">
         <Face id={user.id} size={32} />
         <span>
           <strong>{user.name}</strong>
-          <small>{SIMPLE_LABEL[simpleRole(user)]}</small>
+          <small>{ROLLE_LABEL[rolleOf(user)]}</small>
         </span>
       </button>
       {open && (
         <div className="v-user-pop">
-          <Link href="/einstellungen" className="v-pop-link">
-            <Settings size={16} /> Einstellungen
-          </Link>
+          {canSettings(data) && (
+            <Link href="/einstellungen" className="v-pop-link">
+              <Settings size={16} /> Einstellungen
+            </Link>
+          )}
           <p className="v-pop-label">Anmelden als (Demo)</p>
           <div className="v-pop-people">
-            {groups.map((g) => {
-              const people = activePeople(data).filter((e) => simpleRole(e) === g);
+            {ROLLEN.map((g) => {
+              const people = activePeople(data).filter((e) => rolleOf(e) === g);
               if (!people.length) return null;
               return (
                 <div key={g}>
-                  <small>{SIMPLE_LABEL[g]}</small>
+                  <small>{ROLLE_LABEL[g]}</small>
                   {people.map((e) => (
                     <button
                       key={e.id}

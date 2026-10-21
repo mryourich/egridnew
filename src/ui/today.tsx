@@ -9,7 +9,7 @@ import * as L from "@/lib/labels";
 import { shortPath } from "@/lib/site";
 import { employeeName, uid, useStore } from "@/lib/store";
 import type { Issue, Project, SiteNode } from "@/lib/types";
-import { activePeople, canPlan, dayText, me, visibleSites } from "./access";
+import { dayText, isField, me, scopedPeople, visibleSites } from "./access";
 
 type Task =
   | { kind: "punkt"; id: string; title: string; due: string; site: Project; where: string; node: SiteNode }
@@ -23,7 +23,7 @@ export function Today() {
   const openEditor = useEditor();
   const t = today();
   const user = me(data);
-  const planner = canPlan(data);
+  const planner = !isField(data);
   const sites = visibleSites(data);
   const byId = new Map(sites.map((p) => [p.id, p]));
   const [filter, setFilter] = useState<Filter>("alle");
@@ -48,7 +48,7 @@ export function Today() {
   const regieOpen = data.regie.filter((r) => byId.has(r.projectId) && (!r.signature || !r.approvedAt));
   const toSign = regieOpen.filter((r) => !r.signature);
   const toRelease = regieOpen.filter((r) => r.signature && !r.approvedAt);
-  const people = activePeople(data);
+  const people = scopedPeople(data);
   const planned = people.filter((e) => {
     const d = dayText(data, e.id, t);
     return d.am.kind === "job" || d.pm.kind === "job";
