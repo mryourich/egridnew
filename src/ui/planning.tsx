@@ -10,7 +10,7 @@ export function Planning() {
   const { data } = useStore();
   return (
     <div className="v-page wide">
-      <PageHead title="Planung" sub={canPlan(data) ? "Rechtsklick auf eine freie Stelle = einteilen, Symbol oder Urlaub · Balken ziehen = verschieben" : "Wer arbeitet wann wo."} />
+      <PageHead title="Planung" sub={canPlan(data) ? "Rechtsklick auf eine freie Stelle = Zeitbalken, Symbol oder Abwesenheit · Balken ziehen = verschieben" : "Wer arbeitet wann wo."} />
       {activePeople(data).length === 0 ? <Empty>Noch keine Mitarbeiter. Lege sie unter „Team“ an.</Empty> : <Gantt scope={{ kind: "company" }} />}
     </div>
   );

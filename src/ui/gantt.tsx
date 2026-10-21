@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -250,8 +251,13 @@ export function Gantt({ scope }: { scope: Scope }) {
   const sites = visibleSites(data);
 
   const [zoom, setZoom] = useState<Zoom>("woche");
-  const [from, setFrom] = useState(() => addDays(startOfWeek(t), -7));
-  const { dw, days, step } = ZOOMS[zoom];
+  const { dw, step } = ZOOMS[zoom];
+  // the visible range grows in both directions while scrolling – past included
+  const startRange = (z: Zoom) => ({ from: addDays(startOfWeek(t), -ZOOMS[z].step * 2), days: ZOOMS[z].days + ZOOMS[z].step * 2 });
+  const [range, setRange] = useState(() => startRange("woche"));
+  const { from, days } = range;
+  const [jump, setJump] = useState(0);
+  const pendingShift = useRef(0);
   const hw = dw / 2;
   const to = addDays(from, days - 1);
   const dayList = Array.from({ length: days }, (_, i) => addDays(from, i));
@@ -298,12 +304,35 @@ export function Gantt({ scope }: { scope: Scope }) {
   }, []);
   const leftW = narrow ? 118 : 300;
 
-  // today a little in from the left edge
+  // today a little in from the left edge (on load, "Heute" and zoom)
   useEffect(() => {
     const el = scrollRef.current;
     const i = diffDays(from, t);
     if (el && i >= 0 && i < days) el.scrollLeft = Math.max(0, (i - 3) * dw);
-  }, [from, dw, days, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jump, zoom]);
+  // after adding days in front, keep the view where it was
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el && pendingShift.current) {
+      el.scrollLeft += pendingShift.current;
+      pendingShift.current = 0;
+    }
+  }, [from]);
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el || pendingShift.current) return;
+    const more = step * 2;
+    if (el.scrollLeft < 120) {
+      pendingShift.current = more * dw;
+      setRange((r) => ({ from: addDays(r.from, -more), days: r.days + more }));
+    } else if (el.scrollLeft + el.clientWidth > el.scrollWidth - 120) setRange((r) => ({ ...r, days: r.days + more }));
+  };
+  const scrollBy = (n: number) => scrollRef.current?.scrollBy({ left: n * dw, behavior: "smooth" });
+  const goToday = (z: Zoom = zoom) => {
+    setRange(startRange(z));
+    setJump((j) => j + 1);
+  };
 
   /* ---------------------------------------------------------------- rows and groups */
   const freeRows = layout.planRows ?? [];
@@ -991,22 +1020,6 @@ export function Gantt({ scope }: { scope: Scope }) {
                 exact: true,
               }),
       });
-      if (!site)
-        items2.push({
-          label: "Einteilen …",
-          icon: <Pencil size={15} />,
-          onClick: () =>
-            setSheet({
-              edit: {
-                kind: "new",
-                employeeId: it.id,
-                day: addDays(from, Math.floor(half / 2)),
-                pm: half % 2 === 1,
-                projectId: siteFilter || undefined,
-              },
-              who: it.name,
-            }),
-        });
       if (it.emp)
         items2.push({
           label: "Abwesenheit eintragen",
@@ -1284,7 +1297,7 @@ export function Gantt({ scope }: { scope: Scope }) {
           <button
             type="button"
             className="g-btn icon"
-            onClick={() => setFrom(addDays(from, -step))}
+            onClick={() => scrollBy(-step)}
             aria-label="Zurück"
           >
             <ChevronLeft size={16} />
@@ -1292,14 +1305,14 @@ export function Gantt({ scope }: { scope: Scope }) {
           <button
             type="button"
             className="g-btn"
-            onClick={() => setFrom(addDays(startOfWeek(t), -7))}
+            onClick={() => goToday()}
           >
             Heute
           </button>
           <button
             type="button"
             className="g-btn icon"
-            onClick={() => setFrom(addDays(from, step))}
+            onClick={() => scrollBy(step)}
             aria-label="Weiter"
           >
             <ChevronRight size={16} />
@@ -1311,7 +1324,10 @@ export function Gantt({ scope }: { scope: Scope }) {
               key={k}
               type="button"
               className={zoom === k ? "on" : ""}
-              onClick={() => setZoom(k)}
+              onClick={() => {
+                setZoom(k);
+                goToday(k);
+              }}
             >
               {ZOOMS[k].label}
             </button>
@@ -1380,6 +1396,7 @@ export function Gantt({ scope }: { scope: Scope }) {
       <div
         className="g-scroll"
         ref={scrollRef}
+        onScroll={onScroll}
         onPointerDownCapture={(e) => {
           // touch has no right mouse button: a long press opens the same menu
           if (e.pointerType !== "touch") return;
@@ -1729,7 +1746,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                           onContextMenu={(e) => absMenu(e, a)}
                         >
                           <span>{ABSENCE[a.type].label}</span>
-                          {edit && (
+                          {edit && (e2 - s + 1) * dw > 30 && (
                             <i
                               className="h l"
                               onPointerDown={(e) =>
@@ -1737,7 +1754,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                               }
                             />
                           )}
-                          {edit && (
+                          {edit && (e2 - s + 1) * dw > 30 && (
                             <i
                               className="h r"
                               onPointerDown={(e) =>
@@ -1794,7 +1811,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                                 {p && !j.title ? p.name : labelOf(j)}
                               </span>
                               {j.comment && <i className="g-flag" />}
-                              {edit && w >= 26 && (
+                              {edit && w > 30 && (
                                 <i
                                   className="h l"
                                   onPointerDown={(e) =>
@@ -1802,7 +1819,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                                   }
                                 />
                               )}
-                              {edit && w >= 26 && (
+                              {edit && w > 30 && (
                                 <i
                                   className="h r"
                                   onPointerDown={(e) =>
@@ -1942,7 +1959,7 @@ export function Gantt({ scope }: { scope: Scope }) {
           <>
             <span className="g-desk">
               Rechtsklick = Menü · Doppelklick ={" "}
-              {site ? "neuer Balken / umbenennen" : "einteilen / umbenennen"} ·
+              {site ? "neuer Balken / umbenennen" : "neuer Eintrag / umbenennen"} ·
               ziehen = verschieben · auf freier Fläche ziehen = mehrere
               auswählen · Entf, Strg+C/V/D, ←/→
             </span>

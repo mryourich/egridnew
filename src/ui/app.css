@@ -3750,3 +3750,19 @@ input.g-status:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- wider pages, centred bar text */
+.v-page {
+  max-width: 1760px;
+}
+.g-job {
+  justify-content: center;
+  text-align: center;
+}
+.g-job .g-check {
+  position: absolute;
+  left: 3px;
+}
+.g-job:has(.g-check) .g-label {
+  padding-left: 12px;
+}
