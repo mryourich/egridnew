@@ -68,7 +68,7 @@ export function sameSlot(a: Slot, b: Slot) {
 
 export const ABSENCE: Record<string, { label: string; color: string }> = {
   urlaub: { label: "Urlaub", color: "#0891b2" },
-  krank: { label: "Krank", color: "#dc2626" },
+  krank: { label: "Krankenstand", color: "#dc2626" },
   za: { label: "Zeitausgleich", color: "#16a34a" },
   schulung: { label: "Schulung", color: "#7c3aed" },
   sonstiges: { label: "Abwesend", color: "#64748b" }

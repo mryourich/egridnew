@@ -1,16 +1,15 @@
 "use client";
 
-import { AlertTriangle, Camera, ChevronRight, ListChecks, PenLine } from "lucide-react";
+import { AlertTriangle, Camera, ChevronRight, ListChecks, PenLine, Plus, StickyNote, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useEditor } from "@/components/shell";
 import { addDays, fmt, isWeekend, today, weekdayLong, weekdayShort } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { shortPath } from "@/lib/site";
-import { employeeName, useStore } from "@/lib/store";
+import { employeeName, uid, useStore } from "@/lib/store";
 import type { Issue, Project, SiteNode } from "@/lib/types";
 import { activePeople, canPlan, dayText, me, visibleSites } from "./access";
-import { Face } from "./kit";
 
 type Task =
   | { kind: "punkt"; id: string; title: string; due: string; site: Project; where: string; node: SiteNode }
@@ -59,7 +58,7 @@ export function Today() {
     <div className="v-page">
       <header className="v-head">
         <div>
-          <h1>Heute</h1>
+          <h1>Dashboard</h1>
           <p>
             {weekdayLong(t)}, {fmt(t)} · {user?.name}
           </p>
@@ -220,7 +219,8 @@ export function Today() {
         </div>
 
         <aside className="v-today-side">
-          {planner ? <TeamToday /> : <MyDay />}
+          {!planner && <MyDay />}
+          <Notes />
 
           {planner && (toSign.length > 0 || toRelease.length > 0) && (
             <section className="v-panel">
@@ -254,35 +254,65 @@ export function Today() {
 
 const sevRank: Record<string, number> = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
 
-/** Office and leaders: every person, one line. */
-function TeamToday() {
-  const { data } = useStore();
-  const t = today();
-  const rows = activePeople(data).map((e) => ({ e, d: dayText(data, e.id, t) }));
-  const weekend = isWeekend(t);
+const NOTE_COLORS = ["#fff4b8", "#ffd9c2", "#d6f0c9", "#cfe6ff", "#ead7ff"];
+
+/** Sticky notes – written and changed right here; clicking elsewhere saves. */
+function Notes() {
+  const { data, save, remove } = useStore();
+  const user = me(data);
+  const mine = data.notes.filter((n) => n.ownerId === user?.id).sort((a, b) => (b.createdAt + b.id).localeCompare(a.createdAt + a.id));
+  const [fresh, setFresh] = useState("");
+  if (!user) return null;
+  const add = () => {
+    const id = uid("n");
+    save("notes", { id, ownerId: user.id, title: "", text: "", color: NOTE_COLORS[mine.length % NOTE_COLORS.length], x: 0, y: 0, w: 0, h: 0, createdAt: today() });
+    setFresh(id);
+  };
   return (
-    <section className="v-panel">
+    <section className="v-panel v-notes">
       <header>
-        <h2>Team heute</h2>
-        <Link href="/planung" className="v-link">
-          Planung <ChevronRight size={15} />
-        </Link>
+        <h2>
+          <StickyNote size={16} /> Notizen
+        </h2>
+        <button type="button" className="v-link" onClick={add}>
+          <Plus size={15} /> Neue Notiz
+        </button>
       </header>
-      <ul className="v-rows">
-        {rows.map(({ e, d }) => {
-          const free = d.am.kind === "free" && d.pm.kind === "free";
-          const away = d.am.kind === "absence";
-          return (
-            <li key={e.id} className="v-person">
-              <Face id={e.id} size={26} />
-              <span>
-                <strong>{e.name}</strong>
-                <small className={free ? "is-free" : away ? "is-away" : ""}>{weekend ? "Wochenende" : d.text}</small>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {mine.length === 0 ? (
+        <button type="button" className="v-note-empty" onClick={add}>
+          Klick hier für deinen ersten Notizzettel – z. B. „Kran für Donnerstag bestellen“.
+        </button>
+      ) : (
+        <div className="v-note-grid">
+          {mine.map((n) => (
+            <div key={n.id} className="v-sticky" style={{ background: n.color }}>
+              <textarea
+                key={n.text}
+                defaultValue={n.text}
+                autoFocus={n.id === fresh}
+                placeholder="Notiz …"
+                aria-label="Notiz"
+                rows={Math.max(3, n.text.split("\n").length + 1)}
+                onBlur={(e) => {
+                  const text = e.target.value;
+                  if (!text.trim() && !n.text) return remove("notes", n.id);
+                  if (text !== n.text) save("notes", { ...n, text });
+                }}
+              />
+              <footer>
+                <span className="v-note-colors">
+                  {NOTE_COLORS.map((c) => (
+                    <button key={c} type="button" style={{ background: c }} className={c === n.color ? "on" : ""} aria-label="Farbe" onClick={() => save("notes", { ...n, color: c })} />
+                  ))}
+                </span>
+                <button type="button" className="v-note-del" aria-label="Notiz löschen" onClick={() => remove("notes", n.id)}>
+                  <Trash2 size={14} />
+                </button>
+              </footer>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,84 +1,236 @@
 "use client";
 
-import { Phone, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { fmt, today } from "@/lib/date";
-import { employeeName, uid, useStore } from "@/lib/store";
+import { CalendarPlus, ChevronLeft, ChevronRight, Phone, Plus, Search, Trash2 } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { addDays, fmt, holidayName, isWeekend, monthLabel, today, weekdayShort, workdaysBetween } from "@/lib/date";
+import { uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Employee } from "@/lib/types";
 import { ABSENCE, activePeople, canPlan, canRemove, dayText, SIMPLE_ACCESS, SIMPLE_LABEL, simpleRole, type Simple } from "./access";
 import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
-/** The people of the company and who is away. */
+type Tab = "leute" | "abwesend";
+const ROLE_FILTER: (Simple | "alle")[] = ["alle", "monteur", "bauleiter", "buero", "chef"];
+const ABS_KEYS: AbsenceType[] = ["urlaub", "za", "krank", "schulung"];
+const ABS_SHORT: Record<string, string> = { urlaub: "U", za: "ZA", krank: "K", schulung: "S", sonstiges: "–" };
+
+/** The people of the company – searchable, also with a hundred people – and an absence calendar. */
 export function Team() {
   const { data } = useStore();
+  const [tab, setTab] = useState<Tab>("leute");
   const [person, setPerson] = useState<Partial<Employee> | null>(null);
   const [away, setAway] = useState<Partial<Absence> | null>(null);
+  const [query, setQuery] = useState("");
+  const [role, setRole] = useState<Simple | "alle">("alle");
   const planner = canPlan(data);
   const t = today();
   const people = activePeople(data);
-  const absences = data.absences.filter((a) => a.end >= t && data.employees.some((e) => e.id === a.employeeId && e.active)).sort((a, b) => a.start.localeCompare(b.start));
+  const q = query.trim().toLowerCase();
+  const shown = people
+    .filter((e) => (role === "alle" || simpleRole(e) === role) && (!q || [e.name, e.role, e.phone, e.email, e.team].join(" ").toLowerCase().includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const awayToday = data.absences.filter((a) => a.start <= t && a.end >= t && people.some((e) => e.id === a.employeeId)).length;
+  const count = (r: Simple | "alle") => (r === "alle" ? people.length : people.filter((e) => simpleRole(e) === r).length);
 
   return (
-    <div className="v-page narrow">
-      <PageHead title="Team" sub={`${people.length} ${people.length === 1 ? "Person" : "Personen"} · Monteure kosten nichts extra`}>
+    <div className="v-page">
+      <PageHead title="Team" sub={`${people.length} ${people.length === 1 ? "Person" : "Personen"} · heute ${awayToday} abwesend · Monteure kosten nichts extra`}>
         {planner && (
-          <button type="button" className="v-btn primary" onClick={() => setPerson({})}>
-            <Plus size={17} /> Mitarbeiter
-          </button>
+          <>
+            <button type="button" className="v-btn" onClick={() => setAway({ start: t, end: t, type: "urlaub" })}>
+              <CalendarPlus size={16} /> Urlaub / ZA / Krank
+            </button>
+            <button type="button" className="v-btn primary" onClick={() => setPerson({})}>
+              <Plus size={17} /> Mitarbeiter
+            </button>
+          </>
         )}
       </PageHead>
 
-      <ul className="v-card v-list">
-        {people.map((e) => (
-          <li key={e.id}>
-            <Face id={e.id} size={38} />
-            <button type="button" className="v-list-main" onClick={() => planner && setPerson(e)} disabled={!planner}>
-              <strong>{e.name}</strong>
-              <small>
-                {SIMPLE_LABEL[simpleRole(e)]} · heute: {dayText(data, e.id, t).text}
-              </small>
-            </button>
-            {e.phone && (
-              <a className="v-icon" href={`tel:${e.phone.replace(/\s/g, "")}`} aria-label={`${e.name} anrufen`} title={e.phone}>
-                <Phone size={17} />
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <div className="v-card-head v-gap">
-        <h2 className="v-card-title">Urlaub und Krankenstand</h2>
-        {planner && (
-          <button type="button" className="v-btn" onClick={() => setAway({ start: t, end: t, type: "urlaub" })}>
-            <Plus size={16} /> Eintragen
+      <div className="v-team-bar">
+        <div className="v-seg">
+          <button type="button" className={tab === "leute" ? "on" : ""} onClick={() => setTab("leute")}>
+            Mitarbeiter
           </button>
-        )}
-      </div>
-      {absences.length === 0 ? (
-        <Empty>Niemand ist abwesend.</Empty>
-      ) : (
-        <ul className="v-card v-list">
-          {absences.map((a) => (
-            <li key={a.id}>
-              <Face id={a.employeeId} size={32} />
-              <button type="button" className="v-list-main" onClick={() => planner && setAway(a)} disabled={!planner}>
-                <strong>{employeeName(data, a.employeeId)}</strong>
-                <small>
-                  {fmt(a.start)}
-                  {a.end !== a.start ? ` – ${fmt(a.end)}` : ""}
-                </small>
-              </button>
-              <span className="v-chip" style={{ color: ABSENCE[a.type].color, background: `${ABSENCE[a.type].color}18` }}>
-                {ABSENCE[a.type].label}
-              </span>
-            </li>
+          <button type="button" className={tab === "abwesend" ? "on" : ""} onClick={() => setTab("abwesend")}>
+            Abwesenheiten
+          </button>
+        </div>
+        <label className="v-team-search">
+          <Search size={15} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name, Rolle, Telefon …" aria-label="Suchen" />
+        </label>
+        <div className="v-chips">
+          {ROLE_FILTER.map((r) => (
+            <button key={r} type="button" className={role === r ? "on" : ""} onClick={() => setRole(r)}>
+              {r === "alle" ? "Alle" : SIMPLE_LABEL[r]} <small>{count(r)}</small>
+            </button>
           ))}
-        </ul>
+        </div>
+      </div>
+
+      {tab === "leute" ? (
+        shown.length === 0 ? (
+          <Empty>Niemand gefunden.</Empty>
+        ) : (
+          <div className="v-panel v-team-table">
+            <table className="v-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Rolle</th>
+                  <th className="hide-sm">Telefon</th>
+                  <th>Heute</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((e) => {
+                  const d = dayText(data, e.id, t);
+                  const absent = d.am.kind === "absence";
+                  return (
+                    <tr key={e.id} className={planner ? "click" : ""} onClick={() => planner && setPerson(e)}>
+                      <td>
+                        <span className="v-team-name">
+                          <Face id={e.id} size={28} />
+                          <span>
+                            <strong>{e.name}</strong>
+                            {e.role && e.role !== SIMPLE_LABEL[simpleRole(e)] && <small>{e.role}</small>}
+                          </span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`v-role r-${simpleRole(e)}`}>{SIMPLE_LABEL[simpleRole(e)]}</span>
+                      </td>
+                      <td className="hide-sm">
+                        {e.phone ? (
+                          <a href={`tel:${e.phone.replace(/\s/g, "")}`} onClick={(ev) => ev.stopPropagation()} className="v-team-phone">
+                            <Phone size={13} /> {e.phone}
+                          </a>
+                        ) : (
+                          <span className="muted">–</span>
+                        )}
+                      </td>
+                      <td className={absent ? "v-team-away" : d.am.kind === "free" && d.pm.kind === "free" ? "muted" : ""}>{d.text}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : (
+        <AbsenceCalendar people={shown} onPick={(a) => planner && setAway(a)} />
       )}
 
       {person && <PersonSheet person={person} onClose={() => setPerson(null)} />}
       {away && <AbsenceSheet absence={away} onClose={() => setAway(null)} />}
+    </div>
+  );
+}
+
+/** Month view: one row per person, one column per day. Drag across days to enter Urlaub, ZA or Krankenstand. */
+function AbsenceCalendar({ people, onPick }: { people: Employee[]; onPick: (a: Partial<Absence>) => void }) {
+  const { data } = useStore();
+  const t = today();
+  const [month, setMonth] = useState(t.slice(0, 7));
+  const [range, setRange] = useState<{ emp: string; a: string; b: string } | null>(null);
+  const first = `${month}-01`;
+  const days: string[] = [];
+  for (let d = first; d.slice(0, 7) === month; d = addDays(d, 1)) days.push(d);
+  const shiftMonth = (n: number) => {
+    const [y, m] = month.split("-").map(Number);
+    const d = new Date(Date.UTC(y, m - 1 + n, 1));
+    setMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  };
+  const absOn = (emp: string, d: string) => data.absences.find((a) => a.employeeId === emp && a.start <= d && a.end >= d);
+  const inRange = (emp: string, d: string) => range && range.emp === emp && d >= (range.a < range.b ? range.a : range.b) && d <= (range.a < range.b ? range.b : range.a);
+  const finish = () => {
+    if (!range) return;
+    const [start, end] = range.a < range.b ? [range.a, range.b] : [range.b, range.a];
+    setRange(null);
+    onPick({ employeeId: range.emp, start, end, type: "urlaub" });
+  };
+  const totals = (emp: string) => {
+    const y = month.slice(0, 4);
+    return data.absences
+      .filter((a) => a.employeeId === emp && a.type === "urlaub" && a.start.startsWith(y))
+      .reduce((n, a) => n + workdaysBetween(a.start, a.end), 0);
+  };
+
+  return (
+    <div className="v-panel v-cal" onPointerUp={finish} onPointerLeave={() => range && finish()}>
+      <header>
+        <div className="v-cal-nav">
+          <button type="button" className="v-icon" onClick={() => shiftMonth(-1)} aria-label="Voriger Monat">
+            <ChevronLeft size={17} />
+          </button>
+          <h2>{monthLabel(first, true)}</h2>
+          <button type="button" className="v-icon" onClick={() => shiftMonth(1)} aria-label="Nächster Monat">
+            <ChevronRight size={17} />
+          </button>
+          <button type="button" className="v-link" onClick={() => setMonth(t.slice(0, 7))}>
+            Heute
+          </button>
+        </div>
+        <div className="v-cal-legend">
+          {ABS_KEYS.map((k) => (
+            <span key={k}>
+              <i style={{ background: ABSENCE[k].color }} /> {ABSENCE[k].label}
+            </span>
+          ))}
+          <span className="muted">Über mehrere Tage ziehen = eintragen</span>
+        </div>
+      </header>
+      <div className="v-cal-scroll">
+        <table style={{ "--days": days.length } as CSSProperties}>
+          <thead>
+            <tr>
+              <th className="v-cal-name">Mitarbeiter</th>
+              {days.map((d) => (
+                <th key={d} className={`${isWeekend(d) ? "we" : ""} ${holidayName(d) ? "hol" : ""} ${d === t ? "today" : ""}`} title={holidayName(d)}>
+                  <span>{Number(d.slice(8))}</span>
+                  <small>{weekdayShort(d).slice(0, 2)}</small>
+                </th>
+              ))}
+              <th className="v-cal-sum" title="Urlaubstage dieses Jahr">
+                U {month.slice(0, 4)}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {people.map((e) => (
+              <tr key={e.id}>
+                <th className="v-cal-name">
+                  <span className="v-cal-who">
+                    <Face id={e.id} size={20} />
+                    <span>{e.name}</span>
+                  </span>
+                </th>
+                {days.map((d) => {
+                  const a = absOn(e.id, d);
+                  const off = isWeekend(d) || !!holidayName(d);
+                  return (
+                    <td
+                      key={d}
+                      className={`${off ? "off" : ""} ${d === t ? "today" : ""} ${inRange(e.id, d) ? "pick" : ""} ${a ? "abs" : ""}`}
+                      style={a ? ({ "--c": ABSENCE[a.type].color } as CSSProperties) : undefined}
+                      title={a ? `${ABSENCE[a.type].label} ${fmt(a.start)} – ${fmt(a.end)}` : undefined}
+                      onPointerDown={(ev) => {
+                        ev.preventDefault();
+                        if (a) return onPick(a);
+                        setRange({ emp: e.id, a: d, b: d });
+                      }}
+                      onPointerEnter={() => range && range.emp === e.id && setRange({ ...range, b: d })}
+                    >
+                      {a && !off ? ABS_SHORT[a.type] : ""}
+                    </td>
+                  );
+                })}
+                <td className="v-cal-sum">{totals(e.id) || ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -211,7 +363,7 @@ function AbsenceSheet({ absence, onClose }: { absence: Partial<Absence>; onClose
         </select>
       </Field>
       <div className="v-switch small wrap">
-        {(["urlaub", "krank", "za", "schulung"] as AbsenceType[]).map((k) => (
+        {ABS_KEYS.map((k) => (
           <button key={k} type="button" className={type === k ? "on" : ""} onClick={() => setType(k)}>
             {ABSENCE[k].label}
           </button>
