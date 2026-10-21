@@ -64,6 +64,7 @@ import {
   canEditSites,
   visibleSites,
 } from "./access";
+import { ledSites, levelView } from "@/lib/roles";
 import { Face } from "./kit";
 import { PlanSheet, withMember, type PlanEdit } from "./plan-sheet";
 
@@ -343,10 +344,27 @@ export function Gantt({ scope }: { scope: Scope }) {
       queue.push(...people.filter((x) => x.managerId === e.id).sort(byRole));
     }
   }
+  // leaders see their own level in detail, every branch below as one line (opened on click)
+  const lv = site ? null : levelView(data);
+  const branchName = (head: Employee) => `${rolleOf(head) === "bereichsleiter" ? "Bereich" : "Team"} ${head.name}`;
+  const branchOf = new Map<string, string>();
+  for (const b of lv?.branches ?? []) for (const id of b.members) branchOf.set(id, branchName(b.head));
+  const extraIds = new Set(lv?.extra ?? []);
+  const ledIds = new Set(lv ? ledSites(data).map((p) => p.id) : []);
   const teamName = (e: Employee) => {
+    if (lv) {
+      if (e.id === lv.me || lv.direct.includes(e.id)) return "Meine Ebene";
+      if (branchOf.has(e.id)) return branchOf.get(e.id)!;
+      if (extraIds.has(e.id)) return "Auf meinen Baustellen";
+    }
     const boss = people.find((x) => x.id === e.managerId);
     return boss ? `Team ${boss.name}` : "Leitung";
   };
+  const branchKeys = (lv?.branches ?? []).map((b) => `auto:${branchName(b.head)}`);
+  const branchKeyStr = branchKeys.join("|");
+  useEffect(() => {
+    if (branchKeyStr) setCollapsed(new Set(branchKeyStr.split("|")));
+  }, [branchKeyStr]);
   const order = layout.rowOrder ?? [];
   const pos = (id: string) => (order.includes(id) ? order.indexOf(id) : 1e6);
   const items: Item[] = (
@@ -376,10 +394,13 @@ export function Gantt({ scope }: { scope: Scope }) {
         a.i - b.i,
     )
     .map((x) => x.it);
-  const own = layout.groups ?? [];
+  // own groups only on a site plan; the company board always follows the organisation chart
+  const own = site ? (layout.groups ?? []) : [];
   const autoNames = site
     ? [...new Set(items.map((it) => it.auto))]
-    : [...new Set([...items.filter((it) => it.emp).map((it) => it.auto), "Weitere"])];
+    : lv
+      ? ["Meine Ebene", ...(lv.branches ?? []).map((b) => branchName(b.head)), "Auf meinen Baustellen", "Weitere"]
+      : [...new Set([...items.filter((it) => it.emp).map((it) => it.auto), "Weitere"])];
   const groups = own.length
     ? [...own, { id: "", name: "Ohne Gruppe" }]
     : autoNames.map((n) => ({ id: `auto:${n}`, name: n }));
@@ -521,7 +542,11 @@ export function Gantt({ scope }: { scope: Scope }) {
 
   /* ---------------------------------------------------------------- bars */
   const scoped = data.jobs.filter((j) =>
-    site ? j.projectId === site.id : !siteFilter || j.projectId === siteFilter,
+    site
+      ? j.projectId === site.id
+      : (!siteFilter || j.projectId === siteFilter) &&
+        // people from outside my branch: only their work on my sites
+        (!extraIds.has(j.employeeId) || ledIds.has(j.projectId)),
   );
   const q = query.trim().toLowerCase();
   const projectOf = (j: Job) => data.projects.find((p) => p.id === j.projectId);
@@ -576,6 +601,7 @@ export function Gantt({ scope }: { scope: Scope }) {
         gid: string;
         name: string;
         count: number;
+        ids: string[];
         top: number;
       }
     | {
@@ -612,6 +638,8 @@ export function Gantt({ scope }: { scope: Scope }) {
       gid: g.id,
       name: g.name,
       count: members.length,
+      // a collapsed branch shows its load per day
+      ids: lv && g.id.startsWith("auto:") && branchKeys.includes(g.id) ? members.filter((m) => m.emp).map((m) => m.id) : [],
       top,
     });
     top += GROUP_H;
@@ -1352,9 +1380,11 @@ export function Gantt({ scope }: { scope: Scope }) {
             >
               <Plus size={14} /> Zeile
             </button>
-            <button type="button" className="g-btn" onClick={addGroup}>
-              <Plus size={14} /> Gruppe
-            </button>
+            {site && (
+              <button type="button" className="g-btn" onClick={addGroup}>
+                <Plus size={14} /> Gruppe
+              </button>
+            )}
             {site && (
               <button
                 type="button"
@@ -1544,7 +1574,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                   >
                     <div
                       className="g-group-left"
-                      draggable={edit && !!v.gid && renaming !== `g:${v.gid}`}
+                      draggable={edit && !!site && !!v.gid && renaming !== `g:${v.gid}`}
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData("text/plain", v.name);
@@ -1599,9 +1629,13 @@ export function Gantt({ scope }: { scope: Scope }) {
                       )}
                     </div>
                     <div
-                      className="g-group-band"
+                      className={`g-group-band ${closed && v.ids.length ? "sum" : ""}`}
                       style={{ width: timelineW }}
-                    />
+                      onClick={closed && v.ids.length ? toggle : undefined}
+                      title={closed && v.ids.length ? "Klick = aufklappen" : undefined}
+                    >
+                      {closed && v.ids.length > 0 && <Load ids={v.ids} days={dayList} dw={dw} jobs={scoped} />}
+                    </div>
                   </div>
                 );
               }
@@ -1626,7 +1660,7 @@ export function Gantt({ scope }: { scope: Scope }) {
                 >
                   <div
                     className="g-left"
-                    draggable={edit && !renaming.endsWith(it.id)}
+                    draggable={edit && !!site && !renaming.endsWith(it.id)}
                     onDragStart={(e) => {
                       e.dataTransfer.effectAllowed = "move";
                       e.dataTransfer.setData("text/plain", it.name);
@@ -1977,7 +2011,7 @@ export function Gantt({ scope }: { scope: Scope }) {
             </span>
           </>
         ) : (
-          <span>Nur ansehen – planen können Chef, Büro und Bauleitung.</span>
+          <span>Nur ansehen – planen können Admin, Bereichs- und Teamleitung und Koordination.</span>
         )}
         {site && (
           <span>
@@ -2014,6 +2048,34 @@ export function Gantt({ scope }: { scope: Scope }) {
         <InviteDialog project={site} onClose={() => setInviting(false)} />
       )}
     </div>
+  );
+}
+
+/** Load of a closed branch: per day how many of its people are planned (red when someone is away). */
+function Load({ ids, days, dw, jobs }: { ids: string[]; days: ISODate[]; dw: number; jobs: Job[] }) {
+  const { data } = useStore();
+  const set = new Set(ids);
+  const mine = jobs.filter((j) => !j.symbol && set.has(j.employeeId));
+  const away = data.absences.filter((a) => set.has(a.employeeId));
+  return (
+    <>
+      {days.map((d, i) => {
+        if (isWeekend(d) || holidayName(d)) return null;
+        const planned = new Set(mine.filter((j) => j.start <= d && j.end >= d).map((j) => j.employeeId)).size;
+        const off = new Set(away.filter((a) => a.start <= d && a.end >= d).map((a) => a.employeeId)).size;
+        const ratio = planned / Math.max(1, ids.length - off);
+        return (
+          <span
+            key={d}
+            className={`g-load ${off ? "off" : ""}`}
+            style={{ left: i * dw, width: dw, "--r": Math.min(1, ratio) } as CSSProperties}
+            title={`${weekdayShort(d)} ${fmt(d)}: ${planned} von ${ids.length} eingeteilt${off ? ` · ${off} abwesend` : ""}`}
+          >
+            {dw >= 16 ? planned : ""}
+          </span>
+        );
+      })}
+    </>
   );
 }
 

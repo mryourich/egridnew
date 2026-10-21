@@ -5,7 +5,7 @@ import { useState, type CSSProperties } from "react";
 import { addDays, fmt, holidayName, isWeekend, monthLabel, today, weekdayShort, workdaysBetween } from "@/lib/date";
 import { uid, useStore } from "@/lib/store";
 import type { Absence, AbsenceType, Employee } from "@/lib/types";
-import { assignableRoles, subtree } from "@/lib/roles";
+import { assignableRoles, levelView, subtree } from "@/lib/roles";
 import { ABSENCE, activePeople, canEditTeam, canRemove, dayText, ROLLE_INFO, ROLLE_LABEL, ROLLEN, rolleOf, scopedPeople, type Rolle } from "./access";
 import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
@@ -23,7 +23,12 @@ export function Team() {
   const [role, setRole] = useState<Rolle | "alle">("alle");
   const planner = canEditTeam(data);
   const t = today();
-  const people = scopedPeople(data);
+  const all = scopedPeople(data);
+  // step by step: leaders start with the people directly below them
+  const lv = levelView(data);
+  const [depth, setDepth] = useState<"direkt" | "alle">("direkt");
+  const near = lv ? new Set([lv.me, ...lv.direct, ...lv.extra]) : null;
+  const people = near && depth === "direkt" && tab !== "org" ? all.filter((e) => near.has(e.id)) : all;
   const q = query.trim().toLowerCase();
   const shown = people
     .filter((e) => (role === "alle" || rolleOf(e) === role) && (!q || [e.name, e.role, e.phone, e.email, e.team].join(" ").toLowerCase().includes(q)))
@@ -63,6 +68,16 @@ export function Team() {
           <Search size={15} />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name, Rolle, Telefon …" aria-label="Suchen" />
         </label>
+        {lv && tab !== "org" && (
+          <div className="v-seg">
+            <button type="button" className={depth === "direkt" ? "on" : ""} onClick={() => setDepth("direkt")}>
+              Meine Ebene
+            </button>
+            <button type="button" className={depth === "alle" ? "on" : ""} onClick={() => setDepth("alle")}>
+              Ganzer Bereich <small>{all.length}</small>
+            </button>
+          </div>
+        )}
         <div className="v-chips">
           {roleFilter.map((r) => (
             <button key={r} type="button" className={role === r ? "on" : ""} onClick={() => setRole(r)}>

@@ -36,7 +36,7 @@ export function visibleSites(data: Data, withDone = false) {
   const all = rightsOf(data).allSites;
   return data.projects
     .filter((p) => withDone || p.status !== "abgeschlossen")
-    .filter((p) => all || p.createdBy === user?.id || p.members.includes(user?.id ?? "") || data.jobs.some((j) => j.projectId === p.id && j.employeeId === user?.id))
+    .filter((p) => all || p.createdBy === user?.id || p.managerId === user?.id || p.siteManagerId === user?.id || p.members.includes(user?.id ?? "") || data.jobs.some((j) => j.projectId === p.id && j.employeeId === user?.id))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 

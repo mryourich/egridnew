@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Camera, ChevronRight, ListChecks, PenLine, Plus, StickyNote, Trash2 } from "lucide-react";
+import { AlertTriangle, Camera, ChevronRight, ListChecks, Network, PenLine, Plus, StickyNote, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useEditor } from "@/components/shell";
@@ -8,8 +8,9 @@ import { addDays, fmt, isWeekend, today, weekdayLong, weekdayShort } from "@/lib
 import * as L from "@/lib/labels";
 import { shortPath } from "@/lib/site";
 import { employeeName, uid, useStore } from "@/lib/store";
-import type { Issue, Project, SiteNode } from "@/lib/types";
-import { dayText, isField, me, scopedPeople, visibleSites } from "./access";
+import { levelView, subtree } from "@/lib/roles";
+import type { Employee, Issue, Project, SiteNode } from "@/lib/types";
+import { dayText, isField, me, ROLLE_LABEL, ROLLEN, rolleOf, scopedPeople, visibleSites } from "./access";
 
 type Task =
   | { kind: "punkt"; id: string; title: string; due: string; site: Project; where: string; node: SiteNode }
@@ -96,6 +97,7 @@ export function Today() {
 
       <div className={`v-today ${planner ? "" : "worker"}`}>
         <div className="v-today-main">
+          <MyArea />
           <section className="v-panel">
             <header>
               <h2>
@@ -253,6 +255,75 @@ export function Today() {
 }
 
 const sevRank: Record<string, number> = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
+
+/** Leaders: one line per person directly below – with the numbers of their whole branch. */
+function MyArea() {
+  const { data } = useStore();
+  const lv = levelView(data);
+  if (!lv || !lv.direct.length) return null;
+  const t = today();
+  const rows = lv.direct
+    .map((id) => data.employees.find((e) => e.id === id && e.active))
+    .filter((e): e is Employee => !!e)
+    .map((e) => {
+      const ids = [...subtree(data, e.id)].filter((id) => data.employees.some((x) => x.id === id && x.active));
+      const set = new Set(ids);
+      const planned = ids.filter((id) => {
+        const d = dayText(data, id, t);
+        return d.am.kind === "job" || d.pm.kind === "job";
+      }).length;
+      const away = data.absences.filter((a) => set.has(a.employeeId) && a.start <= t && a.end >= t).length;
+      const defects = data.issues.filter((i) => i.status !== "erledigt" && set.has(i.assigneeId)).length;
+      const late = data.issues.filter((i) => i.status !== "erledigt" && set.has(i.assigneeId) && i.due && i.due < t).length;
+      return { e, size: ids.length, planned, away, defects, late };
+    })
+    .sort((a, b) => ROLLEN.indexOf(rolleOf(a.e)) - ROLLEN.indexOf(rolleOf(b.e)) || a.e.name.localeCompare(b.e.name, "de"));
+  return (
+    <section className="v-panel">
+      <header>
+        <h2>
+          <Network size={16} /> Mein Bereich
+        </h2>
+        <Link href="/planung" className="v-link">
+          Planung <ChevronRight size={15} />
+        </Link>
+      </header>
+      <table className="v-table">
+        <thead>
+          <tr>
+            <th>Direkt unter mir</th>
+            <th>Leute</th>
+            <th>Heute eingeteilt</th>
+            <th>Abwesend</th>
+            <th>Offene Mängel</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.e.id}>
+              <td>
+                <strong>{r.e.name}</strong>
+                <small className="v-sub">{ROLLE_LABEL[rolleOf(r.e)]}</small>
+              </td>
+              <td>{r.size}</td>
+              <td>
+                <span className="v-load-cell">
+                  <i style={{ width: `${(r.planned / Math.max(1, r.size - r.away)) * 100}%` }} />
+                </span>
+                {r.planned} / {r.size - r.away}
+              </td>
+              <td className={r.away ? "v-team-away" : "muted"}>{r.away || "–"}</td>
+              <td className={r.late ? "v-team-away" : ""}>
+                {r.defects || "–"}
+                {r.late > 0 && <small className="v-sub warn"> {r.late} überfällig</small>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
 
 const NOTE_COLORS = ["#fff4b8", "#ffd9c2", "#d6f0c9", "#cfe6ff", "#ead7ff"];
 

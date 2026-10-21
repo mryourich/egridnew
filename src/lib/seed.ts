@@ -10,7 +10,7 @@ function demoPhoto(label: string, hue: number) {
 
 export const DATA_VERSION = 6;
 /** Bump when the demo firm changes – browsers with an older demo get the new one on load. */
-export const SEED_VERSION = 11;
+export const SEED_VERSION = 12;
 
 /** Starting folders of the general document store. */
 export function generalFolders() {
@@ -75,10 +75,10 @@ export function createSeed(): Data {
     currentUserId: "e1",
     company: { tenantId: "muster", name: "Muster Anlagentechnik GmbH", address: "Industriestraße 12, 4840 Vöcklabruck", workdays: [1, 2, 3, 4, 5] },
     projects: [
-      { id: "p1", image: "/demo/band.jpg", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e9", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17"] },
+      { id: "p1", image: "/demo/band.jpg", code: "P-2401", name: "Umspannwerk Nord – Erweiterung", client: "Energie AG", location: "Linz", status: "aktiv", color: "#1463ff", start: d(-21), end: d(45), managerId: "e20", siteManagerId: "e10", description: "Erweiterung um zwei 110-kV-Felder inkl. Sekundärtechnik.", createdBy: "e10", members: ["e1", "e3", "e4", "e11", "e9", "e17", "e20"] },
       { id: "p2", image: "/demo/tunnel.jpg", code: "P-2402", name: "Tunnel Nord – Elektroinstallation", client: "ASFINAG", location: "Vöcklabruck", status: "aktiv", color: "#00b4d8", start: d(-35), end: d(30), managerId: "e9", siteManagerId: "e2", description: "Kabeltrassen, Beleuchtung und Notstromversorgung Abschnitt A–C.", createdBy: "e2", members: ["e4", "e6", "e8", "e12", "e13", "e14", "e1", "e9", "e17"] },
       { id: "p3", image: "/demo/foto5.jpg", code: "P-2403", name: "Parkdeck Ladepunkte", client: "Stadtwerke Wels", location: "Wels", status: "aktiv", color: "#7c3aed", start: d(-7), end: d(24), managerId: "e9", siteManagerId: "e1", description: "24 AC-Ladepunkte, 4 DC-Schnelllader, Lastmanagement.", createdBy: "e1", members: ["e5", "e6", "e7", "e11", "e12", "e2", "e9"] },
-      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e9", siteManagerId: "e10", description: "Neubau NS-Hauptverteilung inkl. Kompensation.", createdBy: "e10", members: ["e9", "e3", "e4"] }
+      { id: "p4", code: "P-2404", name: "Schaltanlage Werk 3", client: "Voest Industrie", location: "Steyr", status: "planung", color: "#f59e0b", start: d(14), end: d(70), managerId: "e20", siteManagerId: "e10", description: "Neubau NS-Hauptverteilung inkl. Kompensation.", createdBy: "e10", members: ["e9", "e3", "e4", "e20"] }
     ],
     employees: [
       { id: "e1", rolle: "teamleiter", managerId: "e9", name: "Mario Juric", role: "Teamleiter Elektro", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1234567", email: "mario@example.at", hourlyRate: 78, qualifications: [{ name: "SCC**", validUntil: d(300) }], active: true },
@@ -97,6 +97,7 @@ export function createSeed(): Data {
       { id: "e17", rolle: "koordinator", managerId: "e9", name: "Thomas Ebner", role: "Montagekoordinator", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
       { id: "e18", rolle: "admin", managerId: "e19", name: "Claudia Fink", role: "Büro / Administration", department: "Büro", team: "Büro", phone: "+43 660 7788990", email: "claudia@example.at", hourlyRate: 0, qualifications: [], active: true },
       { id: "e19", rolle: "gf", managerId: "", name: "Gerhard Lindner", role: "Geschäftsführer", department: "Geschäftsführung", team: "Geschäftsführung", phone: "+43 660 9900112", email: "gerhard@example.at", hourlyRate: 0, qualifications: [], active: true },
+      { id: "e20", rolle: "projektleiter", managerId: "e9", name: "Johann Wagner", role: "Projektleiter", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 4455667", email: "johann@example.at", hourlyRate: 74, qualifications: [], active: true },
       { id: "e14", rolle: "extern", managerId: "e1", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     absences: [
