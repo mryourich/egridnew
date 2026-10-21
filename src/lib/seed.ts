@@ -10,7 +10,7 @@ function demoPhoto(label: string, hue: number) {
 
 export const DATA_VERSION = 6;
 /** Bump when the demo firm changes – browsers with an older demo get the new one on load. */
-export const SEED_VERSION = 12;
+export const SEED_VERSION = 13;
 
 /** Starting folders of the general document store. */
 export function generalFolders() {
@@ -92,13 +92,13 @@ export function createSeed(): Data {
       { id: "e10", rolle: "bauleiter", managerId: "e1", name: "Markus Brandl", role: "Bauleiter", department: "Bauleitung", team: "Bauleitung", phone: "+43 660 1122334", email: "markus@example.at", hourlyRate: 70, qualifications: [{ name: "SCC**", validUntil: d(200) }], active: true },
       { id: "e11", rolle: "monteur", managerId: "e1", name: "Ivan Kovac", role: "Inbetriebnehmer", department: "Service", team: "Inbetriebnahme", phone: "+43 660 2233445", email: "ivan@example.at", hourlyRate: 58, qualifications: [{ name: "Hochvolt", validUntil: d(150) }], active: true },
       { id: "e12", rolle: "monteur", managerId: "e1", name: "Marko Petrovic", role: "Servicetechniker", department: "Service", team: "Inbetriebnahme", phone: "+43 660 3344556", email: "marko@example.at", hourlyRate: 54, qualifications: [], active: true },
-      { id: "e13", rolle: "extern", managerId: "e1", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
+      { id: "e13", rolle: "extern", managerId: "e17", name: "Elektro Huber GmbH", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 12345", email: "office@huber.example", hourlyRate: 48, qualifications: [], active: true },
       { id: "e9", rolle: "bereichsleiter", managerId: "e19", name: "Petra Koller", role: "Bereichsleiterin Elektro", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 9012345", email: "petra@example.at", hourlyRate: 76, qualifications: [], active: true },
       { id: "e17", rolle: "koordinator", managerId: "e9", name: "Thomas Ebner", role: "Montagekoordinator", department: "Montage", team: "Koordination", phone: "+43 660 5566778", email: "thomas.e@example.at", hourlyRate: 60, qualifications: [], active: true },
       { id: "e18", rolle: "admin", managerId: "e19", name: "Claudia Fink", role: "Büro / Administration", department: "Büro", team: "Büro", phone: "+43 660 7788990", email: "claudia@example.at", hourlyRate: 0, qualifications: [], active: true },
       { id: "e19", rolle: "gf", managerId: "", name: "Gerhard Lindner", role: "Geschäftsführer", department: "Geschäftsführung", team: "Geschäftsführung", phone: "+43 660 9900112", email: "gerhard@example.at", hourlyRate: 0, qualifications: [], active: true },
       { id: "e20", rolle: "projektleiter", managerId: "e9", name: "Johann Wagner", role: "Projektleiter", department: "Projektleitung", team: "Projektleitung", phone: "+43 660 4455667", email: "johann@example.at", hourlyRate: 74, qualifications: [], active: true },
-      { id: "e14", rolle: "extern", managerId: "e1", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
+      { id: "e14", rolle: "extern", managerId: "e17", name: "Kabelbau Steiner", role: "Subunternehmer", department: "Extern", team: "Subunternehmer", phone: "+43 7672 67890", email: "office@steiner.example", hourlyRate: 46, qualifications: [], active: true }
     ],
     absences: [
       { id: "ab1", employeeId: "e3", type: "schulung", start: d(10), end: d(11), note: "Hochvolt Auffrischung" },
