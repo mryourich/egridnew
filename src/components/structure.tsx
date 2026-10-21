@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, Copy, ChevronRight, Folder, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Camera, ChevronDown, Copy, ChevronRight, Folder, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { fmt, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
-import { childrenOf, isArea, nodeStatus, pathOf, pointsUnder } from "@/lib/site";
+import { childrenOf, isArea, nodeStatus, pathOf, pointsUnder, shortPath } from "@/lib/site";
 import { canDelete, employeeName, isManager, projectTeam, uid, useStore } from "@/lib/store";
 import type { NodeStatus, Project, SiteNode } from "@/lib/types";
 import { NODE_LABELS, Trail } from "./trail";
@@ -197,7 +197,7 @@ export function SiteStructure({ project }: { project: Project }) {
             {adding === n.id && (
               <div className="at-new" style={{ paddingLeft: 28 + depth * 16 }}>
                 <InlineInput
-                  placeholder="Unterbereich + Enter"
+                  placeholder="Name des Unterbereichs"
                   keepOpen
                   onDone={(v) => {
                     if (v) addArea(n.id, v);
@@ -235,7 +235,7 @@ export function SiteStructure({ project }: { project: Project }) {
           {adding === "" && (
             <li className="at-new">
               <InlineInput
-                placeholder="Neuer Bereich + Enter"
+                placeholder="Name des Bereichs"
                 keepOpen
                 onDone={(v) => {
                   if (v) setArea(addArea("", v));
@@ -266,21 +266,17 @@ export function SiteStructure({ project }: { project: Project }) {
           <SearchInput value={query} onChange={setQuery} placeholder="Punkt suchen…" />
         </header>
 
-        <div className="op-kpis op-kpis-slim">
-          <div className="op-kpi op-total">
-            <span className="ring" style={{ "--p": pct } as CSSProperties}>
-              <i>{pct}%</i>
-            </span>
+        <div className="op-progress">
+          <div className="op-progress-head">
+            <b>{pct} %</b>
             <span>
-              <strong>
-                {doneCount} / {scope.length}
-              </strong>
-              <small>
-                Punkte erledigt
-                {openIssues.length > 0 && ` · ${openIssues.length} ${openIssues.length === 1 ? "Mangel" : "Mängel"}`}
-                {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length > 0 && <em> · {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length} überfällig</em>}
-              </small>
+              {doneCount} von {scope.length} Punkten erledigt
+              {openIssues.length > 0 && ` · ${openIssues.length} ${openIssues.length === 1 ? "offener Mangel" : "offene Mängel"}`}
+              {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length > 0 && <em> · {scope.filter((n) => n.status !== "erledigt" && n.due && n.due < today()).length} überfällig</em>}
             </span>
+          </div>
+          <div className="op-progress-bar">
+            <i style={{ width: `${pct}%` }} />
           </div>
         </div>
 
@@ -295,10 +291,13 @@ export function SiteStructure({ project }: { project: Project }) {
             <span>Fotos</span>
           </div>
           {groups.length === 0 && looseRoots.length === 0 && <Empty>{manager ? "Noch keine Bereiche – links „+ Bereich“." : "Noch keine Punkte."}</Empty>}
-          {looseRoots.filter((n) => n.status !== "erledigt" && (!q || n.title.toLowerCase().includes(q))).map((n) => (
-            <PointRow key={n.id} node={n} project={project} onOpen={setOpenPoint} onStatus={setStatus} />
-          ))}
-          {groups.map((g) => {
+          {!selected &&
+            open
+              .slice()
+              .sort((a, b) => shortPath(nodes, a.parentId).localeCompare(shortPath(nodes, b.parentId), "de") || a.order - b.order)
+              .map((n) => <PointRow key={n.id} node={n} project={project} onOpen={setOpenPoint} onStatus={setStatus} where={n.parentId ? shortPath(nodes, n.parentId) : ""} />)}
+          {!selected && open.length === 0 && nodes.length > 0 && <Empty>Keine offenen Punkte.</Empty>}
+          {selected && groups.map((g) => {
             const own = childrenOf(nodes, g.id).filter((n) => !isArea(nodes, n) && open.includes(n));
             const all = childrenOf(nodes, g.id).filter((n) => !isArea(nodes, n));
             const fin = all.filter((n) => n.status === "erledigt").length;
@@ -386,9 +385,11 @@ export function SiteStructure({ project }: { project: Project }) {
   );
 }
 
+/** Text field: Enter saves (and stays open for the next one with keepOpen), clicking elsewhere saves too, Esc cancels. */
 function InlineInput({ initial = "", placeholder, keepOpen, onDone }: { initial?: string; placeholder?: string; keepOpen?: boolean; onDone: (v: string) => void }) {
   const [v, setV] = useState(initial);
   const ref = useRef<HTMLInputElement>(null);
+  const cancelled = useRef(false);
   useEffect(() => {
     ref.current?.focus();
     ref.current?.select();
@@ -401,9 +402,19 @@ function InlineInput({ initial = "", placeholder, keepOpen, onDone }: { initial?
       placeholder={placeholder}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setV(e.target.value)}
-      onBlur={() => onDone(keepOpen ? "" : v.trim())}
+      onBlur={() => {
+        if (cancelled.current) return;
+        const val = v.trim();
+        if (keepOpen) {
+          if (val) onDone(val);
+          onDone("");
+        } else onDone(val || initial);
+      }}
       onKeyDown={(e) => {
-        if (e.key === "Escape") onDone(keepOpen ? "" : initial);
+        if (e.key === "Escape") {
+          cancelled.current = true;
+          onDone(keepOpen ? "" : initial);
+        }
         if (e.key === "Enter") {
           onDone(v.trim());
           if (keepOpen) setV("");
@@ -425,7 +436,7 @@ function AddPointRow({ onAdd }: { onAdd: (title: string) => void }) {
     <div className="op-add editing">
       <Plus size={14} />
       <InlineInput
-        placeholder="Punkt eingeben + Enter (Esc beendet)"
+        placeholder="Neuer Punkt – Enter für den nächsten"
         keepOpen
         onDone={(v) => {
           if (v) onAdd(v);
@@ -436,7 +447,7 @@ function AddPointRow({ onAdd }: { onAdd: (title: string) => void }) {
   );
 }
 
-function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project: Project; onOpen: (id: string) => void; onStatus: (n: SiteNode, s: NodeStatus) => void }) {
+function PointRow({ node, project, onOpen, onStatus, where }: { node: SiteNode; project: Project; onOpen: (id: string) => void; onStatus: (n: SiteNode, s: NodeStatus) => void; where?: string }) {
   const { data, save } = useStore();
   const team = projectTeam(data, project);
   const photos = data.photos.filter((p) => p.nodeId === node.id).sort((a, b) => b.takenAt.localeCompare(a.takenAt));
@@ -453,6 +464,7 @@ function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project
       </span>
       <span className="op-title">
         <strong>{node.title}</strong>
+        {where && <small className="op-where">{where}</small>}
         {node.status === "erledigt" && <Trail item={node} labels={NODE_LABELS} compact />}
       </span>
       <span className="op-status" onClick={(e) => e.stopPropagation()}>
@@ -478,8 +490,11 @@ function PointRow({ node, project, onOpen, onStatus }: { node: SiteNode; project
         <IssueButton projectId={project.id} nodeId={node.id} location={node.title} className="icon-btn op-defect-btn" label="Mangel" iconOnly />
       </span>
       <span className="op-attach" onClick={(e) => e.stopPropagation()}>
-        {photos[0] && <img className="op-thumb" src={photos[0].dataUrl} alt="" />}
-        {photos.length > 1 && <em>+{photos.length - 1}</em>}
+        {photos.length > 0 && (
+          <span className="op-photo-count" title={`${photos.length} ${photos.length === 1 ? "Foto" : "Fotos"}`}>
+            <Camera size={13} /> {photos.length}
+          </span>
+        )}
         <PhotoAddButton projectId={project.id} nodeId={node.id} className="icon-btn" label="" />
       </span>
     </div>

@@ -3,14 +3,15 @@
 import { ChevronLeft, ChevronRight, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
-import { addDays, today } from "@/lib/date";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { addDays, fmtShort, today } from "@/lib/date";
 import * as L from "@/lib/labels";
 import { projectFolders } from "@/lib/seed";
+import { siteProgress } from "@/lib/site";
 import { uid, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
 import { canPlan, canRemove, dayText, me, visibleSites } from "./access";
-import { Empty, Field, PageHead, Sheet } from "./kit";
+import { Empty, Face, Field, PageHead, Sheet } from "./kit";
 
 export const TABS = [
   { key: "struktur", label: "Offene Punkte", office: false },
@@ -35,7 +36,7 @@ export function SiteList() {
   const t = today();
 
   return (
-    <div className="v-page narrow">
+    <div className="v-page">
       <PageHead title="Baustellen" sub={`${sites.length} ${sites.length === 1 ? "Baustelle" : "Baustellen"}`}>
         {planner && (
           <button type="button" className="v-btn primary" onClick={() => setEdit({})}>
@@ -46,28 +47,64 @@ export function SiteList() {
       {sites.length === 0 ? (
         <Empty>{planner ? "Noch keine Baustelle. Lege die erste an." : "Du bist noch auf keiner Baustelle eingeteilt."}</Empty>
       ) : (
-        <ul className="v-card v-list v-sites">
+        <div className="v-site-grid">
           {sites.map((p) => {
-            const issues = data.issues.filter((i) => i.projectId === p.id && i.status !== "erledigt").length;
-            const here = data.employees.filter((e) => e.active && [dayText(data, e.id, t).am, dayText(data, e.id, t).pm].some((s) => s.kind === "job" && s.job.projectId === p.id)).length;
+            const issues = data.issues.filter((i) => i.projectId === p.id && i.status !== "erledigt");
+            const critical = issues.filter((i) => i.severity === "kritisch" || i.severity === "hoch").length;
+            const nodes = data.siteNodes.filter((n) => n.projectId === p.id);
+            const points = nodes.filter((n) => !nodes.some((k) => k.parentId === n.id));
+            const openPoints = points.filter((n) => n.status !== "erledigt").length;
+            const progress = siteProgress(data, p.id);
+            const here = data.employees.filter((e) => e.active && [dayText(data, e.id, t).am, dayText(data, e.id, t).pm].some((x) => x.kind === "job" && x.job.projectId === p.id));
+            const late = p.end && p.end < t;
             return (
-              <li key={p.id}>
-                <Link href={`/projekte/${p.id}`} className="v-site-row">
-                  <i style={{ background: p.color }} />
-                  <span className="v-list-main">
+              <Link key={p.id} href={`/projekte/${p.id}`} className="v-site-card" style={{ "--c": p.color } as CSSProperties}>
+                <div className="v-sc-top">
+                  <div className="v-sc-title">
                     <strong>{p.name}</strong>
                     <small>{[p.client, p.location].filter(Boolean).join(" · ") || "–"}</small>
+                  </div>
+                  {p.code && <span className="v-sc-code">{p.code}</span>}
+                </div>
+                <div className="v-sc-progress">
+                  <div className="v-sc-progress-head">
+                    <span>Fortschritt</span>
+                    <b>{progress} %</b>
+                  </div>
+                  <div className="v-sc-bar">
+                    <i style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+                <div className="v-sc-facts">
+                  <div className={issues.length ? "bad" : ""}>
+                    <b>{issues.length}</b>
+                    <span>{issues.length === 1 ? "offener Mangel" : "offene Mängel"}</span>
+                    {critical > 0 && <em>{critical} dringend</em>}
+                  </div>
+                  <div>
+                    <b>{openPoints}</b>
+                    <span>offene Punkte</span>
+                    {points.length > 0 && <em className="muted">von {points.length}</em>}
+                  </div>
+                  <div className={late ? "bad" : ""}>
+                    <b>{p.end ? fmtShort(p.end) : "–"}</b>
+                    <span>{late ? "Ende überschritten" : "geplantes Ende"}</span>
+                  </div>
+                </div>
+                <div className="v-sc-foot">
+                  <span className="v-sc-faces">
+                    {here.slice(0, 5).map((e) => (
+                      <Face key={e.id} id={e.id} size={24} />
+                    ))}
+                    {here.length > 5 && <span className="v-sc-more">+{here.length - 5}</span>}
                   </span>
-                  <span className="v-site-facts">
-                    {here > 0 && <span>{here} heute</span>}
-                    {issues > 0 && <span className="warn">{issues} {issues === 1 ? "Mangel" : "Mängel"}</span>}
-                  </span>
-                  <ChevronRight size={18} className="v-chev" />
-                </Link>
-              </li>
+                  <small>{here.length ? `${here.length} heute vor Ort` : "heute niemand vor Ort"}</small>
+                  <ChevronRight size={16} className="v-chev" />
+                </div>
+              </Link>
             );
           })}
-        </ul>
+        </div>
       )}
       {done.length > 0 && (
         <div className="v-done">

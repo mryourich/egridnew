@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { DocBrowser } from "@/components/documents";
 import { MaterialSection } from "@/components/material";
 import { PhotoGallery } from "@/components/site";
-import { SiteGantt } from "@/components/site-gantt";
+import { Gantt } from "@/ui/gantt";
 import { DefectsSection, ReportsSection } from "@/components/site-sections";
 import { SiteStructure } from "@/components/structure";
 import { useStore } from "@/lib/store";
@@ -20,7 +20,7 @@ function Tab() {
   const office = canPlan(data);
   switch (section) {
     case "plan":
-      return office ? <SiteGantt project={project} /> : <SiteStructure project={project} />;
+      return office ? <Gantt scope={{ kind: "site", project }} /> : <SiteStructure project={project} />;
     case "maengel":
       return <DefectsSection projectId={id} />;
     case "fotos":

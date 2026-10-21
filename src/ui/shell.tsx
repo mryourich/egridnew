@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, HardHat, Settings, Sun, Users } from "lucide-react";
+import { CalendarDays, HardHat, LayoutDashboard, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -12,7 +12,7 @@ import { Face } from "./kit";
 import "./app.css";
 
 const NAV = [
-  { href: "/dashboard", label: "Heute", icon: Sun },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/planung", label: "Planung", icon: CalendarDays },
   { href: "/projekte", label: "Baustellen", icon: HardHat },
   { href: "/team", label: "Team", icon: Users }

@@ -46,7 +46,12 @@ export type Project = {
   planRows?: { id: string; name: string }[];
   /** Order of the plan rows (employee ids and free row ids). */
   rowOrder?: string[];
+  /** Free status text per plan row (e.g. "FERTIG", "BLOCKIERT"). */
+  rowStatus?: Record<string, string>;
 };
+
+/** Rows, groups and order of a plan board (site plan or company planning). */
+export type PlanLayout = Pick<Project, "groups" | "memberGroup" | "planRows" | "rowOrder" | "rowStatus">;
 
 export type Qualification = {
   name: string;
@@ -114,6 +119,10 @@ export type Job = Tracked & {
   symbol?: boolean;
   /** Emoji shown for a symbol. */
   icon?: string;
+  /** Sticky-note comment on the bar. */
+  comment?: string;
+  /** Bars that follow this one (drawn as connector lines). */
+  links?: string[];
 };
 
 export type NodeStatus = "offen" | "in_arbeit" | "erledigt";
@@ -359,6 +368,8 @@ export type Company = {
   timesheet?: TimesheetSettings;
   /** Licensed modules besides TECH (always on), e.g. ["grid"]. Empty/missing = default set. */
   modules?: ModuleKey[];
+  /** Layout of the company-wide planning board. */
+  plan?: PlanLayout;
 };
 
 export type Data = {
