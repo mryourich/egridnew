@@ -47,11 +47,13 @@ export function Defects({ project: p }: { project: Project }) {
   const [editing, setEditing] = useState<Defect | null>(null);
   const all = data.defects.filter((d) => d.projectId === p.id);
   const wanted = params.get("mangel");
+  const fresh = params.get("neu");
   useEffect(() => {
     const d = wanted && data.defects.find((x) => x.id === wanted);
     if (d) setEditing(d);
+    else if (fresh && work) setEditing(newDefect(data, p));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted]);
+  }, [wanted, fresh]);
 
   const t = today();
   const term = q.trim().toLowerCase();
@@ -141,7 +143,10 @@ export function Defects({ project: p }: { project: Project }) {
                     <People ids={d.ownerId ? [d.ownerId] : []} />
                   </td>
                   <td className={`hide-sm nowrap ${d.status !== "done" && d.due && d.due < t ? "bad" : ""}`}>{d.due ? fmtShort(d.due) : "–"}</td>
-                  <td className="num hide-md">{d.attachments.filter((a) => a.kind === "photo").length || <span className="muted">–</span>}</td>
+                  <td className="num hide-md nowrap">
+                    {d.attachments.filter((a) => a.kind === "photo").length || <span className="muted">–</span>}
+                    {(d.fixPhotos?.length ?? 0) > 0 && <small className="ok"> + {d.fixPhotos!.length} behoben</small>}
+                  </td>
                   <td className="w-menu" onClick={(e) => e.stopPropagation()}>
                     <Menu items={[{ label: "Löschen", icon: <Trash2 size={14} />, danger: true, disabled: !manage, onClick: () => window.confirm(`${defectNo(d.no)} „${d.title}“ löschen?`) && remove("defects", d.id, `Mangel ${defectNo(d.no)} gelöscht`) }]} />
                   </td>
@@ -265,6 +270,14 @@ export function DefectEditor({ project: p, defect, onClose }: { project: Project
           </span>
           <Attachments value={v.attachments} editable={work} onChange={(attachments) => set("attachments", attachments)} />
         </div>
+        {!isNew && (
+          <div className={`fix-proof span-2 ${v.status === "done" ? "done" : ""}`}>
+            <span className="b-label">Nachweis der Behebung</span>
+            <small className="b-hint">Foto nachher und kurz, was gemacht wurde – kommt in den Mängelbericht.</small>
+            <textarea rows={2} value={v.fixNote ?? ""} onChange={(e) => set("fixNote", e.target.value)} disabled={!work} placeholder="z. B. Konsole neu verschraubt, Drehmoment geprüft" />
+            <Attachments value={v.fixPhotos ?? []} editable={work} onChange={(fixPhotos) => set("fixPhotos", fixPhotos)} />
+          </div>
+        )}
         {!isNew && (
           <p className="trail span-2">
             Gemeldet von {personName(data, v.createdBy) || "–"} am {fmtStamp(v.createdAt)}

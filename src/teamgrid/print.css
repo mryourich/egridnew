@@ -188,3 +188,59 @@
 .pr-table td:last-child {
   white-space: nowrap;
 }
+.pr-photos.two {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.pr-photos figcaption strong,
+.pr-photos figcaption span {
+  display: block;
+}
+.pr-photos figcaption span {
+  color: #64748b;
+}
+.pr-text {
+  white-space: pre-wrap;
+  margin: 0;
+}
+.pr-sum td {
+  font-weight: 700;
+  border-top: 1px solid #94a3b8;
+}
+.pr-signs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 36px;
+  break-inside: avoid;
+}
+.pr-signs img {
+  display: block;
+  height: 60px;
+  width: auto;
+}
+.pr-sign-empty {
+  display: block;
+  height: 60px;
+  color: #16a34a;
+  font-weight: 600;
+}
+.pr-signs small {
+  display: block;
+  padding-top: 4px;
+  border-top: 1px solid #0f172a;
+  color: #475569;
+}
+.pr-fix {
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+  break-inside: avoid;
+}
+.pr-fix > small {
+  display: block;
+  color: #64748b;
+}
+.pr-fix .pr-photos {
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 6px;
+}

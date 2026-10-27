@@ -110,7 +110,7 @@ function PeopleAdmin() {
   );
 }
 
-function PersonForm({ person, onClose }: { person: Partial<Person>; onClose: () => void }) {
+export function PersonForm({ person, onClose }: { person: Partial<Person>; onClose: () => void }) {
   const { data, save, notify } = useStore();
   const isNew = !person.id;
   const [v, setV] = useState<Person>({ id: "", name: "", title: "", rolle: "monteur", managerId: data.meId, email: "", phone: "", active: true, ...person });

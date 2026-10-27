@@ -1,15 +1,24 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addDays, today } from "@/core/date";
-import { fmtDate, fmtMoney, PROJECT_STATUS } from "@/core/format";
+import { fmtMoney, fmtShort, PROJECT_STATUS } from "@/core/format";
 import { byRole, FIELD, rightsOf } from "@/core/roles";
 import { uid, useStore } from "@/core/store";
-import type { Project, ProjectStatus } from "@/core/types";
-import { Avatar, Bar, Button, Empty, Field, Modal, PageHead, SearchBox, Seg, Tag } from "@/core/ui";
+import type { Data, Project, ProjectStatus } from "@/core/types";
+import { Bar, Button, Empty, Field, Modal, PageHead, People, SearchBox, Seg, Tag } from "@/core/ui";
 import { PROJECT_COLORS, projectFacts, visibleProjects } from "./model";
+import { slotOf } from "./plan-kit";
+
+/** Planned on the project that day (morning or afternoon). */
+const plannedHere = (data: Data, id: string, projectId: string, day: string) =>
+  [false, true].some((pm) => {
+    const s = slotOf(data, id, day, pm);
+    return s.kind === "job" && s.job.projectId === projectId;
+  });
 
 type Filter = "alle" | ProjectStatus;
 
@@ -61,69 +70,49 @@ export function ProjectList() {
           {!all.length && !archived && !create ? "Sobald dich jemand in ein Projekt einlädt, erscheint es hier." : undefined}
         </Empty>
       ) : (
-        <div className="panel">
-          <table className="table rows-click">
-            <thead>
-              <tr>
-                <th>Projekt</th>
-                <th className="hide-md">Ort</th>
-                <th>Status</th>
-                <th className="w-progress">Fortschritt</th>
-                <th className="num">Offene Punkte</th>
-                <th className="num">Mängel</th>
-                <th className="hide-sm">Fertig bis</th>
-                <th className="hide-md">Projektleitung</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((p) => {
-                const f = projectFacts(data, p);
-                return (
-                  <tr key={p.id} onClick={() => router.push(`/projekte/${p.id}`)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && router.push(`/projekte/${p.id}`)}>
-                    <td>
-                      <span className="proj-cell">
-                        <i style={{ background: p.color }} />
-                        <span>
-                          <strong>{p.name}</strong>
-                          <small>{[p.number, p.client].filter(Boolean).join(" · ") || "–"}</small>
-                        </span>
-                      </span>
-                    </td>
-                    <td className="hide-md">{p.location || "–"}</td>
-                    <td>
-                      <Tag tone={PROJECT_STATUS[p.status].tone} dot>
-                        {PROJECT_STATUS[p.status].label}
-                      </Tag>
-                    </td>
-                    <td className="w-progress">
-                      <span className="progress-cell">
-                        <Bar value={f.progress} />
-                        <b>{f.progress} %</b>
-                      </span>
-                    </td>
-                    <td className="num">
-                      {f.open.length}
-                      {f.late.length > 0 && <small className="bad"> · {f.late.length} überfällig</small>}
-                    </td>
-                    <td className="num">
-                      <span className={f.urgent.length ? "bad strong" : ""}>{f.openDefects.length || "–"}</span>
-                    </td>
-                    <td className={`hide-sm ${p.due && p.due < t && p.status !== "archived" ? "bad" : ""}`}>{fmtDate(p.due) || "–"}</td>
-                    <td className="hide-md">
-                      {p.managerId ? (
-                        <span className="who">
-                          <Avatar id={p.managerId} size={22} />
-                          {data.people.find((x) => x.id === p.managerId)?.name}
-                        </span>
-                      ) : (
-                        "–"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="proj-grid">
+          {list.map((p) => {
+            const f = projectFacts(data, p);
+            const here = f.team.filter((id) => plannedHere(data, id, p.id, t));
+            return (
+              <Link key={p.id} href={`/projekte/${p.id}`} className="proj-card" style={{ "--c": p.color } as React.CSSProperties}>
+                <div className="pc-top">
+                  <span className="pc-title">
+                    <strong>{p.name}</strong>
+                    <small>{[p.client, p.location].filter(Boolean).join(" · ") || "–"}</small>
+                  </span>
+                  <Tag tone={PROJECT_STATUS[p.status].tone}>{PROJECT_STATUS[p.status].label}</Tag>
+                </div>
+                <div className="pc-progress">
+                  <span>
+                    Fortschritt <b>{f.progress} %</b>
+                  </span>
+                  <Bar value={f.progress} />
+                </div>
+                <div className="pc-facts">
+                  <div className={f.openDefects.length ? "bad" : ""}>
+                    <b>{f.openDefects.length}</b>
+                    <span>{f.openDefects.length === 1 ? "offener Mangel" : "offene Mängel"}</span>
+                    {f.urgent.length > 0 && <em>{f.urgent.length} dringend</em>}
+                  </div>
+                  <div>
+                    <b>{f.open.length}</b>
+                    <span>offene Punkte</span>
+                    {f.late.length > 0 && <em>{f.late.length} überfällig</em>}
+                  </div>
+                  <div className={f.overdue ? "bad" : ""}>
+                    <b>{p.due ? fmtShort(p.due) : "–"}</b>
+                    <span>{f.overdue ? "Termin überschritten" : "fertig bis"}</span>
+                  </div>
+                </div>
+                <div className="pc-foot">
+                  <People ids={here.length ? here : p.managerId ? [p.managerId] : []} max={5} />
+                  <small>{here.length ? `${here.length} heute vor Ort` : p.managerId ? "Projektleitung" : ""}</small>
+                  <span className="pc-no">{p.number}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 

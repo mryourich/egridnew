@@ -21,6 +21,19 @@ export type Workspace = {
   name: string;
   slug: string;
   address: string;
+  /** Layout of the company-wide planning board. */
+  plan?: PlanLayout;
+};
+
+/** Rows, groups and order of a planning board (company planning or a project plan). */
+export type PlanLayout = {
+  groups?: { id: string; name: string }[];
+  memberGroup?: Record<string, string>;
+  /** Free rows: crane, delivery, subcontractor without account … */
+  planRows?: { id: string; name: string }[];
+  rowOrder?: string[];
+  /** Free status text per row, e.g. "FERTIG". */
+  rowStatus?: Record<string, string>;
 };
 
 export type Person = {
@@ -34,6 +47,8 @@ export type Person = {
   email: string;
   phone: string;
   active: boolean;
+  /** Crew, e.g. "Montage A" – groups the project plan. */
+  team?: string;
 };
 
 export type ProjectStatus = "planning" | "active" | "handover" | "paused" | "archived";
@@ -55,7 +70,7 @@ export type Project = Stamped & {
   description: string;
   color: string;
   settings: ProjectSettings;
-};
+} & PlanLayout;
 
 export type ProjectSettings = {
   /** A point can only be closed with at least one photo. */
@@ -114,6 +129,9 @@ export type Defect = Stamped & {
   status: WorkStatus;
   due: ISODate | "";
   attachments: Attachment[];
+  /** Proof of the fix: photos after and a short note. */
+  fixPhotos?: Attachment[];
+  fixNote?: string;
   closedBy?: string;
   closedAt?: string;
 };
@@ -128,11 +146,99 @@ export type Task = Stamped & {
   doneAt?: string;
 };
 
+/** Sticky note: of a project (everyone on it sees it) or personal (projectId ""), shown on the dashboard. */
 export type Note = Stamped & {
   id: string;
   projectId: string;
   text: string;
   pinned: boolean;
+  color: string;
+};
+
+export type AbsenceType = "urlaub" | "krank" | "za" | "schulung";
+
+export type Absence = {
+  id: string;
+  employeeId: string;
+  type: AbsenceType;
+  start: ISODate;
+  end: ISODate;
+  note: string;
+};
+
+/** A bar (or symbol) on a planning board, in half days. */
+export type Job = Stamped & {
+  id: string;
+  projectId: string;
+  /** Row: a person or a free plan row. */
+  employeeId: string;
+  title: string;
+  color: string;
+  start: ISODate;
+  end: ISODate;
+  startPm?: boolean;
+  endAm?: boolean;
+  note: string;
+  done: boolean;
+  symbol?: boolean;
+  icon?: string;
+  comment?: string;
+  links?: string[];
+};
+
+/** Photo of the project documentation that does not belong to a point or defect. */
+export type Photo = Stamped & {
+  id: string;
+  projectId: string;
+  pointId: string;
+  caption: string;
+  file: Attachment;
+};
+
+export type MaterialStatus = "open" | "ordered" | "arrived";
+
+export type Material = Stamped & {
+  id: string;
+  projectId: string;
+  artNo: string;
+  name: string;
+  qty: number;
+  unit: string;
+  status: MaterialStatus;
+  note: string;
+};
+
+/** Remembered article – suggested when entering material again. */
+export type Article = { id: string; artNo: string; name: string; unit: string };
+
+/** Extra work billed separately, signed by the client on site. */
+export type Regie = Stamped & {
+  id: string;
+  projectId: string;
+  no: number;
+  date: ISODate;
+  orderedBy: string;
+  description: string;
+  workers: { employeeId: string; hours: number }[];
+  materials: { artNo: string; name: string; qty: number; unit: string }[];
+  photos: Attachment[];
+  signature: string;
+  signedBy: string;
+  signedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+};
+
+/** Daily site report. */
+export type DailyReport = Stamped & {
+  id: string;
+  projectId: string;
+  date: ISODate;
+  weather: string;
+  crew: { employeeId: string; hours: number }[];
+  work: string;
+  incidents: string;
+  photos: Attachment[];
 };
 
 export type DocumentKind = "photo" | "protocol" | "plan" | "report" | "file";
@@ -147,7 +253,7 @@ export type ProjectDocument = Stamped & {
   file: Attachment;
 };
 
-export type ReportKind = "status" | "defects" | "points";
+export type ReportKind = "status" | "defects" | "points" | "photos";
 
 export type Report = Stamped & {
   id: string;
@@ -181,9 +287,16 @@ export type Data = {
   notes: Note[];
   documents: ProjectDocument[];
   reports: Report[];
+  absences: Absence[];
+  jobs: Job[];
+  photos: Photo[];
+  materials: Material[];
+  articles: Article[];
+  regie: Regie[];
+  dailies: DailyReport[];
   activity: Activity[];
 };
 
 /** The lists that hold records with an id. */
-export type Collection = "people" | "projects" | "points" | "defects" | "tasks" | "notes" | "documents" | "reports";
+export type Collection = "people" | "projects" | "points" | "defects" | "tasks" | "notes" | "documents" | "reports" | "absences" | "jobs" | "photos" | "materials" | "articles" | "regie" | "dailies";
 export type Item<K extends Collection> = Data[K][number];
