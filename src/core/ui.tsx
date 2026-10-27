@@ -84,14 +84,14 @@ export function Empty({ title, children, action }: { title: string; children?: R
 
 export function PageHead({ kicker, title, sub, children }: { kicker?: string; title: ReactNode; sub?: ReactNode; children?: ReactNode }) {
   return (
-    <header className="b-head">
+    <div className="page-header">
       <div>
-        {kicker && <span className="b-kicker">{kicker}</span>}
+        {kicker && <span className="eyebrow">{kicker}</span>}
         <h1>{title}</h1>
         {sub && <p>{sub}</p>}
       </div>
-      {children && <div className="b-head-actions">{children}</div>}
-    </header>
+      {children && <div className="page-actions">{children}</div>}
+    </div>
   );
 }
 

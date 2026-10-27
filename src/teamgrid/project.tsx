@@ -9,35 +9,29 @@ import { Documents } from "./documents";
 import { Gantt } from "./gantt";
 import { MaterialList } from "./material";
 import { Notes } from "./notes";
-import { Overview } from "./overview";
+import { OpenPoints } from "./open-points";
 import { Photos } from "./photos";
 import { ProjectSettings } from "./project-settings";
-import { Points } from "./points";
 import { RegieList } from "./regie";
 import { Reports } from "./reports";
+import { SiteDashboard, SiteStatusBar } from "./site";
 import { Tasks } from "./tasks";
 
-/** One project: the tab from the address decides the page. */
+/** One project of the SiteManager: the tab from the address decides the page. */
 export function ProjectPage({ id, tab = "" }: { id: string; tab?: string }) {
   const { data } = useStore();
   const project = data.projects.find((p) => p.id === id);
   if (!project || !canSee(data, project))
     return (
-      <div className="page">
-        <Empty title="Projekt nicht gefunden" action={<Link href="/projekte" className="b-btn default md">Zu den Projekten</Link>}>
-          Entweder gibt es das Projekt nicht mehr, oder du bist (noch) nicht eingeladen.
-        </Empty>
-      </div>
+      <Empty title="Projekt nicht gefunden" action={<Link href="/projekte" className="primary-action">Zur Projektauswahl</Link>}>
+        Entweder gibt es das Projekt nicht mehr, oder du bist (noch) nicht eingeladen.
+      </Empty>
     );
   const field = isField(data);
+  if (tab === "") return <SiteDashboard project={project} />;
+  if (tab === "punkte") return <OpenPoints project={project} />;
   const pages: Record<string, React.ReactNode> = {
-    "": <Overview project={project} />,
-    punkte: <Points project={project} />,
-    plan: field ? null : (
-      <div className="page wide">
-        <Gantt scope={{ kind: "site", project }} />
-      </div>
-    ),
+    plan: field ? null : <Gantt scope={{ kind: "site", project }} />,
     maengel: <Defects project={project} />,
     fotos: <Photos project={project} />,
     regie: <RegieList project={project} />,
@@ -48,5 +42,12 @@ export function ProjectPage({ id, tab = "" }: { id: string; tab?: string }) {
     berichte: field ? null : <Reports project={project} />,
     einstellungen: <ProjectSettings project={project} />
   };
-  return pages[tab] ?? pages[""];
+  const page = pages[tab];
+  if (!page) return <SiteDashboard project={project} />;
+  return (
+    <div className="site-workspace">
+      <SiteStatusBar project={project} />
+      {page}
+    </div>
+  );
 }

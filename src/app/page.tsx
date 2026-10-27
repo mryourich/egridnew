@@ -412,7 +412,7 @@ export default function Landing() {
           <span>TeamGrid – Projekte, Offene Punkte und Mängel.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
-          <Link href="/dashboard">Anmelden</Link>
+          <Link href="/start">Anmelden</Link>
           <span>© {new Date().getFullYear()} VYSNER</span>
         </div>
       </footer>

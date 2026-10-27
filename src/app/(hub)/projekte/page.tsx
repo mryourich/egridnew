@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
-import { ProjectList } from "@/teamgrid/projects";
+"use client";
 
-export const metadata: Metadata = { title: "Projekte" };
+import { Suspense } from "react";
+import { ProjectSelection } from "@/teamgrid/site";
 
 export default function Page() {
-  return <ProjectList />;
+  return (
+    <Suspense>
+      <ProjectSelection />
+    </Suspense>
+  );
 }
