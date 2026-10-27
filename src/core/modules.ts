@@ -7,6 +7,13 @@ import {
   Camera,
   Car,
   CheckCircle2,
+  ClipboardCheck,
+  Contact2,
+  FileDown,
+  KanbanSquare,
+  Receipt,
+  Timer,
+  UserCheck,
   ClipboardList,
   Euro,
   FileCheck2,
@@ -29,7 +36,7 @@ import {
 } from "lucide-react";
 
 export type NavIcon = typeof LayoutDashboard;
-export type ModuleKey = "dashboard" | "site" | "planning" | "people" | "fleet" | "documents" | "settings";
+export type ModuleKey = "dashboard" | "site" | "planning" | "time" | "people" | "crm" | "billing" | "fleet" | "documents" | "settings";
 
 export type SubNavItem = {
   key: string;
@@ -68,6 +75,7 @@ export const MODULES: ModuleNavItem[] = [
     color: "#1769ff",
     subItems: [
       { key: "", label: "Dashboard", description: "Zentrale Übersicht", icon: LayoutDashboard },
+      { key: "aufgaben", label: "Aufgaben", description: "Board über alle Projekte", icon: KanbanSquare },
       { key: "notizen", label: "Notizen", description: "Meine Sticky Notes", icon: StickyNote },
       { key: "aktivitaeten", label: "Aktivitäten", description: "Feed und Änderungen", icon: Activity }
     ]
@@ -90,6 +98,7 @@ export const MODULES: ModuleNavItem[] = [
       { key: "material", label: "Material", description: "Bestellen und Lieferung", icon: Package },
       { key: "aufgaben", label: "Aufgaben", description: "Zuweisungen vor Ort", icon: ClipboardList },
       { key: "notizen", label: "Notizen", description: "Baustellen-Journal", icon: MessageSquareText },
+      { key: "formulare", label: "Prüfprotokolle", description: "Formulare und Checklisten", icon: ClipboardCheck },
       { key: "dokumente", label: "Dokumentation", description: "Pläne und Protokolle", icon: FileCheck2 },
       { key: "berichte", label: "Berichte", description: "Tagesberichte und PDF", icon: FileText, office: true },
       { key: "einstellungen", label: "Einstellungen", description: "Projekt-Setup", icon: Settings }
@@ -109,6 +118,21 @@ export const MODULES: ModuleNavItem[] = [
     ]
   },
   {
+    key: "time",
+    label: "Zeiterfassung",
+    summary: "Stempeluhr & Stunden",
+    kicker: "Ein- und ausstempeln, Stunden auf Projekte buchen, Überstunden und Anwesenheit.",
+    icon: Timer,
+    path: "/zeiten",
+    color: "#0f766e",
+    subItems: [
+      { key: "", label: "Meine Zeiten", description: "Woche und Stempeluhr", icon: Timer },
+      { key: "anwesenheit", label: "Anwesenheit", description: "Wer ist heute da", icon: UserCheck },
+      { key: "auswertung", label: "Auswertung", description: "Stunden je Projekt", icon: BarChart3 },
+      { key: "export", label: "Export", description: "Stundenliste als CSV", icon: FileDown }
+    ]
+  },
+  {
     key: "people",
     label: "People",
     summary: "Team & Organigramm",
@@ -120,6 +144,34 @@ export const MODULES: ModuleNavItem[] = [
       { key: "", label: "Mitarbeiter", description: "Profile und Rollen", icon: UsersRound },
       { key: "organigramm", label: "Organigramm", description: "Wer führt wen", icon: Network },
       { key: "abwesenheiten", label: "Abwesenheiten", description: "Urlaub und Krankenstand", icon: CalendarDays }
+    ]
+  },
+  {
+    key: "crm",
+    label: "Kunden",
+    summary: "Kontakte & Anfragen",
+    kicker: "Kunden, Lieferanten, Partner – und jede Anfrage bis zum Auftrag.",
+    icon: Contact2,
+    path: "/kunden",
+    color: "#db2777",
+    subItems: [
+      { key: "", label: "Kontakte", description: "Kunden und Lieferanten", icon: Contact2 },
+      { key: "anfragen", label: "Anfragen", description: "Pipeline bis zum Auftrag", icon: KanbanSquare }
+    ]
+  },
+  {
+    key: "billing",
+    label: "Abrechnung",
+    summary: "Angebote & Rechnungen",
+    kicker: "Angebote, Rechnungen, Gutschriften und Mahnungen – aus Stunden, Material und Regie.",
+    icon: Receipt,
+    path: "/abrechnung",
+    color: "#ca8a04",
+    subItems: [
+      { key: "", label: "Übersicht", description: "Offene Posten und Umsatz", icon: LayoutDashboard },
+      { key: "angebote", label: "Angebote", description: "Kalkulieren und versenden", icon: FileText },
+      { key: "rechnungen", label: "Rechnungen", description: "Stellen und verfolgen", icon: Receipt },
+      { key: "mahnungen", label: "Mahnungen", description: "Überfällige Rechnungen", icon: AlertTriangle }
     ]
   },
   {
@@ -169,6 +221,7 @@ export const MODULES: ModuleNavItem[] = [
     subItems: [
       { key: "", label: "Benutzer & Rollen", description: "Einladungen und Rechte", icon: ShieldCheck },
       { key: "firma", label: "Firmendaten", description: "Stammdaten und Adresse", icon: Building2 },
+      { key: "formulare", label: "Formular-Vorlagen", description: "Prüfprotokolle bauen", icon: ClipboardCheck },
       { key: "daten", label: "Daten", description: "Sicherung und Demo", icon: FolderKanban }
     ]
   }

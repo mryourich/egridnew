@@ -139,7 +139,8 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
     budget: project?.budget == null ? "" : String(project.budget),
     description: project?.description ?? "",
     color: project?.color ?? PROJECT_COLORS[data.projects.length % PROJECT_COLORS.length],
-    image: project?.image ?? ""
+    image: project?.image ?? "",
+    contactId: project?.contactId ?? ""
   });
   const set = <K extends keyof typeof v>(k: K, value: (typeof v)[K]) => setV((x) => ({ ...x, [k]: value }));
   const leads = data.people.filter((p) => p.active && !FIELD.includes(p.rolle) && p.rolle !== "gf").sort(byRole);
@@ -159,7 +160,8 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
       budget: v.budget.trim() ? Number(v.budget.replace(/[^\d,.-]/g, "").replace(",", ".")) || null : null,
       description: v.description.trim(),
       color: v.color,
-      image: v.image || undefined
+      image: v.image || undefined,
+      contactId: v.contactId || undefined
     };
     save("projects", item, isNew ? `Projekt „${item.name}“ angelegt` : "Projektdaten geändert");
     notify(isNew ? "Projekt angelegt – nur du und die Projektleitung sehen es, bis du Leute einlädst." : "Gespeichert");
@@ -200,8 +202,23 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
             ))}
           </select>
         </Field>
-        <Field label="Auftraggeber">
-          <input value={v.client} onChange={(e) => set("client", e.target.value)} placeholder="Firma oder Name" />
+        <Field label="Auftraggeber" hint={data.contacts.length ? "Aus den Kunden wählen oder frei eintippen" : undefined}>
+          <input
+            list="project-clients"
+            value={v.client}
+            onChange={(e) => {
+              const c = data.contacts.find((x) => x.name === e.target.value);
+              setV((x) => ({ ...x, client: e.target.value, contactId: c?.id ?? "", location: x.location || (c ? c.address : "") }));
+            }}
+            placeholder="Firma oder Name"
+          />
+          <datalist id="project-clients">
+            {data.contacts
+              .filter((c) => c.status !== "lieferant")
+              .map((c) => (
+                <option key={c.id} value={c.name} />
+              ))}
+          </datalist>
         </Field>
         <Field label="Ort / Adresse">
           <input value={v.location} onChange={(e) => set("location", e.target.value)} placeholder="Straße, Ort" />

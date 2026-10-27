@@ -1,0 +1,305 @@
+/* VYSNER B2B layer – on top of the eGrid base: square, dense, quiet; dark navigation, light work area. */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --surface-soft: #f6f8fb;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --muted-strong: #334155;
+  --line: #dde2ea;
+  --line-strong: #c5ccd8;
+  --blue: #1a5cff;
+  --blue-soft: #eaf0ff;
+  --green: #15803d;
+  --amber: #b45309;
+  --red: #c62828;
+  --navy: #0b1530;
+  --navy-2: #121e40;
+  --shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+  --shadow-soft: none;
+  --r: 3px;
+}
+body:has(.app-frame) {
+  font-family: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+}
+.app-frame {
+  grid-template-columns: 248px minmax(0, 1fr);
+}
+
+/* ------------------------------------------------------------ navigation: dark */
+.app-frame .sidebar {
+  padding: 0 10px 16px;
+  background: var(--navy);
+  border-right: 0;
+  color: #c3cbe0;
+}
+.app-frame .brand-row {
+  min-height: 56px;
+  margin: 0 -10px 14px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.app-frame .brand-row img {
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+}
+.app-frame .brand-row strong {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.app-frame .sidebar-back {
+  margin: 0 8px 12px;
+  color: #8f9bbb;
+  font-size: 12px;
+}
+.app-frame .sidebar-back:hover {
+  color: #fff;
+}
+.app-frame .sidebar .menu-icon,
+.app-frame .sidebar-back span {
+  border-radius: 2px;
+  color: #8f9bbb;
+  background: rgba(255, 255, 255, 0.06);
+}
+.app-frame .sidebar-section-label,
+.app-frame .subnav-header strong {
+  color: #6f7c9e;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.app-frame .active-module-card,
+.app-frame .project-context-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.app-frame .active-module-card small,
+.app-frame .project-context-card small {
+  color: #8f9bbb;
+}
+.app-frame .active-module-card .menu-icon,
+.app-frame .project-context-card .menu-icon {
+  color: #fff;
+  background: var(--blue);
+}
+.app-frame .platform-module-list > :is(a, button),
+.app-frame .module-subnav > :is(a, button) {
+  min-height: 36px;
+  border: 0;
+  border-radius: 2px;
+  color: #c3cbe0;
+  background: transparent;
+}
+.app-frame .module-subnav > :is(a, button) > svg {
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  color: #8f9bbb;
+  background: none;
+}
+.app-frame .platform-module-list > :is(a, button):hover,
+.app-frame .module-subnav > :is(a, button):hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: transparent;
+}
+.app-frame .platform-module-list > :is(a, button).active,
+.app-frame .module-subnav > :is(a, button).active {
+  color: #fff;
+  background: rgba(26, 92, 255, 0.22);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+.app-frame .platform-module-list > :is(a, button).active .menu-icon,
+.app-frame .module-subnav > :is(a, button).active > svg {
+  color: #fff;
+  background: none;
+}
+.app-frame .project-picker-nav .project-create-link {
+  color: #9db7ff;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: transparent;
+}
+/* open points structure inside the dark navigation */
+.app-frame .sidebar .progress-structure-menu {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.app-frame .sidebar .progress-structure-head span,
+.app-frame .sidebar .progress-structure-head strong {
+  color: #6f7c9e;
+}
+.app-frame .sidebar .progress-structure-head button {
+  border-radius: 2px;
+  color: #fff;
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.app-frame .sidebar .progress-menu-row {
+  border-radius: 2px;
+  border-color: transparent;
+  background: transparent;
+}
+.app-frame .sidebar .progress-menu-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.app-frame .sidebar .progress-menu-row.active {
+  background: rgba(26, 92, 255, 0.22);
+  border-color: transparent;
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+.app-frame .sidebar .progress-menu-main strong {
+  color: #e7ebf5;
+}
+.app-frame .sidebar .progress-menu-main small {
+  color: #7f8bab;
+}
+.app-frame .sidebar .progress-menu-main > span:first-child {
+  color: #8f9bbb;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+}
+.app-frame .sidebar .progress-menu-expand,
+.app-frame .sidebar .progress-menu-add {
+  color: #8f9bbb;
+  background: transparent;
+}
+.app-frame .sidebar .progress-menu-add:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.app-frame .sidebar .progress-menu-draft input {
+  border-radius: 2px;
+}
+.app-frame .sidebar .progress-menu-empty {
+  color: #8f9bbb;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ top bar */
+.app-frame .topbar {
+  min-height: 56px;
+  padding: 8px 24px;
+  background: #fff;
+  backdrop-filter: none;
+}
+.app-frame .search-box {
+  height: 36px;
+  border-radius: 3px;
+  background: var(--surface-soft);
+}
+.app-frame .icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+}
+.app-frame .notification-dot {
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------ page */
+.app-frame .page-content {
+  padding: 22px 24px 40px;
+}
+.app-frame .page-header {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-end;
+}
+.app-frame .page-header h1 {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.app-frame .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.app-frame .page-header p {
+  font-size: 13.5px;
+}
+.app-frame :is(.primary-action, .secondary-action, .danger-action) {
+  min-height: 34px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.app-frame :is(.dashboard-card, .site-analytics-card, .site-project-card, .progress-table-card, .completed-table-panel, .site-status-bar > div, .site-dashboard-hero, .progress-mini-stat, .progress-mini-progress, .coming-panel, .launcher-help, .app-tile) {
+  border-radius: 3px;
+  box-shadow: none;
+  border-color: var(--line);
+}
+.modal-panel {
+  border-radius: 3px;
+  box-shadow: 0 24px 60px rgba(11, 21, 48, 0.28);
+}
+.progress-context-menu,
+.search-pop,
+.topbar-pop {
+  border-radius: 3px;
+  box-shadow: var(--shadow);
+}
+.app-frame .progress-table-header {
+  background: #f6f8fb;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.app-frame .progress-table-row {
+  min-height: 46px;
+}
+.app-frame .progress-table-title-button {
+  font-weight: 600;
+}
+.app-frame .assignee-avatar {
+  border-radius: 50%;
+}
+.app-frame .progress,
+.app-frame .progress span {
+  border-radius: 0;
+}
+
+/* launcher tiles: square, quiet */
+.app-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 3px;
+  box-shadow: none;
+}
+.app-tile:hover {
+  transform: none;
+  border-color: var(--blue);
+  box-shadow: none;
+}
+
+/* the VYSNER pages: match the frame */
+.app-frame .panel,
+.app-frame .kpis,
+.app-frame .proj-card,
+.app-frame .pool-card,
+.app-frame .gal-item,
+.app-frame .mat-card {
+  border-radius: 3px;
+  border-color: var(--line);
+}
+.app-frame .b-btn {
+  border-radius: 3px;
+}
+
+@media (max-width: 820px) {
+  .app-frame {
+    grid-template-columns: 1fr;
+  }
+  .app-frame .page-content {
+    padding: 16px 12px 32px;
+  }
+}

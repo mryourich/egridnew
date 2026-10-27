@@ -11,6 +11,7 @@ import { personName, useStore } from "@/core/store";
 import type { Data, Project } from "@/core/types";
 import { PageHead } from "@/core/ui";
 import { access, childrenOf, projectFacts, tasksUnder, visibleProjects } from "./model";
+import { billingOf, eur0, hoursOf, totals } from "./money";
 import { ProjectForm } from "./projects";
 
 export type Tone = "blue" | "green" | "amber" | "red";
@@ -293,6 +294,8 @@ export function SiteDashboard({ project: p }: { project: Project }) {
             </div>
           </section>
 
+          <BudgetCard project={p} />
+
           <section className="dashboard-card site-feature wide">
             <WidgetHeader title="Aktueller Baufortschritt" />
             <div className="progress-board">
@@ -423,6 +426,52 @@ export function SiteStatusBar({ project: p }: { project: Project }) {
         <small>offen</small>
       </div>
       {toast && <p>{toast}</p>}
+    </section>
+  );
+}
+
+/** Hours booked on the project, their value and the budget used – live from the time tracking. */
+function BudgetCard({ project: p }: { project: Project }) {
+  const { data } = useStore();
+  const times = data.times.filter((x) => x.projectId === p.id);
+  const hours = times.reduce((s, x) => s + hoursOf(x), 0);
+  const billable = times.filter((x) => x.billable).reduce((s, x) => s + hoursOf(x), 0);
+  const open = times.filter((x) => x.billable && !x.billedIn).reduce((s, x) => s + hoursOf(x), 0);
+  const rate = billingOf(data).rate;
+  const value = billable * rate;
+  const invoiced = data.billing.filter((b) => b.projectId === p.id && b.kind === "rechnung" && b.status !== "entwurf" && b.status !== "storniert").reduce((s, b) => s + totals(b).net, 0);
+  const used = p.budget ? Math.round((value / p.budget) * 100) : 0;
+  return (
+    <section className="dashboard-card site-feature">
+      <WidgetHeader title="Stunden & Budget" action={rightsOf(data).sales && open ? <Link className="link" href={`/abrechnung/rechnungen?neu=1&projekt=${p.id}`}>abrechnen</Link> : undefined} />
+      <div className="status-stack">
+        <div>
+          <span>Gebucht</span>
+          <strong>{Math.round(hours)} h</strong>
+        </div>
+        <div>
+          <span>Wert ({rate} €/h)</span>
+          <strong>{eur0(value)}</strong>
+        </div>
+        <div>
+          <span>Verrechnet</span>
+          <strong>{eur0(invoiced)}</strong>
+        </div>
+        <div>
+          <span>Noch offen</span>
+          <strong>{Math.round(open)} h</strong>
+        </div>
+      </div>
+      {p.budget ? (
+        <div className="budget-line">
+          <span>
+            Budget {eur0(p.budget)} · {used} % verbraucht
+          </span>
+          <ProgressBar value={used} tone={used > 90 ? "red" : used > 70 ? "amber" : "green"} />
+        </div>
+      ) : (
+        <p className="site-empty">Kein Budget hinterlegt – unter „Bearbeiten“ eintragen.</p>
+      )}
     </section>
   );
 }

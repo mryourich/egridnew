@@ -3,11 +3,12 @@
 import { Printer } from "lucide-react";
 import { today } from "@/core/date";
 import { defectNo, fmtDate, fmtShort, fmtStamp, fmtWhen, PRIORITY, PROJECT_STATUS, WORK_STATUS } from "@/core/format";
-import { canSee } from "@/core/roles";
+import { canSee, rightsOf } from "@/core/roles";
 import { personName, StoreProvider, useStore } from "@/core/store";
 import { isoWeek, weekdayLong } from "@/core/date";
 import type { DailyReport, Data, OpenPoint, Project, Regie } from "@/core/types";
 import { crewHours } from "./dailies";
+import { billingOf, eur, KIND, totals } from "./money";
 import { projectPhotos } from "./photo-list";
 import { hoursOf, regieNo } from "./regie";
 import { childrenOf, pathLabel, projectFacts, tasksUnder } from "./model";
@@ -23,6 +24,8 @@ export function PrintPage({ kind, id }: { kind: string; id: string }) {
 
 function Doc({ kind, id }: { kind: string; id: string }) {
   const { data } = useStore();
+  if (kind === "beleg") return <BillingPrint id={id} />;
+  if (kind === "formular") return <FormPrint id={id} />;
   const regie = kind === "regie" ? data.regie.find((r) => r.id === id) : undefined;
   const daily = kind === "tagesbericht" ? data.dailies.find((r) => r.id === id) : undefined;
   const projectId = regie?.projectId ?? daily?.projectId ?? id;
@@ -489,5 +492,223 @@ function FixedDefects({ data, list }: { data: Data; list: Data["defects"] }) {
         </div>
       ))}
     </section>
+  );
+}
+
+/** Quote, invoice, credit note or dunning letter as an A4 letter. */
+function BillingPrint({ id }: { id: string }) {
+  const { data } = useStore();
+  const b = data.billing.find((x) => x.id === id);
+  if (!b || !rightsOf(data).sales) return <p className="pr-missing">Beleg nicht gefunden.</p>;
+  const c = data.contacts.find((x) => x.id === b.contactId);
+  const p = data.projects.find((x) => x.id === b.projectId);
+  const t = totals(b);
+  const s = billingOf(data);
+  const ref = b.refId ? data.billing.find((x) => x.id === b.refId) : undefined;
+  return (
+    <div className="pr">
+      <div className="pr-bar">
+        <button type="button" onClick={() => window.print()}>
+          <Printer size={16} /> Drucken / als PDF speichern
+        </button>
+      </div>
+      <article className="pr-page pr-letter">
+        <header className="pr-head">
+          <div>
+            <img src="/brand/vysner-logo.png" alt="VYSNER" />
+            <span>{data.workspace.name}</span>
+            {data.workspace.address && <span>{data.workspace.address}</span>}
+          </div>
+          <div className="pr-title">
+            <h1>{KIND[b.kind].label}</h1>
+            <span>{b.no}</span>
+          </div>
+        </header>
+        <div className="pr-address">
+          <div>
+            <small>
+              {data.workspace.name} · {data.workspace.address}
+            </small>
+            <strong>{c?.name ?? "–"}</strong>
+            {c?.person && <span>z. H. {c.person}</span>}
+            {c?.address.split(",").map((l) => <span key={l}>{l.trim()}</span>)}
+          </div>
+          <table className="pr-meta pr-docmeta">
+            <tbody>
+              <tr>
+                <th>Datum</th>
+                <td>{fmtDate(b.date)}</td>
+              </tr>
+              <tr>
+                <th>{b.kind === "angebot" ? "Gültig bis" : "Zahlbar bis"}</th>
+                <td>{fmtDate(b.due) || "–"}</td>
+              </tr>
+              {p && (
+                <tr>
+                  <th>Projekt</th>
+                  <td>
+                    {p.name} {p.number && `(${p.number})`}
+                  </td>
+                </tr>
+              )}
+              {ref && (
+                <tr>
+                  <th>Bezug</th>
+                  <td>
+                    {KIND[ref.kind].label} {ref.no}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <h2 className="pr-subject">{b.title}</h2>
+        {b.intro && <p className="pr-text">{b.intro}</p>}
+        <table className="pr-table pr-lines">
+          <thead>
+            <tr>
+              <th>Pos.</th>
+              <th>Leistung</th>
+              <th className="num">Menge</th>
+              <th>Einheit</th>
+              <th className="num">Einzelpreis</th>
+              <th className="num">Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {b.lines.map((l, i) => (
+              <tr key={l.id}>
+                <td>{i + 1}</td>
+                <td>{l.text}</td>
+                <td className="num">{String(l.qty).replace(".", ",")}</td>
+                <td>{l.unit}</td>
+                <td className="num">{eur(l.price)}</td>
+                <td className="num">{eur(l.qty * l.price)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <table className="pr-sums">
+          <tbody>
+            {!!b.fee && (
+              <tr>
+                <th>Mahnspesen</th>
+                <td>{eur(b.fee)}</td>
+              </tr>
+            )}
+            <tr>
+              <th>Summe netto</th>
+              <td>{eur(t.net)}</td>
+            </tr>
+            {b.kind !== "mahnung" && (
+              <tr>
+                <th>USt. {b.vat} %</th>
+                <td>{eur(t.tax)}</td>
+              </tr>
+            )}
+            <tr className="total">
+              <th>{b.kind === "mahnung" ? "Zu zahlen" : "Gesamtbetrag"}</th>
+              <td>{eur(t.gross)}</td>
+            </tr>
+          </tbody>
+        </table>
+        {b.vat === 0 && b.kind !== "mahnung" && <p className="pr-text pr-note">Übergang der Steuerschuld auf den Leistungsempfänger gemäß § 19 Abs. 1a UStG. UID des Leistungsempfängers lt. Auftrag.</p>}
+        <p className="pr-text pr-note">
+          {b.kind === "angebot"
+            ? `Dieses Angebot ist gültig bis ${fmtDate(b.due)}. Wir freuen uns auf Ihren Auftrag.`
+            : b.kind === "gutschrift"
+              ? "Der Betrag wird Ihnen gutgeschrieben bzw. mit offenen Rechnungen verrechnet."
+              : `Bitte überweisen Sie den Betrag bis ${fmtDate(b.due)}${s.iban ? ` auf ${s.iban}` : ""} unter Angabe der Nummer ${b.no}.`}
+        </p>
+        <footer className="pr-foot">
+          {data.workspace.name} · {data.workspace.address}
+          {s.uid && ` · UID ${s.uid}`}
+          {s.iban && ` · IBAN ${s.iban}`}
+        </footer>
+      </article>
+    </div>
+  );
+}
+
+/** A filled-in form (inspection report) as a PDF. */
+function FormPrint({ id }: { id: string }) {
+  const { data } = useStore();
+  const e = data.formEntries.find((x) => x.id === id);
+  const tpl = e && data.forms.find((x) => x.id === e.templateId);
+  const p = e && data.projects.find((x) => x.id === e.projectId);
+  if (!e || !tpl || !p || !canSee(data, p)) return <p className="pr-missing">Protokoll nicht gefunden.</p>;
+  return (
+    <div className="pr">
+      <div className="pr-bar">
+        <button type="button" onClick={() => window.print()}>
+          <Printer size={16} /> Drucken / als PDF speichern
+        </button>
+      </div>
+      <article className="pr-page">
+        <header className="pr-head">
+          <div>
+            <img src="/brand/vysner-logo.png" alt="VYSNER" />
+            <span>{data.workspace.name}</span>
+            {data.workspace.address && <span>{data.workspace.address}</span>}
+          </div>
+          <div className="pr-title">
+            <h1>{tpl.name}</h1>
+            <span>{e.status === "abgeschlossen" ? `abgeschlossen ${fmtStamp(e.closedAt)}` : "Entwurf"}</span>
+          </div>
+        </header>
+        <table className="pr-meta">
+          <tbody>
+            <tr>
+              <th>Projekt</th>
+              <td>{p.name}</td>
+              <th>Auftraggeber</th>
+              <td>{p.client || "–"}</td>
+            </tr>
+            <tr>
+              <th>Betreff</th>
+              <td>{e.title}</td>
+              <th>Erstellt</th>
+              <td>
+                {personName(data, e.createdBy)} · {fmtStamp(e.createdAt)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table className="pr-table pr-form">
+          <tbody>
+            {tpl.fields.map((f) =>
+              f.type === "heading" ? (
+                <tr key={f.id} className="pr-form-head">
+                  <td colSpan={2}>{f.label}</td>
+                </tr>
+              ) : f.type === "photo" ? (
+                (e.photos[f.id] ?? []).length > 0 && (
+                  <tr key={f.id}>
+                    <th>{f.label}</th>
+                    <td>
+                      <div className="pr-photos">
+                        {(e.photos[f.id] ?? []).map((a) => (
+                          <figure key={a.id}>
+                            <img src={a.url} alt="" />
+                          </figure>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              ) : (
+                <tr key={f.id}>
+                  <th>{f.label}</th>
+                  <td>
+                    {f.type === "check" ? (e.values[f.id] ? "☑ ja" : "☐ nein") : f.type === "signature" ? e.values[f.id] ? <img className="pr-sig" src={String(e.values[f.id])} alt="Unterschrift" /> : "–" : f.type === "date" ? fmtDate(String(e.values[f.id] ?? "")) || "–" : `${e.values[f.id] ?? "–"}${f.unit && e.values[f.id] ? ` ${f.unit}` : ""}`}
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+        <footer className="pr-foot">Erstellt mit VYSNER · {fmtStamp(new Date().toISOString())}</footer>
+      </article>
+    </div>
   );
 }

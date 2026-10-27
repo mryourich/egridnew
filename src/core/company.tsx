@@ -4,6 +4,7 @@ import { Download, Plus, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { assignableRoles, byRole, FIELD, me, ROLLE_INFO, ROLLE_LABEL, ROLLEN, rightsOf, subtree, type Rolle } from "./roles";
 import { today } from "./date";
+import { DEFAULT_BILLING } from "./seed";
 import { uid, useStore } from "./store";
 import type { Data, Person } from "./types";
 import { Avatar, Button, Empty, Field, Modal, PageHead, SearchBox, Tag } from "./ui";
@@ -180,14 +181,35 @@ export function PersonForm({ person, onClose }: { person: Partial<Person>; onClo
 function CompanyData() {
   const { data, setWorkspace, notify } = useStore();
   const [v, setV] = useState(data.workspace);
+  const b = { ...DEFAULT_BILLING, ...v.billing };
+  const setB = (x: Partial<typeof b>) => setV({ ...v, billing: { ...b, ...x } });
+  const num = (s: string) => Number(s.replace(",", ".")) || 0;
   return (
     <div className="panel pad narrow-block">
       <div className="form-grid">
         <Field label="Firmenname" className="span-2">
           <input value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
         </Field>
-        <Field label="Adresse" className="span-2" hint="Steht auf den Berichten.">
+        <Field label="Adresse" className="span-2" hint="Steht auf Berichten, Angeboten und Rechnungen.">
           <input value={v.address} onChange={(e) => setV({ ...v, address: e.target.value })} />
+        </Field>
+        <Field label="UID-Nummer">
+          <input value={b.uid} onChange={(e) => setB({ uid: e.target.value })} placeholder="ATU…" />
+        </Field>
+        <Field label="IBAN">
+          <input value={b.iban} onChange={(e) => setB({ iban: e.target.value })} placeholder="AT.." />
+        </Field>
+        <Field label="Stundensatz netto (€)" hint="Vorschlag für Stunden auf Rechnungen und den Wert der Zeiten.">
+          <input inputMode="decimal" key={`r${b.rate}`} defaultValue={String(b.rate).replace(".", ",")} onBlur={(e) => setB({ rate: num(e.target.value) })} />
+        </Field>
+        <Field label="Umsatzsteuer (%)">
+          <input inputMode="decimal" key={`v${b.vat}`} defaultValue={String(b.vat)} onBlur={(e) => setB({ vat: num(e.target.value) })} />
+        </Field>
+        <Field label="Zahlungsziel (Tage)">
+          <input inputMode="numeric" key={`t${b.terms}`} defaultValue={String(b.terms)} onBlur={(e) => setB({ terms: num(e.target.value) })} />
+        </Field>
+        <Field label="Wochenarbeitszeit (h)" hint="Ergibt das Tagessoll in der Zeiterfassung.">
+          <input inputMode="decimal" key={`w${b.weekHours}`} defaultValue={String(b.weekHours).replace(".", ",")} onBlur={(e) => setB({ weekHours: num(e.target.value) })} />
         </Field>
       </div>
       <Button variant="primary" onClick={() => (setWorkspace({ ...v, name: v.name.trim() || data.workspace.name }), notify("Gespeichert"))}>
