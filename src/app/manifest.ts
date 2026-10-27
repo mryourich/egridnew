@@ -5,8 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "VYSNER",
     short_name: "VYSNER",
-    description: "Baustellenmanagement für Bauleitung und Monteure",
-    start_url: "/dashboard",
+    description: "TeamGrid – Projekte, Offene Punkte und Mängel",
+    start_url: "/projekte",
     scope: "/",
     display: "standalone",
     background_color: "#0b1530",
