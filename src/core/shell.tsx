@@ -1,27 +1,40 @@
 "use client";
 
-import { ArrowLeft, Building2, ChevronDown, ClipboardList, FileText, FolderKanban, LayoutDashboard, ListTree, LogOut, Menu as MenuIcon, NotebookPen, Search, Settings, TriangleAlert, X } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, Camera, ChevronDown, ClipboardList, FileText, FolderKanban, FolderOpen, GanttChart, Gauge, LayoutDashboard, ListTree, LogOut, Menu as MenuIcon, Package, PenLine, Search, Settings, StickyNote, TriangleAlert, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { visibleProjects } from "@/teamgrid/model";
 import { OfflineSupport } from "./offline";
-import { byRole, me, ROLLE_LABEL, ROLLEN, rightsOf } from "./roles";
+import { byRole, isField, me, ROLLE_LABEL, ROLLEN, rightsOf } from "./roles";
 import { StoreProvider, useStore } from "./store";
 import { Avatar } from "./ui";
 import "./app.css";
+import "@/teamgrid/teamgrid.css";
 
 /** Pages inside a project – the project menu in the sidebar. */
 export const PROJECT_TABS = [
-  { key: "", label: "Übersicht", icon: LayoutDashboard },
-  { key: "punkte", label: "Offene Punkte", icon: ListTree },
-  { key: "maengel", label: "Mängel", icon: TriangleAlert },
-  { key: "aufgaben", label: "Aufgaben", icon: ClipboardList },
-  { key: "notizen", label: "Notizen", icon: NotebookPen },
-  { key: "dokumente", label: "Dokumente", icon: FileText },
-  { key: "berichte", label: "Berichte", icon: FileText },
-  { key: "einstellungen", label: "Projekt-Einstellungen", icon: Settings }
+  { key: "", label: "Übersicht", icon: Gauge, office: false },
+  { key: "punkte", label: "Offene Punkte", icon: ListTree, office: false },
+  { key: "plan", label: "Plan", icon: GanttChart, office: true },
+  { key: "maengel", label: "Mängel", icon: TriangleAlert, office: false },
+  { key: "fotos", label: "Fotos", icon: Camera, office: false },
+  { key: "regie", label: "Regie", icon: PenLine, office: false },
+  { key: "material", label: "Material", icon: Package, office: false },
+  { key: "aufgaben", label: "Aufgaben", icon: ClipboardList, office: false },
+  { key: "notizen", label: "Notizen", icon: StickyNote, office: false },
+  { key: "dokumente", label: "Dokumente", icon: FolderOpen, office: false },
+  { key: "berichte", label: "Berichte", icon: FileText, office: true },
+  { key: "einstellungen", label: "Projekt-Einstellungen", icon: Settings, office: false }
 ] as const;
+
+/** The main menu of TeamGrid. */
+const MAIN = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/projekte", label: "Projekte", icon: FolderKanban },
+  { href: "/planung", label: "Planung", icon: CalendarDays },
+  { href: "/team", label: "Team", icon: Users }
+];
 
 export function Hub({ children }: { children: ReactNode }) {
   return (
@@ -44,7 +57,7 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <div className={`hub ${open ? "nav-open" : ""}`}>
       <aside className="hub-side">
-        <Link href="/projekte" className="hub-brand" aria-label="VYSNER">
+        <Link href="/dashboard" className="hub-brand" aria-label="VYSNER">
           <img src="/brand/vysner-mark-small.png" alt="" />
           <img src="/brand/vysner-word.png" alt="VYSNER" className="hub-word" />
         </Link>
@@ -64,7 +77,7 @@ function Frame({ children }: { children: ReactNode }) {
                 <small>{[project.number, project.client].filter(Boolean).join(" · ")}</small>
               </span>
             </div>
-            {PROJECT_TABS.map((t) => (
+            {PROJECT_TABS.filter((t) => !t.office || !isField(data)).map((t) => (
               <Link key={t.key} href={`/projekte/${project.id}${t.key ? `/${t.key}` : ""}`} className={tab === t.key ? "on" : ""}>
                 <t.icon size={16} />
                 {t.label}
@@ -73,9 +86,11 @@ function Frame({ children }: { children: ReactNode }) {
           </nav>
         ) : (
           <nav className="hub-nav" aria-label="TeamGrid">
-            <Link href="/projekte" className={parts[0] === "projekte" ? "on" : ""}>
-              <FolderKanban size={16} /> Projekte
-            </Link>
+            {MAIN.filter((n) => n.href !== "/team" || rightsOf(data).teamView).map((n) => (
+              <Link key={n.href} href={n.href} className={`/${parts[0]}` === n.href ? "on" : ""}>
+                <n.icon size={16} /> {n.label}
+              </Link>
+            ))}
             <ProjectShortcuts />
           </nav>
         )}

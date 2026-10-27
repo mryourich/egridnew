@@ -14,9 +14,9 @@ function Start() {
     if (done.current) return;
     done.current = true;
     const own = !data.demo && (data.projects.length > 0 || data.people.length > 1);
-    if (own && !window.confirm("Vorhandene Daten in diesem Browser ersetzen?")) return router.replace("/projekte");
+    if (own && !window.confirm("Vorhandene Daten in diesem Browser ersetzen?")) return router.replace("/dashboard");
     reset(kind);
-    router.replace("/projekte");
+    router.replace("/dashboard");
   }, [data, kind, reset, router]);
   return null;
 }

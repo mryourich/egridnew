@@ -45,3 +45,37 @@ export function download(a: Pick<Attachment, "url" | "name">) {
   link.click();
   link.remove();
 }
+
+/** Bytes of a stored file: data URL inline, anything else (e.g. demo pictures) is fetched. */
+export async function fileBytes(url: string): Promise<Uint8Array | string> {
+  if (url.startsWith("data:")) {
+    const [meta, body] = url.split(",", 2);
+    if (!meta.includes(";base64")) return decodeURIComponent(body);
+    const bin = atob(body);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+  return new Uint8Array(await (await fetch(url)).arrayBuffer());
+}
+
+/** File and folder names that work on Windows and macOS. */
+export function safeName(name: string, fallback = "Datei") {
+  return name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 120) || fallback;
+}
+
+/** Offers a blob as a download. */
+export function downloadBlob(blob: Blob, filename: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.style.display = "none";
+  // attached to the page so every browser keeps the file name
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+}
+
+/** Extension of a stored picture. */
+export const extOf = (url: string, mime = "") => (mime.includes("png") || url.startsWith("data:image/png") || url.endsWith(".png") ? "png" : "jpg");

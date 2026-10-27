@@ -128,19 +128,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (key === "projects") {
           // a project takes everything in it along
           const keep = <T extends { projectId: string }>(l: T[]) => l.filter((x) => x.projectId !== id);
-          next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), notes: keep(d.notes), documents: keep(d.documents), reports: keep(d.reports), activity: keep(d.activity) };
+          next = {
+            ...next,
+            points: keep(d.points),
+            defects: keep(d.defects),
+            tasks: keep(d.tasks),
+            notes: keep(d.notes),
+            documents: keep(d.documents),
+            reports: keep(d.reports),
+            jobs: keep(d.jobs),
+            photos: keep(d.photos),
+            materials: keep(d.materials),
+            regie: keep(d.regie),
+            dailies: keep(d.dailies),
+            activity: keep(d.activity)
+          };
         }
         if (key === "points") {
-          // a point takes its sub-points; defects stay but lose the link
+          // a point takes its sub-points; defects and photos stay but lose the link
           const ids = branch(d.points, id);
-          next = { ...next, points: d.points.filter((p) => !ids.has(p.id)), defects: d.defects.map((x) => (ids.has(x.openPointId) ? { ...x, openPointId: "" } : x)) };
+          next = {
+            ...next,
+            points: d.points.filter((p) => !ids.has(p.id)),
+            defects: d.defects.map((x) => (ids.has(x.openPointId) ? { ...x, openPointId: "" } : x)),
+            photos: d.photos.map((x) => (ids.has(x.pointId) ? { ...x, pointId: "" } : x))
+          };
         }
         if (key === "people") {
           next = {
             ...next,
             projects: d.projects.map((p) => ({ ...p, memberIds: p.memberIds.filter((m) => m !== id), managerId: p.managerId === id ? "" : p.managerId })),
             points: d.points.map((p) => ({ ...p, assigneeIds: p.assigneeIds.filter((a) => a !== id) })),
-            people: next.people.map((p) => (p.managerId === id ? { ...p, managerId: "" } : p))
+            people: next.people.map((p) => (p.managerId === id ? { ...p, managerId: "" } : p)),
+            jobs: d.jobs.filter((j) => j.employeeId !== id),
+            absences: d.absences.filter((a) => a.employeeId !== id)
           };
         }
         return key === "projects" ? next : { ...next, activity: log(d, activity, projectId) };
