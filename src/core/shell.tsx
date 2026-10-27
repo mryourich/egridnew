@@ -18,14 +18,6 @@ import "./egrid.css";
 import "./egrid-extra.css";
 import "@/teamgrid/teamgrid.css";
 
-/** The main menu of TeamGrid. */
-const MAIN = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projekte", label: "Projekte", icon: FolderKanban },
-  { href: "/planung", label: "Planung", icon: CalendarDays },
-  { href: "/team", label: "Team", icon: Users }
-];
-
 export function Hub({ children }: { children: ReactNode }) {
   return (
     <StoreProvider>
