@@ -36,7 +36,7 @@
   justify-content: center;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 0 14px;
   font-size: 13px;
   font-weight: 650;
@@ -75,7 +75,7 @@
 .ui-button-default {
   background: var(--blue);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(23, 105, 255, 0.18);
+  box-shadow: none;
 }
 
 .ui-button-default:hover {
@@ -114,7 +114,7 @@
 .ui-button-destructive {
   background: var(--red);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(217, 75, 75, 0.18);
+  box-shadow: none;
 }
 
 .ui-button-destructive:hover {
@@ -147,7 +147,7 @@
   display: inline-grid;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
   color: var(--muted-strong);
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
@@ -187,7 +187,7 @@
   width: 30px;
   min-width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: 3px;
 }
 
 .ui-icon-button-size-lg {
@@ -213,7 +213,7 @@
   width: max-content;
   max-width: 220px;
   padding: 6px 8px;
-  border-radius: 7px;
+  border-radius: 3px;
   background: #0b1d49;
   color: #ffffff;
   font-size: 11px;
@@ -223,7 +223,7 @@
   pointer-events: none;
   transform: translate(-50%, 4px);
   transition: opacity 140ms ease, transform 140ms ease;
-  box-shadow: 0 10px 24px rgba(15, 35, 80, 0.18);
+  box-shadow: none;
 }
 
 .ui-tooltip:hover::after,
@@ -287,9 +287,9 @@
 
 .ui-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .ui-card-header,
@@ -331,7 +331,7 @@
 .ui-textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
   color: var(--ink);
   font-size: 13px;
@@ -357,7 +357,7 @@
 .ui-input:focus,
 .ui-textarea:focus {
   border-color: #aecaef;
-  box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.10);
+  box-shadow: none;
   outline: 0;
 }
 
@@ -406,9 +406,9 @@
 .ui-dialog-content {
   width: min(560px, 100%);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 24px 60px rgba(15, 35, 80, 0.18);
+  box-shadow: none;
 }
 
 .ui-dialog-header,
@@ -449,7 +449,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 12px 14px;
   background: #ffffff;
   color: var(--ink);
@@ -533,7 +533,7 @@
   display: inline-grid;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 0 9px;
   font-size: 13px;
   font-weight: 700;
@@ -552,7 +552,7 @@
 }
 
 .ui-checkbox {
-  border-radius: 5px;
+  border-radius: 3px;
 }
 
 .ui-radio-group {
@@ -576,7 +576,7 @@
   min-height: 38px;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
   color: var(--ink);
   padding: 0 36px 0 12px;
@@ -586,7 +586,7 @@
 
 .ui-select:focus {
   border-color: #aecaef;
-  box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.10);
+  box-shadow: none;
   outline: 0;
 }
 
@@ -611,7 +611,7 @@
   height: 18px;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 2px 7px rgba(15, 35, 80, 0.16);
+  box-shadow: none;
   transition: transform 160ms ease;
 }
 
@@ -641,7 +641,7 @@
 
 .ui-skeleton {
   min-height: 16px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: linear-gradient(90deg, #eef3fb 0%, #f8fbff 45%, #eef3fb 90%);
   background-size: 220% 100%;
   animation: ui-skeleton-pulse 1.3s ease-in-out infinite;
@@ -681,10 +681,10 @@
   z-index: 70;
   min-width: 220px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 6px;
   background: #ffffff;
-  box-shadow: 0 18px 42px rgba(15, 35, 80, 0.14);
+  box-shadow: none;
 }
 
 .ui-popover-content {
@@ -708,7 +708,7 @@
   align-items: center;
   gap: 8px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   background: transparent;
   color: var(--ink);
   padding: 0 9px;
@@ -745,7 +745,7 @@
   align-items: center;
   gap: 4px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 3px;
   padding: 4px;
   background: #ffffff;
 }
@@ -753,7 +753,7 @@
 .ui-tabs-trigger {
   min-height: 30px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   background: transparent;
   color: var(--muted-strong);
   padding: 0 12px;
@@ -782,7 +782,7 @@
   justify-content: center;
   gap: 7px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   background: transparent;
   color: var(--muted-strong);
   padding: 0 10px;
@@ -814,7 +814,7 @@
   width: 100%;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -869,7 +869,7 @@
   flex-direction: column;
   border: 1px solid var(--line);
   background: #ffffff;
-  box-shadow: 0 24px 60px rgba(15, 35, 80, 0.18);
+  box-shadow: none;
 }
 
 .ui-sheet-right,
@@ -881,12 +881,12 @@
 
 .ui-sheet-right {
   right: 0;
-  border-radius: 12px 0 0 12px;
+  border-radius: 3px 0 0 3px;
 }
 
 .ui-sheet-left {
   left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 3px 3px 0;
 }
 
 .ui-sheet-top,
@@ -898,12 +898,12 @@
 
 .ui-sheet-top {
   top: 0;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 3px 3px;
 }
 
 .ui-sheet-bottom {
   bottom: 0;
-  border-radius: 12px 12px 0 0;
+  border-radius: 3px 3px 0 0;
 }
 
 .ui-sheet-header,
@@ -946,7 +946,7 @@
 .ui-accordion-item,
 .ui-collapsible {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -993,9 +993,9 @@
 .ui-command {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .ui-command-input {
@@ -1031,7 +1031,7 @@
   align-items: center;
   gap: 9px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   background: transparent;
   color: var(--ink);
   padding: 0 10px;
@@ -1154,7 +1154,7 @@ body:has(.app-frame) {
 .rail-brand img {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .sub-sidebar {
@@ -1185,7 +1185,7 @@ body:has(.app-frame) {
 .brand-row img {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
   box-shadow: none;
 }
@@ -1221,7 +1221,7 @@ body:has(.app-frame) {
   color: inherit;
   background: #f8fbff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   box-shadow: none;
   text-align: left;
 }
@@ -1232,7 +1232,7 @@ body:has(.app-frame) {
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: #ffffff;
   background: var(--blue);
   font-size: 12px;
@@ -1266,7 +1266,7 @@ body:has(.app-frame) {
   align-items: center;
   gap: 5px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 8px 6px;
   color: var(--muted-strong);
   background: transparent;
@@ -1290,7 +1290,7 @@ body:has(.app-frame) {
 }
 
 .side-nav button.active {
-  box-shadow: 0 8px 18px rgba(23, 105, 255, 0.12), inset 0 -3px 0 var(--blue);
+  box-shadow: none;
 }
 
 .sidebar-section-label {
@@ -1305,7 +1305,7 @@ body:has(.app-frame) {
 .module-subnav-panel {
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #fbfdff;
 }
 
@@ -1346,7 +1346,7 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: transparent;
   text-align: left;
@@ -1388,13 +1388,13 @@ body:has(.app-frame) {
 .module-subnav > :is(button, a).active {
   background: var(--blue-soft);
   border-color: #cfe0ff;
-  box-shadow: inset 3px 0 0 var(--blue);
+  box-shadow: none;
 }
 
 .active-module-card {
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
@@ -1424,7 +1424,7 @@ body:has(.app-frame) {
 .sidebar-panel {
   margin-top: auto;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #f8fbff;
   border: 1px solid var(--line);
   box-shadow: none;
@@ -1497,7 +1497,7 @@ body:has(.app-frame) {
   padding: 0 13px;
   background: #f7faff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   box-shadow: none;
 }
 
@@ -1508,7 +1508,7 @@ body:has(.app-frame) {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 3px;
   color: var(--muted);
   background: #ffffff;
   font-size: 12px;
@@ -1537,7 +1537,7 @@ body:has(.app-frame) {
   justify-content: center;
   gap: 8px;
   min-height: 40px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -1614,7 +1614,7 @@ body:has(.app-frame) {
   background: var(--blue);
   border-color: var(--blue);
   font-weight: 550;
-  box-shadow: 0 8px 18px rgba(23, 105, 255, 0.18);
+  box-shadow: none;
 }
 
 .secondary-action {
@@ -1631,7 +1631,7 @@ body:has(.app-frame) {
 .vehicle-card:hover,
 .project-card:hover {
   border-color: var(--line-strong);
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .text-action {
@@ -1648,7 +1648,7 @@ body:has(.app-frame) {
   align-items: center;
   gap: 6px;
   padding: 0 11px;
-  border-radius: 8px;
+  border-radius: 3px;
   color: #8a4b00;
   background: #fff7e8;
   border: 1px solid #f0d6a8;
@@ -1711,7 +1711,7 @@ body:has(.app-frame) {
   padding: 6px;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -1722,7 +1722,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 11px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: transparent;
   white-space: nowrap;
@@ -1747,7 +1747,7 @@ body:has(.app-frame) {
   margin-bottom: 16px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -1787,9 +1787,9 @@ body:has(.app-frame) {
   margin-bottom: 18px;
   padding: 22px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.78);
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .company-center-main {
@@ -1805,7 +1805,7 @@ body:has(.app-frame) {
   height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--teal);
   background: #e8f4f2;
   border: 1px solid rgba(0, 122, 120, 0.12);
@@ -1841,7 +1841,7 @@ body:has(.app-frame) {
   display: grid;
   gap: 7px;
   padding: 14px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #f6faf8;
   border: 1px solid rgba(36, 138, 61, 0.12);
 }
@@ -1865,9 +1865,9 @@ body:has(.app-frame) {
 .vehicle-card,
 .settings-panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--surface-raised);
-  box-shadow: 0 1px 2px rgba(15, 35, 80, 0.03);
+  box-shadow: none;
 }
 
 .stat-card {
@@ -1884,7 +1884,7 @@ body:has(.app-frame) {
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .stat-card span,
@@ -1951,9 +1951,9 @@ body:has(.app-frame) {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 35, 80, 0.03);
+  box-shadow: none;
 }
 
 .widget-header {
@@ -1985,7 +1985,7 @@ body:has(.app-frame) {
   gap: 6px;
   padding: 0 9px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 12px;
@@ -2135,7 +2135,7 @@ body:has(.app-frame) {
   right: 4px;
   z-index: 2;
   padding: 4px 7px;
-  border-radius: 6px;
+  border-radius: 3px;
   color: #ffffff;
   background: var(--blue);
   font-size: 12px;
@@ -2174,7 +2174,7 @@ body:has(.app-frame) {
 .task-row small {
   width: fit-content;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #edf2f9;
   font-size: 11px;
@@ -2192,7 +2192,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 1px solid #b9c7da;
-  border-radius: 4px;
+  border-radius: 3px;
   color: #ffffff;
   font-size: 11px;
 }
@@ -2270,7 +2270,7 @@ body:has(.app-frame) {
   height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
   font-size: 11px;
@@ -2299,7 +2299,7 @@ body:has(.app-frame) {
 
 .entity-row em {
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
   font-size: 11px;
@@ -2332,7 +2332,7 @@ body:has(.app-frame) {
 .project-status {
   width: fit-content;
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 11px;
 }
 
@@ -2421,7 +2421,7 @@ body:has(.app-frame) {
   place-items: center;
   color: var(--teal);
   background: #e8f4f2;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .module-card span,
@@ -2464,7 +2464,7 @@ body:has(.app-frame) {
   width: 10px;
   height: 10px;
   margin-top: 5px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--teal);
 }
 
@@ -2548,7 +2548,7 @@ body:has(.app-frame) {
   align-items: center;
   justify-content: center;
   padding: 0 9px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 12px;
   font-weight: 900;
 }
@@ -2575,14 +2575,14 @@ body:has(.app-frame) {
   height: 8px;
   display: block;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #e5e7eb;
 }
 
 .progress span {
   height: 100%;
   display: block;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .progress.green span {
@@ -2621,7 +2621,7 @@ body:has(.app-frame) {
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.82);
 }
 
@@ -2629,7 +2629,7 @@ body:has(.app-frame) {
   height: 32px;
   padding: 0 13px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   color: var(--muted);
   background: transparent;
   font-weight: 800;
@@ -2696,7 +2696,7 @@ body:has(.app-frame) {
 }
 
 .avatar-image {
-  border-radius: 8px;
+  border-radius: 3px;
   object-fit: cover;
 }
 
@@ -2726,7 +2726,7 @@ body:has(.app-frame) {
   display: grid;
   align-content: center;
   gap: 4px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--surface-soft);
   border: 1px solid rgba(29, 29, 31, 0.06);
 }
@@ -2803,7 +2803,7 @@ body:has(.app-frame) {
   gap: 8px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.68);
 }
 
@@ -2829,9 +2829,9 @@ body:has(.app-frame) {
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--surface-raised);
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .toggle-row strong,
@@ -2920,7 +2920,7 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .login-form input {
@@ -2960,7 +2960,7 @@ body:has(.app-frame) {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 8px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -3228,7 +3228,7 @@ body:has(.app-frame) {
 .brand-row img {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .brand-row strong {
@@ -3260,7 +3260,7 @@ body:has(.app-frame) {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  border-radius: 7px;
+  border-radius: 3px;
   color: #8b9ab2;
   background: #eff4fb;
 }
@@ -3275,11 +3275,11 @@ body:has(.app-frame) {
   gap: 9px;
   padding: 7px 10px;
   border: 1px solid #d3e3ff;
-  border-radius: 10px;
+  border-radius: 3px;
   color: var(--blue);
   background: #edf5ff;
   text-align: left;
-  box-shadow: 0 8px 18px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .active-module-card {
@@ -3362,7 +3362,7 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 3px;
   color: #74809a;
   background: transparent;
   text-align: left;
@@ -3372,7 +3372,7 @@ body:has(.app-frame) {
   width: 24px;
   height: 24px;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: 3px;
   color: #8b9ab2;
   background: #eff4fb;
 }
@@ -3391,7 +3391,7 @@ body:has(.app-frame) {
   color: var(--blue);
   background: #edf5ff;
   border-color: #d3e3ff;
-  box-shadow: 0 6px 14px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .platform-module-list :is(button, a) {
@@ -3403,14 +3403,14 @@ body:has(.app-frame) {
   color: #74809a;
   background: transparent;
   border-color: transparent;
-  border-radius: 9px;
+  border-radius: 3px;
   box-shadow: none;
 }
 
 .platform-module-list :is(button, a) .menu-icon {
   width: 24px;
   height: 24px;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .platform-module-list :is(button, a) strong {
@@ -3427,7 +3427,7 @@ body:has(.app-frame) {
   color: var(--blue);
   background: #edf5ff;
   border-color: #d3e3ff;
-  box-shadow: 0 6px 14px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .project-context-card {
@@ -3497,7 +3497,7 @@ body:has(.app-frame) {
   min-height: 76px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -3561,9 +3561,9 @@ body:has(.app-frame) {
   gap: 18px;
   padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 35, 80, 0.03);
+  box-shadow: none;
 }
 
 .site-dashboard-hero span {
@@ -3602,7 +3602,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 12px;
@@ -3629,9 +3629,9 @@ body:has(.app-frame) {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 35, 80, 0.03);
+  box-shadow: none;
 }
 
 .site-analytics-card .progress {
@@ -3643,7 +3643,7 @@ body:has(.app-frame) {
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 3px;
 }
 
 .site-analytics-card.blue .site-analytics-icon {
@@ -3794,7 +3794,7 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 0 10px;
   border: 1px solid #edf2f8;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #f8fbff;
 }
 
@@ -3936,9 +3936,9 @@ body:has(.app-frame) {
 .progress-mini-stat {
   min-height: 50px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-mini-progress {
@@ -4021,7 +4021,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 12px;
@@ -4046,9 +4046,9 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-scope-head {
@@ -4096,10 +4096,10 @@ body:has(.app-frame) {
   gap: 10px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted);
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-inline-search input {
@@ -4132,9 +4132,9 @@ body:has(.app-frame) {
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-structure-head {
@@ -4175,7 +4175,7 @@ body:has(.app-frame) {
   gap: 6px;
   padding: 0 10px;
   border: 1px solid #cfe0ff;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
   font-size: 12px;
@@ -4203,7 +4203,7 @@ body:has(.app-frame) {
   align-items: center;
   gap: 5px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
 }
 
@@ -4223,7 +4223,7 @@ body:has(.app-frame) {
 
 .progress-menu-row.active {
   color: var(--blue);
-  box-shadow: inset 3px 0 0 var(--blue);
+  box-shadow: none;
 }
 
 .progress-menu-expand,
@@ -4270,7 +4270,7 @@ body:has(.app-frame) {
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -4308,7 +4308,7 @@ body:has(.app-frame) {
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted);
 }
 
@@ -4381,7 +4381,7 @@ body:has(.app-frame) {
   min-height: 39px;
   grid-template-columns: 22px minmax(0, 1fr) auto;
   gap: 4px;
-  border-radius: 9px;
+  border-radius: 3px;
   color: #74809a;
 }
 
@@ -4407,7 +4407,7 @@ body:has(.app-frame) {
 .sidebar-progress-structure .progress-menu-main > span:first-child {
   width: 24px;
   height: 24px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #eff4fb;
 }
 
@@ -4424,7 +4424,7 @@ body:has(.app-frame) {
 .sidebar-progress-structure .progress-menu-delete {
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: 3px;
 }
 
 .sidebar-progress-structure .progress-menu-row:hover,
@@ -4432,11 +4432,11 @@ body:has(.app-frame) {
   color: var(--blue);
   background: #edf5ff;
   border-color: #d3e3ff;
-  box-shadow: 0 6px 14px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .sidebar-progress-structure .progress-menu-row.active {
-  box-shadow: 0 6px 14px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .sidebar-progress-structure .progress-menu-row.active .progress-menu-main > span:first-child,
@@ -4453,9 +4453,9 @@ body:has(.app-frame) {
   gap: 5px;
   padding: 5px 6px 5px 10px;
   border: 1px solid #d3e3ff;
-  border-radius: 9px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 6px 14px rgba(24, 92, 190, 0.05);
+  box-shadow: none;
 }
 
 .progress-menu-draft.level-1 {
@@ -4484,7 +4484,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   color: #8b9ab2;
   background: #eff4fb;
 }
@@ -4513,9 +4513,9 @@ body:has(.app-frame) {
   gap: 2px;
   padding: 6px;
   border: 1px solid #dbe7f7;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 18px 42px rgba(14, 31, 68, 0.16);
+  box-shadow: none;
 }
 
 .progress-context-menu button {
@@ -4526,7 +4526,7 @@ body:has(.app-frame) {
   gap: 8px;
   padding: 0 9px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   color: #526078;
   background: transparent;
   text-align: left;
@@ -4574,10 +4574,10 @@ body:has(.app-frame) {
   gap: 12px;
   padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted);
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-command-search input {
@@ -4595,7 +4595,7 @@ body:has(.app-frame) {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 3px;
   color: var(--muted);
   background: #f7faff;
   font-size: 12px;
@@ -4639,9 +4639,9 @@ body:has(.app-frame) {
 .progress-selection-band,
 .progress-table-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .progress-metric-card {
@@ -4762,7 +4762,7 @@ body:has(.app-frame) {
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -4963,7 +4963,7 @@ body:has(.app-frame) {
   min-height: 30px;
   padding: 0 8px;
   border: 1px solid #cfe0ff;
-  border-radius: 7px;
+  border-radius: 3px;
   outline: 0;
   background: #ffffff;
 }
@@ -5036,7 +5036,7 @@ body:has(.app-frame) {
   justify-content: center;
   gap: 7px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: transparent;
   font-size: 12px;
@@ -5145,7 +5145,7 @@ body:has(.app-frame) {
 .completed-progress-toggle.table-style {
   width: 100%;
   min-height: 46px;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 
 .table-empty {
@@ -5245,7 +5245,7 @@ body:has(.app-frame) {
   gap: 8px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted);
   background: #ffffff;
 }
@@ -5270,7 +5270,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 12px;
@@ -5305,7 +5305,7 @@ body:has(.app-frame) {
   gap: 9px;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -5342,7 +5342,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #f1f5fb;
 }
@@ -5388,7 +5388,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -5433,7 +5433,7 @@ body:has(.app-frame) {
   min-height: 28px;
   padding: 0 8px;
   border: 1px solid #cfe0ff;
-  border-radius: 7px;
+  border-radius: 3px;
   outline: 0;
   color: var(--ink);
   background: #ffffff;
@@ -5480,7 +5480,7 @@ body:has(.app-frame) {
   place-items: center;
   gap: 6px;
   border: 1px dashed #d8e6fb;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted);
   background: #fbfdff;
 }
@@ -5506,7 +5506,7 @@ body:has(.app-frame) {
   width: fit-content;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 13px;
@@ -5555,7 +5555,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--muted-strong);
   background: #ffffff;
   font-size: 12px;
@@ -5590,7 +5590,7 @@ body:has(.app-frame) {
   min-height: 48px;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -5607,7 +5607,7 @@ body:has(.app-frame) {
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -5648,7 +5648,7 @@ body:has(.app-frame) {
   min-height: 244px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
   color: var(--ink);
   text-align: left;
@@ -5660,7 +5660,7 @@ body:has(.app-frame) {
 .site-project-card:focus-visible {
   border-color: #cfe0ff;
   background: #f7fbff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
   outline: 0;
   transform: translateY(-1px);
 }
@@ -5675,7 +5675,7 @@ body:has(.app-frame) {
   overflow: hidden;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   background: linear-gradient(135deg, #edf4ff, #f8fbff);
   color: var(--blue);
 }
@@ -5692,9 +5692,9 @@ body:has(.app-frame) {
   height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .project-card-meta {
@@ -5737,7 +5737,7 @@ body:has(.app-frame) {
   height: 50px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 3px;
   background: var(--blue-soft);
   color: var(--blue);
 }
@@ -5770,7 +5770,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 3px;
   background: linear-gradient(135deg, #edf4ff, #f8fbff);
   color: var(--blue);
   object-fit: cover;
@@ -5845,7 +5845,7 @@ body:has(.app-frame) {
   resize: vertical;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   outline: 0;
   color: var(--ink);
   background: #ffffff;
@@ -5881,7 +5881,7 @@ body:has(.app-frame) {
   gap: 12px;
   padding: 28px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -5909,7 +5909,7 @@ body:has(.app-frame) {
   height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -5954,9 +5954,9 @@ body:has(.app-frame) {
   width: min(440px, 100%);
   padding: 22px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .progress-modal-panel {
@@ -5993,7 +5993,7 @@ body:has(.app-frame) {
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #ffffff;
 }
 
@@ -6012,7 +6012,7 @@ body:has(.app-frame) {
   gap: 7px;
   padding: 0 12px;
   border: 1px solid #ffcdd2;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--red);
   background: #fff0f1;
   font-size: 13px;
@@ -6035,7 +6035,7 @@ body:has(.app-frame) {
 .editor-field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   outline: 0;
   color: var(--ink);
   background: #ffffff;
@@ -6114,7 +6114,7 @@ body:has(.app-frame) {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #fbfcff;
   color: var(--ink);
   text-align: left;
@@ -6126,7 +6126,7 @@ body:has(.app-frame) {
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--blue);
   background: var(--blue-soft);
   overflow: hidden;
@@ -6173,7 +6173,7 @@ body:has(.app-frame) {
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #f8fbff;
 }
 
@@ -6202,7 +6202,7 @@ body:has(.app-frame) {
 .defect-modal-panel > p {
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 3px;
   background: #f8fbff;
   color: var(--muted-strong);
   font-size: 13px;

@@ -23,6 +23,21 @@ export type Workspace = {
   address: string;
   /** Layout of the company-wide planning board. */
   plan?: PlanLayout;
+  /** Billing defaults: hourly rate, VAT, weekly working hours. */
+  billing?: BillingSettings;
+};
+
+export type BillingSettings = {
+  /** € per hour, net */
+  rate: number;
+  /** VAT in percent */
+  vat: number;
+  /** weekly target hours of a full-time worker (daily target = /5) */
+  weekHours: number;
+  /** payment term in days */
+  terms: number;
+  iban: string;
+  uid: string;
 };
 
 /** Rows, groups and order of a planning board (company planning or a project plan). */
@@ -67,6 +82,8 @@ export type Project = Stamped & {
   /** Invited people; together with the creator they are the project team. */
   memberIds: string[];
   budget: number | null;
+  /** customer in the contacts */
+  contactId?: string;
   description: string;
   color: string;
   /** Picture of the site (data URL or file in /public) – shown on the project card. */
@@ -227,6 +244,8 @@ export type Regie = Stamped & {
   signature: string;
   signedBy: string;
   signedAt?: string;
+  /** invoice that billed this Regie */
+  billedIn?: string;
   approvedBy?: string;
   approvedAt?: string;
 };
@@ -253,6 +272,135 @@ export type ProjectDocument = Stamped & {
   kind: DocumentKind;
   status: DocumentStatus;
   file: Attachment;
+};
+
+/* ------------------------------------------------------------ customers, inquiries */
+
+export type ContactStatus = "kunde" | "interessent" | "lieferant" | "partner";
+
+/** Customer, prospect, supplier or partner – a company or a person. */
+export type Contact = Stamped & {
+  id: string;
+  name: string;
+  /** contact person at the company */
+  person: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: ContactStatus;
+  tags: string[];
+  note: string;
+};
+
+export type DealStage = "anfrage" | "besichtigung" | "angebot" | "beauftragt" | "verloren";
+
+/** An inquiry on its way to an order. */
+export type Deal = Stamped & {
+  id: string;
+  title: string;
+  contactId: string;
+  stage: DealStage;
+  /** expected value, net € */
+  value: number;
+  /** chance in percent */
+  probability: number;
+  ownerId: string;
+  /** expected decision */
+  closeDate: ISODate | "";
+  note: string;
+  /** project created from the won inquiry */
+  projectId?: string;
+  /** order of the cards in a column */
+  order: number;
+};
+
+/* ------------------------------------------------------------ time and attendance */
+
+/** Working time of one person on one project (or internal work). */
+export type TimeEntry = Stamped & {
+  id: string;
+  employeeId: string;
+  /** "" = internal (yard, office, training) */
+  projectId: string;
+  date: ISODate;
+  /** "07:00" */
+  start: string;
+  end: string;
+  /** break in minutes */
+  pause: number;
+  activity: string;
+  billable: boolean;
+  /** invoice that billed this time */
+  billedIn?: string;
+};
+
+/** One working day on the time clock: clocked in, breaks, clocked out. */
+export type ClockDay = {
+  id: string;
+  employeeId: string;
+  date: ISODate;
+  /** ISO timestamps */
+  in: string;
+  out?: string;
+  breaks: { start: string; end?: string }[];
+  /** running job timer: project and since when */
+  timer?: { projectId: string; activity: string; since: string };
+};
+
+/* ------------------------------------------------------------ quotes and invoices */
+
+export type BillingKind = "angebot" | "rechnung" | "gutschrift" | "mahnung";
+export type BillingStatus = "entwurf" | "versendet" | "angenommen" | "abgelehnt" | "bezahlt" | "storniert";
+
+export type BillingLine = { id: string; text: string; qty: number; unit: string; price: number };
+
+export type BillingDoc = Stamped & {
+  id: string;
+  kind: BillingKind;
+  /** e.g. AN-2026-0012, RE-2026-0031 */
+  no: string;
+  date: ISODate;
+  /** payment due / quote valid until */
+  due: ISODate | "";
+  contactId: string;
+  projectId: string;
+  title: string;
+  intro: string;
+  lines: BillingLine[];
+  vat: number;
+  status: BillingStatus;
+  paidAt?: string;
+  /** quote an invoice comes from, or invoice a dunning letter refers to */
+  refId?: string;
+  /** dunning level 1–3 */
+  level?: number;
+  fee?: number;
+};
+
+/* ------------------------------------------------------------ forms (inspection reports, checklists) */
+
+export type FormFieldType = "heading" | "check" | "text" | "number" | "date" | "select" | "photo" | "signature";
+
+export type FormField = { id: string; label: string; type: FormFieldType; required: boolean; options?: string[]; unit?: string };
+
+/** A form: e.g. Prüfprotokoll E-Anlage, Abnahmeprotokoll, Sicherheitsunterweisung. */
+export type FormTemplate = Stamped & {
+  id: string;
+  name: string;
+  description: string;
+  fields: FormField[];
+};
+
+/** A filled-in form on a project. */
+export type FormEntry = Stamped & {
+  id: string;
+  templateId: string;
+  projectId: string;
+  title: string;
+  values: Record<string, string | boolean>;
+  photos: Record<string, Attachment[]>;
+  status: "entwurf" | "abgeschlossen";
+  closedAt?: string;
 };
 
 export type ReportKind = "status" | "defects" | "points" | "photos";
@@ -296,9 +444,16 @@ export type Data = {
   articles: Article[];
   regie: Regie[];
   dailies: DailyReport[];
+  contacts: Contact[];
+  deals: Deal[];
+  times: TimeEntry[];
+  clock: ClockDay[];
+  billing: BillingDoc[];
+  forms: FormTemplate[];
+  formEntries: FormEntry[];
   activity: Activity[];
 };
 
 /** The lists that hold records with an id. */
-export type Collection = "people" | "projects" | "points" | "defects" | "tasks" | "notes" | "documents" | "reports" | "absences" | "jobs" | "photos" | "materials" | "articles" | "regie" | "dailies";
+export type Collection = "people" | "projects" | "points" | "defects" | "tasks" | "notes" | "documents" | "reports" | "absences" | "jobs" | "photos" | "materials" | "articles" | "regie" | "dailies" | "contacts" | "deals" | "times" | "clock" | "billing" | "forms" | "formEntries";
 export type Item<K extends Collection> = Data[K][number];

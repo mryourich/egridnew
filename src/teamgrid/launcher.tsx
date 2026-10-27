@@ -8,6 +8,7 @@ import { me, rightsOf, scopedPeople } from "@/core/roles";
 import { useStore } from "@/core/store";
 import { modulesFor } from "@/core/shell";
 import { projectFacts, visibleProjects } from "./model";
+import { clockMinutes, eur0, fmtH, overdue, totals } from "./money";
 import { plannedOn } from "./plan-kit";
 
 const GREETING = () => {
@@ -31,11 +32,22 @@ export function Launcher() {
     site: `${projects.length} Projekte · ${openDefects} offene Mängel`,
     planning: `${people.filter((p) => plannedOn(data, p.id, t)).length} von ${people.length} heute eingeteilt`,
     people: `${people.length} Personen · ${away} abwesend`,
-    settings: rightsOf(data).admin ? data.workspace.name : undefined
+    settings: rightsOf(data).admin ? data.workspace.name : undefined,
+    time: (() => {
+      const c = data.clock.find((x) => x.employeeId === data.meId && x.date === t);
+      return c && !c.out ? `Im Dienst · ${fmtH(clockMinutes(c))}` : c ? `Heute ${fmtH(clockMinutes(c))}` : "Noch nicht eingestempelt";
+    })(),
+    crm: `${data.contacts.filter((c) => c.status === "kunde").length} Kunden · ${data.deals.filter((d) => !["beauftragt", "verloren"].includes(d.stage)).length} offene Anfragen`,
+    billing: (() => {
+      const open = data.billing.filter((b) => b.kind === "rechnung" && b.status === "versendet");
+      const late = open.filter((b) => overdue(b, t)).length;
+      return `${eur0(open.reduce((s, b) => s + totals(b).gross, 0))} offen${late ? ` · ${late} überfällig` : ""}`;
+    })()
   };
   const mods = modulesFor(data);
   const groups = [
-    { title: "Arbeit", list: mods.filter((m) => !m.soon && m.key !== "settings") },
+    { title: "Baustelle & Team", list: mods.filter((m) => ["dashboard", "site", "planning", "time", "people"].includes(m.key)) },
+    { title: "Kunden & Abrechnung", list: mods.filter((m) => m.key === "crm" || m.key === "billing") },
     { title: "Bald verfügbar", list: mods.filter((m) => m.soon) },
     { title: "Verwaltung", list: mods.filter((m) => m.key === "settings") }
   ].filter((g) => g.list.length);
@@ -48,7 +60,7 @@ export function Launcher() {
           {GREETING()}, {user?.name.split(" ")[0]}
         </h1>
         <p>
-          {weekdayLong(t)}, {fmt(t)} · Alle VYSNER-Apps an einem Ort – ein Datenstand für Projekte, Planung und Team.
+          {weekdayLong(t)}, {fmt(t)} · Alle VYSNER-Apps an einem Ort – ein Datenstand von der Anfrage über Baustelle und Stunden bis zur Rechnung.
         </p>
       </header>
 

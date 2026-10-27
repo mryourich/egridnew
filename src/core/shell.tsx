@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { ProgressSidebar } from "@/teamgrid/open-points";
 import { visibleProjects } from "@/teamgrid/model";
+import { ClockPill } from "@/teamgrid/time";
 import { fmtWhen } from "./format";
 import { locate, MODULES, type ModuleNavItem, type SubNavItem } from "./modules";
 import { OfflineSupport } from "./offline";
@@ -17,6 +18,7 @@ import "./app.css";
 import "./egrid.css";
 import "./egrid-extra.css";
 import "@/teamgrid/teamgrid.css";
+import "./b2b.css";
 
 export function Hub({ children }: { children: ReactNode }) {
   return (
@@ -31,7 +33,7 @@ export function Hub({ children }: { children: ReactNode }) {
 /** Which modules someone may open. */
 export function modulesFor(data: Data) {
   const r = rightsOf(data);
-  return MODULES.filter((m) => (m.key === "people" ? r.teamView : m.key === "settings" ? r.admin : true));
+  return MODULES.filter((m) => (m.key === "people" ? r.teamView : m.key === "settings" ? r.admin : m.key === "crm" || m.key === "billing" ? r.sales : true));
 }
 
 /** Sub pages of a module for the signed-in person. */
@@ -117,6 +119,7 @@ function Frame({ children }: { children: ReactNode }) {
           </button>
           <QuickFind />
           <div className="topbar-actions">
+            <ClockPill />
             <Link className="icon-button" href="/start" aria-label="Alle Apps" title="Alle Apps">
               <LayoutGrid size={19} />
             </Link>

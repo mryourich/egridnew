@@ -47,13 +47,18 @@ type Rights = {
   team: boolean;
   /** sees everybody in planning and team (otherwise their part of the organisation chart) */
   allPeople: boolean;
+  /** customers, inquiries, quotes and invoices */
+  sales: boolean;
   /** company settings and data */
   admin: boolean;
   /** looks only, changes nothing */
   readOnly: boolean;
 };
 
-const R = (allProjects: boolean, create: boolean, manage: boolean, work: boolean, plan: boolean, teamView: boolean, team: boolean, allPeople: boolean, admin: boolean, readOnly = false): Rights => ({ allProjects, create, manage, work, plan, teamView, team, allPeople, admin, readOnly });
+const R = (allProjects: boolean, create: boolean, manage: boolean, work: boolean, plan: boolean, teamView: boolean, team: boolean, allPeople: boolean, admin: boolean, readOnly = false): Rights => ({ allProjects, create, manage, work, plan, teamView, team, allPeople, admin, readOnly, sales: false });
+
+/** who works with customers, quotes and invoices */
+const SALES: Rolle[] = ["admin", "gf", "bereichsleiter", "teamleiter", "projektleiter"];
 
 //                                    all    create manage work   plan   teamV  team   allPpl admin
 export const RIGHTS: Record<Rolle, Rights> = {
@@ -68,6 +73,8 @@ export const RIGHTS: Record<Rolle, Rights> = {
   lehrling: /*       */ R(false, false, false, true, false, false, false, false, false),
   extern: /*         */ R(false, false, false, true, false, false, false, false, false)
 };
+
+for (const r of SALES) RIGHTS[r].sales = true;
 
 /** Workers on site: Monteur, Lehrling, Extern. */
 export const FIELD: Rolle[] = ["monteur", "lehrling", "extern"];

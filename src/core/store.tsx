@@ -141,6 +141,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             materials: keep(d.materials),
             regie: keep(d.regie),
             dailies: keep(d.dailies),
+            formEntries: keep(d.formEntries),
+            times: d.times.map((x) => (x.projectId === id ? { ...x, projectId: "" } : x)),
+            deals: d.deals.map((x) => (x.projectId === id ? { ...x, projectId: undefined } : x)),
             activity: keep(d.activity)
           };
         }

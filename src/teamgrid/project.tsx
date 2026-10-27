@@ -6,6 +6,7 @@ import { useStore } from "@/core/store";
 import { Empty } from "@/core/ui";
 import { Defects } from "./defects";
 import { Documents } from "./documents";
+import { FormsTab } from "./forms";
 import { Gantt } from "./gantt";
 import { MaterialList } from "./material";
 import { Notes } from "./notes";
@@ -38,6 +39,7 @@ export function ProjectPage({ id, tab = "" }: { id: string; tab?: string }) {
     material: <MaterialList project={project} />,
     aufgaben: <Tasks project={project} />,
     notizen: <Notes project={project} />,
+    formulare: <FormsTab project={project} />,
     dokumente: <Documents project={project} />,
     berichte: field ? null : <Reports project={project} />,
     einstellungen: <ProjectSettings project={project} />

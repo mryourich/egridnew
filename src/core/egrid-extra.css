@@ -22,13 +22,13 @@
   padding: 6px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 3px;
   box-shadow: var(--shadow);
 }
 .search-pop a {
   display: block;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 3px;
 }
 .search-pop a:hover {
   background: var(--blue-soft);
@@ -69,7 +69,7 @@ button.user-menu {
   padding: 10px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 3px;
   box-shadow: var(--shadow);
 }
 .notif-pop header {
@@ -89,7 +89,7 @@ button.user-menu {
   display: flex;
   gap: 10px;
   padding: 8px 6px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 13px;
   line-height: 1.35;
 }
@@ -125,7 +125,7 @@ button.user-menu {
 .user-pop-list button {
   padding: 6px 8px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   background: none;
   text-align: left;
   font-size: 13px;
@@ -207,7 +207,7 @@ button.user-menu {
   padding: 18px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 3px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
@@ -222,7 +222,7 @@ button.user-menu {
   place-items: center;
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: 3px;
   color: #fff;
   background: var(--app);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--app) 30%, transparent);
@@ -270,7 +270,7 @@ button.user-menu {
   padding: 18px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 3px;
   color: var(--muted-strong);
 }
 .launcher-help svg {
@@ -315,7 +315,7 @@ button.user-menu {
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--blue);
-  border-radius: 8px;
+  border-radius: 3px;
   outline: 0;
 }
 .progress-add-row.editing {
