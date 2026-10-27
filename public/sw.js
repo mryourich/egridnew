@@ -2,7 +2,7 @@
    The data itself lives on the device anyway (until the server sync comes).
    Every build registers this worker with a new ?v=… – then all old copies are thrown away. */
 const VERSION = "vysner-" + (new URL(self.location.href).searchParams.get("v") || "dev");
-const SHELL = ["/dashboard", "/projekte", "/planung", "/team", "/einstellungen"];
+const SHELL = ["/start", "/dashboard", "/projekte", "/planung", "/team", "/einstellungen"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

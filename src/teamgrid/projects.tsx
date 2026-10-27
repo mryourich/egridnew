@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addDays, today } from "@/core/date";
+import { readAttachment } from "@/core/files";
 import { fmtMoney, fmtShort, PROJECT_STATUS } from "@/core/format";
 import { byRole, FIELD, rightsOf } from "@/core/roles";
 import { uid, useStore } from "@/core/store";
@@ -137,7 +138,8 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
     managerId: project?.managerId ?? data.meId,
     budget: project?.budget == null ? "" : String(project.budget),
     description: project?.description ?? "",
-    color: project?.color ?? PROJECT_COLORS[data.projects.length % PROJECT_COLORS.length]
+    color: project?.color ?? PROJECT_COLORS[data.projects.length % PROJECT_COLORS.length],
+    image: project?.image ?? ""
   });
   const set = <K extends keyof typeof v>(k: K, value: (typeof v)[K]) => setV((x) => ({ ...x, [k]: value }));
   const leads = data.people.filter((p) => p.active && !FIELD.includes(p.rolle) && p.rolle !== "gf").sort(byRole);
@@ -156,7 +158,8 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
       managerId: v.managerId,
       budget: v.budget.trim() ? Number(v.budget.replace(/[^\d,.-]/g, "").replace(",", ".")) || null : null,
       description: v.description.trim(),
-      color: v.color
+      color: v.color,
+      image: v.image || undefined
     };
     save("projects", item, isNew ? `Projekt „${item.name}“ angelegt` : "Projektdaten geändert");
     notify(isNew ? "Projekt angelegt – nur du und die Projektleitung sehen es, bis du Leute einlädst." : "Gespeichert");
@@ -231,6 +234,35 @@ export function ProjectForm({ project, onClose, onSaved }: { project?: Project; 
             {PROJECT_COLORS.map((c) => (
               <button key={c} type="button" style={{ background: c }} className={v.color === c ? "on" : ""} onClick={() => set("color", c)} aria-label={`Farbe ${c}`} />
             ))}
+          </div>
+        </div>
+        <div className="b-field span-2">
+          <span className="b-label">Projektbild</span>
+          <div className="proj-image-pick">
+            {v.image ? <img src={v.image} alt="" /> : <span>Kein Bild</span>}
+            <label className="b-btn default sm">
+              Bild auswählen
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  try {
+                    set("image", (await readAttachment(f, data.meId)).url);
+                  } catch (err) {
+                    notify(err instanceof Error ? err.message : "Bild konnte nicht gelesen werden.");
+                  }
+                }}
+              />
+            </label>
+            {v.image && (
+              <button type="button" className="link" onClick={() => set("image", "")}>
+                Entfernen
+              </button>
+            )}
           </div>
         </div>
         <button type="submit" hidden />

@@ -11,7 +11,7 @@ export function Planning() {
   const edit = rightsOf(data).plan;
   return (
     <div className="page wide">
-      <PageHead kicker="TeamGrid" title="Planung" sub={edit ? "Rechtsklick auf eine freie Stelle = Zeitbalken, Symbol oder Abwesenheit · Balken ziehen = verschieben · Enden ziehen = länger" : "Wer arbeitet wann wo."} />
+      <PageHead kicker="Plantafel" title="Planung" sub={edit ? "Rechtsklick auf eine freie Stelle = Zeitbalken, Symbol oder Abwesenheit · Balken ziehen = verschieben · Enden ziehen = länger" : "Wer arbeitet wann wo."} />
       {scopedPeople(data).length === 0 ? <Empty title="Noch keine Mitarbeiter">Lege sie unter „Team“ an.</Empty> : <Gantt scope={{ kind: "company" }} />}
     </div>
   );

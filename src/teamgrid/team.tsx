@@ -11,15 +11,14 @@ import { Avatar, Button, Empty, Field, IconButton, Modal, PageHead, SearchBox, S
 import { ABS_TYPES, ABSENCE, dayText } from "./plan-kit";
 import "./team.css";
 
-type Tab = "leute" | "org" | "abwesend";
+export type Tab = "leute" | "org" | "abwesend";
 
 /** The people – searchable, also with a hundred of them –, the organisation chart and the absence calendar. */
-export function Team() {
+export function Team({ tab = "leute" }: { tab?: Tab }) {
   const { data } = useStore();
-  const [tab, setTab] = useState<Tab>("leute");
   const [person, setPerson] = useState<Partial<Person> | null>(null);
   const [away, setAway] = useState<Partial<Absence> | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("q") ?? ""));
   const [role, setRole] = useState<Rolle | "alle">("alle");
   const edit = rightsOf(data).team;
   const t = today();
@@ -44,7 +43,7 @@ export function Team() {
 
   return (
     <div className="page">
-      <PageHead kicker="TeamGrid" title="Team" sub={`${people.length} ${people.length === 1 ? "Person" : "Personen"} · heute ${awayToday} abwesend · Monteure, Lehrlinge und Externe kosten nichts extra`}>
+      <PageHead kicker={tab === "org" ? "Organigramm" : tab === "abwesend" ? "Abwesenheiten" : "Mitarbeiter"} title="People" sub={`${people.length} ${people.length === 1 ? "Person" : "Personen"} · heute ${awayToday} abwesend · Monteure, Lehrlinge und Externe kosten nichts extra`}>
         {edit && (
           <>
             <Button icon={<CalendarPlus size={15} />} onClick={() => setAway({ start: t, end: t, type: "urlaub" })}>
@@ -58,15 +57,6 @@ export function Team() {
       </PageHead>
 
       <div className="toolbar">
-        <Seg<Tab>
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: "leute", label: "Mitarbeiter" },
-            { value: "org", label: "Organigramm" },
-            { value: "abwesend", label: "Abwesenheiten" }
-          ]}
-        />
         <SearchBox value={query} onChange={setQuery} placeholder="Name, Funktion, Telefon…" />
         {lv && tab !== "org" && (
           <Seg
@@ -251,7 +241,7 @@ function OrgChart({ people, highlight, onOpen }: { people: Person[]; highlight: 
 }
 
 /** Month view: one row per person, one column per day. Drag across days to enter Urlaub, ZA or Krankenstand. */
-function AbsenceCalendar({ people, onPick }: { people: Person[]; onPick: (a: Partial<Absence>) => void }) {
+export function AbsenceCalendar({ people, onPick }: { people: Person[]; onPick: (a: Partial<Absence>) => void }) {
   const { data } = useStore();
   const t = today();
   const [month, setMonth] = useState(t.slice(0, 7));
@@ -356,7 +346,7 @@ function AbsenceCalendar({ people, onPick }: { people: Person[]; onPick: (a: Par
   );
 }
 
-function AbsenceForm({ absence, people, onClose }: { absence: Partial<Absence>; people: Person[]; onClose: () => void }) {
+export function AbsenceForm({ absence, people, onClose }: { absence: Partial<Absence>; people: Person[]; onClose: () => void }) {
   const { save, remove, notify } = useStore();
   const isNew = !absence.id;
   const [employeeId, setEmployeeId] = useState(absence.employeeId ?? people[0]?.id ?? "");

@@ -4,7 +4,7 @@ import type { Attachment, Data, Job, Material, OpenPoint, Person, Photo, PointTy
 
 export const DATA_VERSION = 1;
 /** Raise when the demo content changes – visitors then get the new demo. */
-export const DEMO_VERSION = 2;
+export const DEMO_VERSION = 3;
 
 const ts = (daysAgo: number, time = "08:00") => new Date(`${addDays(today(), -daysAgo)}T${time}:00`).toISOString();
 
@@ -78,9 +78,9 @@ export function createDemo(): Data {
     ...p
   });
   const projects: Project[] = [
-    project("p1", { number: "P-2601", name: "Semmering Basistunnel", client: "ÖBB Infrastruktur", location: "Mürzzuschlag", status: "active", start: d(-60), due: d(28), managerId: "mj", memberIds: ["ab", "ik", "mp", "lg", "ks"], createdBy: "mj", budget: 218400, color: "#1a5cff", description: "Elektroinstallation Tunnelabschnitt Nord: Kabeltrassen, Verteiler, Beleuchtung." }),
-    project("p2", { number: "P-2602", name: "Ladeinfrastruktur Zentrale", client: "eww Gruppe", location: "Wels", status: "planning", start: d(-10), due: d(70), managerId: "jw", memberIds: ["mh", "sl", "dh"], createdBy: "jw", budget: 74900, color: "#7c3aed", description: "24 AC-Ladepunkte und Lastmanagement im Parkdeck." }),
-    project("p3", { number: "P-2603", name: "Smart Meter Rollout", client: "Gemeinde Attnang", location: "Attnang", status: "handover", start: d(-90), due: d(-2), managerId: "mj", memberIds: ["mh", "mp", "dh"], createdBy: "mj", budget: 211000, color: "#0891b2", description: "Tausch von 1.200 Zählern, Abnahme mit der Gemeinde." })
+    project("p1", { number: "P-2601", name: "Semmering Basistunnel", client: "ÖBB Infrastruktur", location: "Mürzzuschlag", status: "active", start: d(-60), due: d(28), managerId: "mj", memberIds: ["ab", "ik", "mp", "lg", "ks"], createdBy: "mj", budget: 218400, color: "#1a5cff", image: "/demo/tunnel.jpg", description: "Elektroinstallation Tunnelabschnitt Nord: Kabeltrassen, Verteiler, Beleuchtung." }),
+    project("p2", { number: "P-2602", name: "Ladeinfrastruktur Zentrale", client: "eww Gruppe", location: "Wels", status: "planning", start: d(-10), due: d(70), managerId: "jw", memberIds: ["mh", "sl", "dh"], createdBy: "jw", budget: 74900, color: "#7c3aed", image: "/demo/foto5.jpg", description: "24 AC-Ladepunkte und Lastmanagement im Parkdeck." }),
+    project("p3", { number: "P-2603", name: "Smart Meter Rollout", client: "Gemeinde Attnang", location: "Attnang", status: "handover", start: d(-90), due: d(-2), managerId: "mj", memberIds: ["mh", "mp", "dh"], createdBy: "mj", budget: 211000, color: "#0891b2", image: "/demo/band2.jpg", description: "Tausch von 1.200 Zählern, Abnahme mit der Gemeinde." })
   ];
 
   const att = (id: string, name: string, url: string, kind: Attachment["kind"] = "photo", by = "ik"): Attachment => ({ id, name, kind, mime: kind === "photo" ? "image/jpeg" : "application/pdf", size: 240_000, url, addedBy: by, addedAt: ts(1, "10:20") });

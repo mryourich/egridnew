@@ -8,7 +8,7 @@ import { defectNo, fmtShort, PRIORITY } from "@/core/format";
 import { byRole, isField, levelView, me, ROLLE_LABEL, scopedPeople, subtree } from "@/core/roles";
 import { personName, useStore } from "@/core/store";
 import type { Project } from "@/core/types";
-import { Seg, Tag } from "@/core/ui";
+import { PageHead, Seg, Tag } from "@/core/ui";
 import { pathLabel, visibleProjects } from "./model";
 import { dayText, plannedOn } from "./plan-kit";
 import { StickyBoard } from "./sticky";
@@ -54,15 +54,7 @@ export function Dashboard() {
 
   return (
     <div className="page">
-      <header className="b-head">
-        <div>
-          <span className="b-kicker">{data.workspace.name}</span>
-          <h1>Dashboard</h1>
-          <p>
-            {weekdayLong(t)}, {fmt(t)} · {user?.name}
-          </p>
-        </div>
-      </header>
+      <PageHead kicker="Zentrale Übersicht" title="Dashboard" sub={`${weekdayLong(t)}, ${fmt(t)} · ${user?.name} · ${data.workspace.name}`} />
 
       <div className="kpis dash-kpis">
         <button type="button" className={`kpi ${filter === "alle" ? "on" : ""}`} onClick={() => setFilter("alle")}>

@@ -6,14 +6,13 @@ import { assignableRoles, byRole, FIELD, me, ROLLE_INFO, ROLLE_LABEL, ROLLEN, ri
 import { today } from "./date";
 import { uid, useStore } from "./store";
 import type { Data, Person } from "./types";
-import { Avatar, Button, Empty, Field, Modal, PageHead, SearchBox, Seg, Tag } from "./ui";
+import { Avatar, Button, Empty, Field, Modal, PageHead, SearchBox, Tag } from "./ui";
 
-type Tab = "benutzer" | "firma" | "daten";
+export type Tab = "benutzer" | "firma" | "daten";
 
 /** Company, people and roles, data – for the admin. */
-export function CompanySettings() {
+export function CompanySettings({ tab = "benutzer" }: { tab?: Tab }) {
   const { data } = useStore();
-  const [tab, setTab] = useState<Tab>("benutzer");
   if (!rightsOf(data).admin)
     return (
       <div className="page narrow">
@@ -22,17 +21,7 @@ export function CompanySettings() {
     );
   return (
     <div className="page">
-      <PageHead kicker="Einstellungen" title="Firma & Benutzer" sub={data.workspace.name}>
-        <Seg<Tab>
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: "benutzer", label: "Benutzer & Rollen" },
-            { value: "firma", label: "Firma" },
-            { value: "daten", label: "Daten" }
-          ]}
-        />
-      </PageHead>
+      <PageHead kicker={tab === "firma" ? "Firmendaten" : tab === "daten" ? "Daten" : "Benutzer & Rollen"} title="Einstellungen" sub={data.workspace.name} />
       {tab === "benutzer" ? <PeopleAdmin /> : tab === "firma" ? <CompanyData /> : <DataAdmin />}
     </div>
   );

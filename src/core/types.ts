@@ -69,6 +69,8 @@ export type Project = Stamped & {
   budget: number | null;
   description: string;
   color: string;
+  /** Picture of the site (data URL or file in /public) – shown on the project card. */
+  image?: string;
   settings: ProjectSettings;
 } & PlanLayout;
 
