@@ -102,7 +102,7 @@ export default function Landing() {
             <a href="#preis">Preis</a>
           </nav>
           <span className="lp-spacer" />
-          <Link href="/projekte" className="lp-btn lp-btn-ghost">
+          <Link href="/uebersicht" className="lp-btn lp-btn-ghost">
             Anmelden
           </Link>
           <Link href="/demo" className="lp-btn lp-btn-primary lp-hide-sm">
@@ -412,7 +412,7 @@ export default function Landing() {
           <span>TeamGrid – Projekte, Offene Punkte und Mängel.</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
-          <Link href="/start">Anmelden</Link>
+          <Link href="/uebersicht">Anmelden</Link>
           <span>© {new Date().getFullYear()} VYSNER</span>
         </div>
       </footer>
