@@ -1,22 +1,26 @@
 "use client";
 
-import { AlertTriangle, Barcode, Download, Minus, Package, Plus, Printer, ScanLine, Search, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { AlertTriangle, Barcode, ChevronDown, ChevronRight, Download, Minus, Package, Plus, Printer, ScanLine, Search, Trash2, Truck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BlurInput, BlurTextarea, Empty, Field, Modal, PageHead, SidePanel, SortHead, StatusBadge, useConfirm } from "@/components/app/kit";
 import { Button, Checkbox, IconButton, Input, Select, Switch } from "@/components/ui";
+import { fmt, today } from "@/lib/date";
 import { fmtDateTime, fmtNum, parseNum } from "@/lib/format";
+import { downloadBlob } from "@/lib/zip";
 import { activeSites, inSite, now, personName, siteName, uid, useStore } from "@/lib/store/store";
 import type { MaterialItem } from "@/lib/store/types";
 import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
 import { svg128, validCode128 } from "./code128";
+import { BookDialog } from "./booking";
 import { ScanDialog } from "./scanner";
+import { book, cancelOrder, isLow, MOVE_LABEL, order, orders, receive, suggest, withdrawals } from "./stock";
 
 type SortKey = "name" | "qty" | "supplier" | "site" | "status";
 const UNITS = ["Stk", "m", "m²", "m³", "kg", "l", "Pkg", "Rolle", "Kartusche", "Sack", "Palette"];
 
-const low = (m: MaterialItem) => m.qty < m.minQty;
-const withOrdered = (m: MaterialItem, ordered: boolean): MaterialItem => ({ ...m, ordered, orderedAt: ordered ? now() : undefined });
+const low = isLow;
+const OPEN_KEY = "vysner:material-all-open";
 
 /** Next internal code for items without a manufacturer barcode. */
 function nextCode(items: MaterialItem[]) {
@@ -24,54 +28,95 @@ function nextCode(items: MaterialItem[]) {
   return `VY-${String(n + 1).padStart(6, "0")}`;
 }
 
-/** Stock per site: barcode labels, scanning, ordered / not ordered, warning below the minimum. */
+/**
+ * Stock per site. On top what needs ordering (below the minimum, not yet ordered) with the quantity to order,
+ * then what is ordered and still to come, everything else in the full list below.
+ * Scanning a barcode with the phone books a withdrawal – the stock follows automatically.
+ */
 export function Material() {
   const { data, save, siteId, notify } = useStore();
   const q = useQuery();
   const [term, setTerm] = useState("");
-  const [ordered, setOrdered] = useState<"" | "ja" | "nein">("");
   const [supplier, setSupplier] = useState("");
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "status", dir: 1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "name", dir: 1 });
   const [scanning, setScanning] = useState(false);
+  const [booking, setBooking] = useState<MaterialItem | null>(null);
   const [creating, setCreating] = useState<{ barcode?: string } | null>(null);
+  const [qtys, setQtys] = useState<Record<string, string>>({});
+  const [allOpen, setAllOpen] = useState(false);
   const onlyLow = q.get("filter") === "unter";
   const openId = q.get("artikel");
+  const me = data.meId;
+
+  useEffect(() => {
+    try {
+      setAllOpen(window.localStorage.getItem(OPEN_KEY) === "1");
+    } catch {
+      // closed
+    }
+  }, []);
+  const toggleAll = (v: boolean) => {
+    setAllOpen(v);
+    try {
+      window.localStorage.setItem(OPEN_KEY, v ? "1" : "0");
+    } catch {
+      // only for this visit
+    }
+  };
+  // /material?scan=1 opens the camera straight away (bookmark on the phone's home screen)
+  useEffect(() => {
+    if (q.get("scan")) {
+      setScanning(true);
+      q.set({ scan: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const scoped = data.materials.filter(inSite(siteId));
+  const toOrder = scoped.filter((m) => low(m) && !m.ordered).sort((a, b) => a.qty / Math.max(1, a.minQty) - b.qty / Math.max(1, b.minQty) || a.name.localeCompare(b.name, "de"));
+  const incoming = scoped.filter((m) => m.ordered).sort((a, b) => (a.orderedAt ?? "").localeCompare(b.orderedAt ?? ""));
   const suppliers = [...new Set(scoped.map((m) => m.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
   const t = term.trim().toLowerCase();
   const rows = useMemo(() => {
-    const list = scoped.filter(
-      (m) => (!onlyLow || low(m)) && (!ordered || (ordered === "ja") === m.ordered) && (!supplier || m.supplier === supplier) && (!t || [m.name, m.artNo, m.barcode, m.supplier, m.note, siteName(data, m.siteId)].join(" ").toLowerCase().includes(t))
-    );
-    // warnings first, then by name
+    const list = scoped.filter((m) => (!onlyLow || low(m)) && (!supplier || m.supplier === supplier) && (!t || [m.name, m.artNo, m.barcode, m.supplier, m.note, siteName(data, m.siteId)].join(" ").toLowerCase().includes(t)));
     const val = (m: MaterialItem): string | number =>
-      sort.key === "qty" ? m.qty : sort.key === "supplier" ? m.supplier.toLowerCase() || "zzz" : sort.key === "site" ? siteName(data, m.siteId).toLowerCase() : sort.key === "status" ? (low(m) ? (m.ordered ? 1 : 0) : 2) * 1e6 + m.name.toLowerCase().charCodeAt(0) : m.name.toLowerCase();
+      sort.key === "qty" ? m.qty : sort.key === "supplier" ? m.supplier.toLowerCase() || "zzz" : sort.key === "site" ? siteName(data, m.siteId).toLowerCase() : sort.key === "status" ? (low(m) ? (m.ordered ? 1 : 0) : 2) : m.name.toLowerCase();
     return list.sort((a, b) => {
       const x = val(a);
       const y = val(b);
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir || a.name.localeCompare(b.name, "de");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, siteId, onlyLow, ordered, supplier, t, sort]);
-  const lowCount = scoped.filter(low).length;
+  }, [data, siteId, onlyLow, supplier, t, sort]);
+  const showAll = allOpen || !!t || onlyLow || !!supplier;
 
   const found = useCallback(
     (code: string) => {
       setScanning(false);
       const hit = data.materials.find((m) => m.barcode === code && (!siteId || m.siteId === siteId)) ?? data.materials.find((m) => m.barcode === code || m.artNo === code);
-      if (hit) {
-        q.set({ artikel: hit.id });
-        notify(`Gefunden: ${hit.name}${hit.siteId !== siteId && siteId ? ` (${siteName(data, hit.siteId)})` : ""}`);
-      } else {
+      if (hit) setBooking(hit);
+      else {
         notify(`Barcode ${code} ist noch keinem Artikel zugeordnet.`);
         setCreating({ barcode: code });
       }
     },
-    [data, siteId, q, notify]
+    [data, siteId, notify]
   );
 
-  const step = (m: MaterialItem, d: number) => save("materials", { ...m, qty: Math.max(0, Math.round((m.qty + d) * 100) / 100) });
+  const qtyOf = (m: MaterialItem) => qtys[m.id] ?? String(suggest(m));
+  const placeOrder = (m: MaterialItem) => {
+    const n = parseNum(qtyOf(m));
+    if (!Number.isFinite(n) || n <= 0) return notify("Bitte eine Bestellmenge größer 0 eingeben", { tone: "error" });
+    save("materials", order(m, n, me));
+    notify(`Bestellt: ${fmtNum(n)} ${m.unit} ${m.name}`, { undo: () => save("materials", m) });
+  };
+  const orderList = () => {
+    const head = ["Baustelle", "Artikel", "Art.-Nr.", "Barcode", "Lieferant", "Bestand", "Mindestbestand", "Bestellmenge", "Einheit"];
+    const lines = toOrder.map((m) => [siteName(data, m.siteId), m.name, m.artNo, m.barcode, m.supplier, fmtNum(m.qty), fmtNum(m.minQty), qtyOf(m), m.unit]);
+    const csv = "﻿" + [head, ...lines].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `Bestellliste ${siteId ? siteName(data, siteId) : "alle Baustellen"} ${fmt(today())}.csv`);
+  };
+  const step = (m: MaterialItem, d: number) => save("materials", book(m, d < 0 ? "entnahme" : "zugang", Math.abs(d), me));
 
   return (
     <div className="page">
@@ -80,153 +125,230 @@ export function Material() {
         sub={`Bestand ${siteId ? siteName(data, siteId) : "aller Baustellen"} · ${scoped.length} Artikel`}
         actions={
           <>
-            <Button variant="secondary" leftIcon={<ScanLine size={15} />} onClick={() => setScanning(true)}>
-              Scannen
-            </Button>
-            <Button leftIcon={<Plus size={15} />} onClick={() => setCreating({})}>
+            <Button variant="secondary" leftIcon={<Plus size={15} />} onClick={() => setCreating({})}>
               Artikel anlegen
+            </Button>
+            <Button leftIcon={<ScanLine size={15} />} onClick={() => setScanning(true)}>
+              Scannen & buchen
             </Button>
           </>
         }
       />
 
-      {lowCount > 0 && (
-        <div className={cn("alert-bar", onlyLow && "on")} role="status">
-          <AlertTriangle size={16} />
-          <span className="grow">
-            <strong>{lowCount} Artikel unter Mindestbestand</strong> · davon {scoped.filter((m) => low(m) && !m.ordered).length} noch nicht bestellt
-          </span>
-          <Button size="sm" variant="secondary" onClick={() => q.set({ filter: onlyLow ? null : "unter" })}>
-            {onlyLow ? "Alle anzeigen" : "Nur diese anzeigen"}
-          </Button>
+      <section className="panel prio-panel">
+        <div className="panel-head wrap">
+          <AlertTriangle size={16} className={toOrder.length ? "signal-text" : "muted"} />
+          <h2>Nachbestellen</h2>
+          <span className="muted">{toOrder.length ? `${toOrder.length} Artikel unter Mindestbestand, noch nicht bestellt` : "Alles über dem Mindestbestand oder bereits bestellt"}</span>
+          <span className="grow" />
+          {toOrder.length > 0 && (
+            <Button size="sm" variant="secondary" leftIcon={<Download size={14} />} onClick={orderList}>
+              Bestellliste (CSV)
+            </Button>
+          )}
         </div>
-      )}
-
-      <div className="toolbar">
-        <label className="search">
-          <Search size={14} />
-          <Input
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            onKeyDown={(e) => {
-              // a hand scanner types into the search and ends with Enter
-              if (e.key === "Enter" && term.trim() && data.materials.some((m) => m.barcode === term.trim())) {
-                found(term.trim());
-                setTerm("");
-              }
-            }}
-            placeholder="Artikel, Art.-Nr., Barcode"
-            aria-label="Material durchsuchen"
-          />
-        </label>
-        <Select value={ordered} onChange={(e) => setOrdered(e.target.value as typeof ordered)} aria-label="Bestellstatus" className="filter-select">
-          <option value="">Bestellt & nicht bestellt</option>
-          <option value="ja">Bestellt</option>
-          <option value="nein">Nicht bestellt</option>
-        </Select>
-        <Select value={supplier} onChange={(e) => setSupplier(e.target.value)} aria-label="Lieferant" className="filter-select">
-          <option value="">Alle Lieferanten</option>
-          {suppliers.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </Select>
-        <label className="check-row">
-          <Checkbox checked={onlyLow} onChange={(e) => q.set({ filter: e.target.checked ? "unter" : null })} /> Unter Mindestbestand
-        </label>
-        <span className="count">{rows.length} Artikel</span>
-      </div>
-
-      <section className="panel">
-        {rows.length ? (
+        {toOrder.length > 0 ? (
           <div className="table-scroll">
             <table className="ui-table">
               <thead>
                 <tr>
-                  <SortHead k="name" sort={sort} onSort={setSort}>
-                    Artikel
-                  </SortHead>
-                  {!siteId && (
-                    <SortHead k="site" sort={sort} onSort={setSort}>
-                      Baustelle
-                    </SortHead>
-                  )}
-                  <th className="ui-table-head">Barcode</th>
-                  <SortHead k="qty" sort={sort} onSort={setSort} className="num">
-                    Bestand
-                  </SortHead>
-                  <th className="ui-table-head num">Min.</th>
-                  <SortHead k="supplier" sort={sort} onSort={setSort}>
-                    Lieferant
-                  </SortHead>
-                  <SortHead k="status" sort={sort} onSort={setSort}>
-                    Status
-                  </SortHead>
+                  <th className="ui-table-head">Artikel</th>
+                  {!siteId && <th className="ui-table-head">Baustelle</th>}
+                  <th className="ui-table-head num">Bestand / Min.</th>
+                  <th className="ui-table-head">Lieferant</th>
+                  <th className="ui-table-head">Bisher bestellt</th>
+                  <th className="ui-table-head">Bestellmenge</th>
+                  <th className="ui-table-head" aria-label="Bestellen" />
                 </tr>
               </thead>
               <tbody>
-                {rows.map((m) => (
-                  <tr key={m.id} className={cn("ui-table-row clickable", low(m) && "warn", openId === m.id && "selected")} onClick={() => q.set({ artikel: m.id })}>
-                    <td className="ui-table-cell">
-                      <div className="point-cell">
-                        <strong>{m.name}</strong>
-                        <small>{m.artNo || "–"}</small>
-                      </div>
-                    </td>
-                    {!siteId && <td className="ui-table-cell muted">{siteName(data, m.siteId)}</td>}
-                    <td className="ui-table-cell mono muted">{m.barcode || "–"}</td>
-                    <td className="ui-table-cell" onClick={(e) => e.stopPropagation()}>
-                      <div className="qty">
-                        <IconButton label="Eins weniger" size="sm" variant="ghost" onClick={() => step(m, -1)} disabled={m.qty <= 0}>
-                          <Minus size={13} />
-                        </IconButton>
-                        <span className={cn("qty-value", low(m) && "signal-text")}>
-                          {fmtNum(m.qty)} <small>{m.unit}</small>
-                        </span>
-                        <IconButton label="Eins mehr" size="sm" variant="ghost" onClick={() => step(m, 1)}>
-                          <Plus size={13} />
-                        </IconButton>
-                      </div>
-                    </td>
-                    <td className="ui-table-cell num muted">{fmtNum(m.minQty)}</td>
-                    <td className="ui-table-cell">{m.supplier || <span className="muted">–</span>}</td>
-                    <td className="ui-table-cell" onClick={(e) => e.stopPropagation()}>
-                      <div className="mat-status">
-                        <button type="button" className={cn("order-toggle", m.ordered && "on")} aria-pressed={m.ordered} onClick={() => save("materials", withOrdered(m, !m.ordered))} title={m.ordered ? `Bestellt ${fmtDateTime(m.orderedAt)}` : "Als bestellt markieren"}>
-                          {m.ordered ? "Bestellt" : "Nicht bestellt"}
+                {toOrder.map((m) => {
+                  const past = orders(m);
+                  return (
+                    <tr key={m.id} className="ui-table-row warn">
+                      <td className="ui-table-cell">
+                        <button type="button" className="point-cell link-cell" onClick={() => q.set({ artikel: m.id })}>
+                          <strong>{m.name}</strong>
+                          <small>{[m.artNo, m.barcode].filter(Boolean).join(" · ")}</small>
                         </button>
-                        {low(m) && (
-                          <StatusBadge tone="amber" icon={AlertTriangle}>
-                            Unter Minimum
-                          </StatusBadge>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      {!siteId && <td className="ui-table-cell muted">{siteName(data, m.siteId)}</td>}
+                      <td className="ui-table-cell num nowrap">
+                        <span className="signal-text">{fmtNum(m.qty)}</span> / {fmtNum(m.minQty)} <small className="muted">{m.unit}</small>
+                      </td>
+                      <td className="ui-table-cell">{m.supplier || <span className="muted">–</span>}</td>
+                      <td className="ui-table-cell muted nowrap">{past.length ? `${past.length}× · zuletzt ${fmt(past.at(-1)!.at.slice(0, 10))}` : "noch nie"}</td>
+                      <td className="ui-table-cell">
+                        <div className="order-qty">
+                          <Input value={qtyOf(m)} onChange={(e) => setQtys((x) => ({ ...x, [m.id]: e.target.value }))} inputMode="decimal" aria-label={`Bestellmenge ${m.name}`} onKeyDown={(e) => e.key === "Enter" && placeOrder(m)} />
+                          <span className="muted">{m.unit}</span>
+                        </div>
+                      </td>
+                      <td className="ui-table-cell num">
+                        <Button size="sm" onClick={() => placeOrder(m)}>
+                          Bestellt
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="panel-body">
-            <Empty
-              inline
-              icon={<Package size={26} />}
-              title={scoped.length ? "Kein Artikel für diesen Filter" : "Noch kein Material erfasst"}
-              text={scoped.length ? "Suche oder Filter anpassen." : "Artikel anlegen oder einen Barcode scannen – jeder Artikel gehört zum Bestand einer Baustelle."}
-              action={
-                !scoped.length && (
-                  <Button leftIcon={<Plus size={15} />} onClick={() => setCreating({})}>
-                    Artikel anlegen
-                  </Button>
-                )
-              }
-            />
-          </div>
+          <p className="panel-body muted">Kein Handlungsbedarf.</p>
         )}
       </section>
+
+      {incoming.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <Truck size={16} className="muted" />
+            <h2>Bestellt – Lieferung offen</h2>
+            <span className="muted">{incoming.length} Artikel</span>
+          </div>
+          <div className="list-rows">
+            {incoming.map((m) => (
+              <div key={m.id}>
+                <button type="button" className="title link-cell" onClick={() => q.set({ artikel: m.id })}>
+                  <strong>{m.name}</strong> <small className="muted">· {[!siteId && siteName(data, m.siteId), m.supplier].filter(Boolean).join(" · ")}</small>
+                </button>
+                <span className="nowrap">
+                  {m.orderedQty ? `${fmtNum(m.orderedQty)} ${m.unit}` : "Menge offen"} <small className="muted">· bestellt {fmt(m.orderedAt?.slice(0, 10))}</small>
+                </span>
+                <span className={cn("nowrap", low(m) && "signal-text")}>
+                  Bestand {fmtNum(m.qty)} {m.unit}
+                </span>
+                <Button size="sm" variant="secondary" onClick={() => (save("materials", cancelOrder(m)), notify("Bestellung storniert", { undo: () => save("materials", m) }))}>
+                  Storno
+                </Button>
+                <Button size="sm" disabled={!m.orderedQty} title={m.orderedQty ? "Liefermenge zum Bestand buchen" : "Bestellmenge im Artikel eintragen"} onClick={() => (save("materials", receive(m, me)), notify(`Lieferung gebucht: +${fmtNum(m.orderedQty ?? 0)} ${m.unit} ${m.name}`, { undo: () => save("materials", m) }))}>
+                  Geliefert
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="panel">
+        <button type="button" className="panel-head panel-toggle" aria-expanded={showAll} onClick={() => toggleAll(!allOpen)}>
+          {showAll ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <h2>Alle Artikel</h2>
+          <span className="muted">{scoped.length} im Bestand</span>
+        </button>
+        <div className="toolbar panel-tools">
+          <label className="search">
+            <Search size={14} />
+            <Input
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              onKeyDown={(e) => {
+                // a hand scanner types into the search and ends with Enter
+                if (e.key === "Enter" && term.trim() && data.materials.some((m) => m.barcode === term.trim())) {
+                  e.preventDefault();
+                  found(term.trim());
+                  setTerm("");
+                }
+              }}
+              placeholder="Artikel, Art.-Nr., Barcode"
+              aria-label="Material durchsuchen"
+            />
+          </label>
+          <Select value={supplier} onChange={(e) => setSupplier(e.target.value)} aria-label="Lieferant" className="filter-select">
+            <option value="">Alle Lieferanten</option>
+            {suppliers.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+          <label className="check-row">
+            <Checkbox checked={onlyLow} onChange={(e) => q.set({ filter: e.target.checked ? "unter" : null })} /> Unter Mindestbestand
+          </label>
+          <span className="count">{showAll ? `${rows.length} Artikel` : "Zum Aufklappen auf „Alle Artikel“ tippen"}</span>
+        </div>
+        {showAll &&
+          (rows.length ? (
+            <div className="table-scroll">
+              <table className="ui-table">
+                <thead>
+                  <tr>
+                    <SortHead k="name" sort={sort} onSort={setSort}>
+                      Artikel
+                    </SortHead>
+                    {!siteId && (
+                      <SortHead k="site" sort={sort} onSort={setSort}>
+                        Baustelle
+                      </SortHead>
+                    )}
+                    <th className="ui-table-head">Barcode</th>
+                    <SortHead k="qty" sort={sort} onSort={setSort} className="num">
+                      Bestand
+                    </SortHead>
+                    <th className="ui-table-head num">Min.</th>
+                    <SortHead k="supplier" sort={sort} onSort={setSort}>
+                      Lieferant
+                    </SortHead>
+                    <SortHead k="status" sort={sort} onSort={setSort}>
+                      Status
+                    </SortHead>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((m) => (
+                    <tr key={m.id} className={cn("ui-table-row clickable", low(m) && "warn", openId === m.id && "selected")} onClick={() => q.set({ artikel: m.id })}>
+                      <td className="ui-table-cell">
+                        <div className="point-cell">
+                          <strong>{m.name}</strong>
+                          <small>{m.artNo || "–"}</small>
+                        </div>
+                      </td>
+                      {!siteId && <td className="ui-table-cell muted">{siteName(data, m.siteId)}</td>}
+                      <td className="ui-table-cell mono muted">{m.barcode || "–"}</td>
+                      <td className="ui-table-cell" onClick={(e) => e.stopPropagation()}>
+                        <div className="qty">
+                          <IconButton label="Eins entnehmen" size="sm" variant="ghost" onClick={() => step(m, -1)} disabled={m.qty <= 0}>
+                            <Minus size={13} />
+                          </IconButton>
+                          <span className={cn("qty-value", low(m) && "signal-text")}>
+                            {fmtNum(m.qty)} <small>{m.unit}</small>
+                          </span>
+                          <IconButton label="Eins zubuchen" size="sm" variant="ghost" onClick={() => step(m, 1)}>
+                            <Plus size={13} />
+                          </IconButton>
+                        </div>
+                      </td>
+                      <td className="ui-table-cell num muted">{fmtNum(m.minQty)}</td>
+                      <td className="ui-table-cell">{m.supplier || <span className="muted">–</span>}</td>
+                      <td className="ui-table-cell">
+                        {m.ordered ? <StatusBadge tone="blue">Bestellt{m.orderedQty ? ` ${fmtNum(m.orderedQty)}` : ""}</StatusBadge> : low(m) ? <StatusBadge tone="amber" icon={AlertTriangle}>Nachbestellen</StatusBadge> : <span className="muted">OK</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="panel-body">
+              <Empty
+                inline
+                icon={<Package size={26} />}
+                title={scoped.length ? "Kein Artikel für diesen Filter" : "Noch kein Material erfasst"}
+                text={scoped.length ? "Suche oder Filter anpassen." : "Artikel anlegen oder einen Barcode scannen – jeder Artikel gehört zum Bestand einer Baustelle."}
+                action={
+                  !scoped.length && (
+                    <Button leftIcon={<Plus size={15} />} onClick={() => setCreating({})}>
+                      Artikel anlegen
+                    </Button>
+                  )
+                }
+              />
+            </div>
+          ))}
+      </section>
       {scanning && <ScanDialog onCode={found} onClose={() => setScanning(false)} />}
+      {booking && <BookDialog item={booking} onClose={() => setBooking(null)} onNext={() => (setBooking(null), setScanning(true))} />}
       {creating && <NewItem barcode={creating.barcode} onClose={() => setCreating(null)} onCreated={(id) => (setCreating(null), q.set({ artikel: id }))} />}
       {openId && <ItemPanel id={openId} onClose={() => q.set({ artikel: null })} />}
     </div>
@@ -309,7 +431,7 @@ function NewItem({ barcode, onClose, onCreated }: { barcode?: string; onClose: (
             <Input value={m.supplier} onChange={(ev) => set({ supplier: ev.target.value })} list="suppliers" />
           </Field>
           <label className="check-row span-2">
-            <Checkbox checked={m.ordered} onChange={(ev) => set({ ordered: ev.target.checked, orderedAt: ev.target.checked ? now() : undefined })} /> Bereits bestellt
+            <Checkbox checked={m.ordered} onChange={(ev) => set({ ordered: ev.target.checked, orderedAt: ev.target.checked ? now() : undefined, orderedQty: undefined })} /> Bereits bestellt
           </label>
         </div>
       )}
@@ -331,22 +453,35 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, save, remove, notify, restore } = useStore();
   const ask = useConfirm();
   const [delta, setDelta] = useState("");
+  const [orderQty, setOrderQty] = useState("");
   const m = data.materials.find((x) => x.id === id);
   if (!m) return null;
   const set = (patch: Partial<MaterialItem>) => save("materials", { ...m, ...patch });
   const num = (v: string, k: "qty" | "minQty") => {
     const n = parseNum(v);
     if (Number.isNaN(n) || n < 0) return notify("Bitte eine Zahl ≥ 0 eingeben", { tone: "error" });
-    set({ [k]: n });
+    // a changed stock figure is kept as correction in the log
+    save("materials", k === "qty" ? book(m, "korrektur", n, data.meId) : { ...m, minQty: n });
   };
-  const book = (sign: 1 | -1) => {
+  const bookDelta = (sign: 1 | -1) => {
     const n = parseNum(delta);
     if (Number.isNaN(n) || n <= 0) return notify("Bitte eine Menge größer 0 eingeben", { tone: "error" });
-    const qty = Math.max(0, Math.round((m.qty + sign * n) * 100) / 100);
-    set({ qty });
+    const out = book(m, sign > 0 ? "zugang" : "entnahme", n, data.meId);
+    save("materials", out);
     setDelta("");
-    notify(`${sign > 0 ? "Zugang" : "Entnahme"} ${fmtNum(n)} ${m.unit} · Bestand ${fmtNum(qty)} ${m.unit}`);
+    notify(`${sign > 0 ? "Zugang" : "Entnahme"} ${fmtNum(n)} ${m.unit} · Bestand ${fmtNum(out.qty)} ${m.unit}`);
   };
+  const placeOrder = () => {
+    const n = parseNum(orderQty || String(suggest(m)));
+    if (!Number.isFinite(n) || n <= 0) return notify("Bitte eine Bestellmenge größer 0 eingeben", { tone: "error" });
+    save("materials", order(m, n, data.meId));
+    setOrderQty("");
+    notify(`Bestellt: ${fmtNum(n)} ${m.unit}`);
+  };
+  const log = [...(m.log ?? [])].reverse();
+  const used30 = withdrawals(m)
+    .filter((x) => Date.now() - Date.parse(x.at) < 30 * 86_400_000)
+    .reduce((sum, x) => sum + x.qty, 0);
   const drop = async () => {
     if (!(await ask({ title: `„${m.name}“ löschen?` }))) return;
     const before = data;
@@ -411,11 +546,11 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
             className="stock-book"
             onSubmit={(e) => {
               e.preventDefault();
-              book(1);
+              bookDelta(1);
             }}
           >
             <Input value={delta} onChange={(e) => setDelta(e.target.value)} placeholder="Menge" inputMode="decimal" aria-label="Menge buchen" />
-            <Button type="button" variant="secondary" size="sm" leftIcon={<Minus size={13} />} onClick={() => book(-1)}>
+            <Button type="button" variant="secondary" size="sm" leftIcon={<Minus size={13} />} onClick={() => bookDelta(-1)}>
               Entnahme
             </Button>
             <Button type="submit" variant="secondary" size="sm" leftIcon={<Plus size={13} />}>
@@ -457,9 +592,40 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
             ))}
           </Select>
         </Field>
-        <label className="check-row span-2">
-          <Switch checked={m.ordered} onChange={(e) => save("materials", withOrdered(m, e.target.checked))} /> {m.ordered ? `Bestellt${m.orderedAt ? ` am ${fmtDateTime(m.orderedAt)}` : ""}` : "Nicht bestellt"}
-        </label>
+        <div className="span-2 order-box">
+          {m.ordered ? (
+            <>
+              <span className="grow">
+                <strong>Bestellt{m.orderedQty ? `: ${fmtNum(m.orderedQty)} ${m.unit}` : ""}</strong>
+                <small className="muted"> · {fmtDateTime(m.orderedAt)}</small>
+              </span>
+              <Button size="sm" variant="secondary" onClick={() => save("materials", cancelOrder(m))}>
+                Storno
+              </Button>
+              <Button size="sm" disabled={!m.orderedQty} onClick={() => (save("materials", receive(m, data.meId)), notify(`Lieferung gebucht: +${fmtNum(m.orderedQty ?? 0)} ${m.unit}`))}>
+                Geliefert
+              </Button>
+            </>
+          ) : (
+            <form
+              className="order-qty grow"
+              onSubmit={(e) => {
+                e.preventDefault();
+                placeOrder();
+              }}
+            >
+              <span className="grow">Nicht bestellt</span>
+              <Input value={orderQty} onChange={(e) => setOrderQty(e.target.value)} placeholder={String(suggest(m))} inputMode="decimal" aria-label="Bestellmenge" />
+              <span className="muted">{m.unit}</span>
+              <Button type="submit" size="sm">
+                Bestellen
+              </Button>
+            </form>
+          )}
+        </div>
+        <p className="span-2 muted stock-stats">
+          {orders(m).length ? `${orders(m).length}× bestellt, zuletzt ${fmtDateTime(orders(m).at(-1)!.at)}` : "Noch nie bestellt"} · Verbrauch letzte 30 Tage: {fmtNum(used30)} {m.unit}
+        </p>
         <Field label="Barcode (Code 128)" className="span-2">
           <BlurInput value={m.barcode} className="mono" onSave={(v) => (!v || validCode128(v) ? set({ barcode: v }) : notify("Nur Buchstaben, Ziffern und Satzzeichen, max. 48 Zeichen", { tone: "error" }))} />
         </Field>
@@ -481,6 +647,29 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
             <p className="muted">
               <Barcode size={16} /> {labelError || "Kein Barcode hinterlegt."}
             </p>
+          )}
+        </div>
+        <div className="field span-2">
+          <span>Buchungen</span>
+          {log.length ? (
+            <ul className="move-log">
+              {log.slice(0, 30).map((x) => (
+                <li key={x.id}>
+                  <span className={cn("move-kind", x.kind)}>{MOVE_LABEL[x.kind]}</span>
+                  <strong className="nowrap">
+                    {x.kind === "entnahme" ? "−" : x.kind === "zugang" || (x.kind === "korrektur" && x.qty > 0) ? "+" : ""}
+                    {fmtNum(Math.abs(x.qty))} {m.unit}
+                  </strong>
+                  <span className="grow muted">
+                    {personName(data, x.by) || "–"}
+                    {x.note ? ` · ${x.note}` : ""}
+                  </span>
+                  <span className="muted nowrap">{fmtDateTime(x.at)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <small className="muted">Noch keine Buchungen.</small>
           )}
         </div>
         <Field label="Notiz" className="span-2">

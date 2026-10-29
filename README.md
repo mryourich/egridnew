@@ -23,13 +23,18 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
 
 - **Übersicht** – Startseite: Kennzahlen, Baustellenliste (anlegen, bearbeiten, archivieren, löschen), Detailseite je Baustelle.
 - **OpenPoints** – zwei Ansichten: *Checkliste* (Bereich › Abschnitt › Unterabschnitt › Punkt, abhaken, Fotos) und
-  *Mängelliste* (Nummer M-001 je Baustelle, Status, Priorität, Zuständigkeit, Frist). Mangel direkt aus einem Punkt.
+  *Mängelliste* (Nummer M-001 je Baustelle, Status, Priorität, Zuständigkeit, Frist, Fotos Mangel und Fotos Behebung).
+  Kamera in der App: mehrere Fotos hintereinander aufnehmen, dann alle hochladen. Fotodoku als ZIP mit Ordnern wie die
+  Struktur (Checkliste) bzw. `M-001 …/Mangel` und `/Behebung` (Mängel), jeweils mit Liste als CSV.
 - **Aufgaben** – Meine / Zugewiesen / Alle, Filter nach Status und Fälligkeit, Schnellerfassung.
 - **Kalender** – VYSNER-Planungstafel: Tag/Woche/Monat, Halbtage, Ziehen und Größe ändern, Abwesenheiten,
-  Symbole, Kommentare, Verknüpfungen, Heute-Markierung, Zeitraum wächst beim Scrollen.
+  Symbole, Kommentare, Verknüpfungen, Heute-Markierung, Zeitraum wächst beim Scrollen, leere Zeilen bis unten.
 - **Notizen** – Haftnotizen je Baustelle oder persönlich, Farben, per Griff sortierbar.
-- **Material** – Bestand je Baustelle, Barcode Code 128 (Etikett drucken / SVG), Scannen mit Kamera (iPhone, iPad,
-  Android) oder Handscanner, bestellt / nicht bestellt, Warnung unter Mindestbestand.
+- **Material** – oben *Nachbestellen* (unter Mindestbestand, mit Bestellmenge, Bestellhistorie, Bestellliste als CSV),
+  dann *Bestellt – Lieferung offen* („Geliefert" bucht den Zugang), darunter alle Artikel. „Scannen & buchen": Barcode
+  mit der Handykamera oder dem Handscanner erfassen, Menge eingeben – die Entnahme wird vom Bestand abgebucht und mit
+  Person und Zeit protokolliert. `/material?scan=1` öffnet direkt die Kamera (Lesezeichen am Homescreen).
+  Barcode Code 128 als Etikett (drucken / SVG).
 
 Die Baustellenauswahl in der Kopfleiste filtert alle Module („Alle Baustellen" zeigt alles). „Angemeldet als" wählt
 die Person auf diesem Gerät, bis die Anmeldung über Supabase kommt.

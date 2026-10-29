@@ -116,7 +116,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (key === "sites") {
         // a site takes everything on it along
         const keep = <T extends { siteId: string }>(l: T[]) => l.filter((x) => x.siteId !== id);
-        for (const x of [...d.points, ...d.defects].filter((y) => y.siteId === id)) files.push(...x.files.map((f) => f.id));
+        for (const x of d.points.filter((y) => y.siteId === id)) files.push(...x.files.map((f) => f.id));
+        for (const x of d.defects.filter((y) => y.siteId === id)) files.push(...[...x.files, ...(x.fixFiles ?? [])].map((f) => f.id));
         next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), entries: keep(d.entries), notes: keep(d.notes), materials: keep(d.materials) };
       }
       if (key === "points") {
@@ -138,7 +139,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           absences: d.absences.filter((x) => x.personId !== id)
         };
       }
-      if (key === "defects") files.push(...(d.defects.find((x) => x.id === id)?.files.map((f) => f.id) ?? []));
+      if (key === "defects") {
+        const x = d.defects.find((y) => y.id === id);
+        if (x) files.push(...[...x.files, ...(x.fixFiles ?? [])].map((f) => f.id));
+      }
       if (key === "entries") next = { ...next, entries: next.entries.map((e) => (e.links?.includes(id) ? { ...e, links: e.links.filter((l) => l !== id) } : e)) };
       if (files.length) void dropFiles(files);
       return next;

@@ -12,6 +12,8 @@ import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
 import { childrenOf, nextOrder, pathLabel, pointsBelow } from "./model";
 import { withPointStatus } from "./editors";
+import { ZipButton } from "./zip-button";
+import { exportChecklist } from "@/lib/photo-export";
 
 const COLLAPSED_KEY = "vysner:op-collapsed";
 type Show = "offen" | "alle" | "erledigt";
@@ -261,6 +263,10 @@ export function Checklist({ onOpen }: { onOpen: (id: string) => void }) {
               <i style={{ width: `${pct}%` }} />
             </div>
           </div>
+          <ZipButton
+            name={`Fotodoku ${selected ? selected.title : selectedSite ? (data.sites.find((x) => x.id === selectedSite)?.name ?? "") : "Alle Baustellen"}`}
+            run={() => exportChecklist(data, selected ? [selected.siteId] : selectedSite ? [selectedSite] : sites.map((x) => x.id), selected?.id)}
+          />
           <label className="search">
             <Search size={14} />
             <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Punkte durchsuchen" aria-label="Punkte durchsuchen" />

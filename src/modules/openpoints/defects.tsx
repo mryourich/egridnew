@@ -10,6 +10,8 @@ import type { Defect, DefectStatus } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
 import { withDefectStatus } from "./editors";
 import { defectNo } from "./model";
+import { ZipButton } from "./zip-button";
+import { exportDefects } from "@/lib/photo-export";
 
 type SortKey = "no" | "title" | "priority" | "status" | "due" | "owner";
 
@@ -59,6 +61,7 @@ export function DefectList({ onOpen, openId }: { onOpen: (id: string) => void; o
           <h3>Mängelliste</h3>
           <span className="muted">{counts.map(([k, n]) => `${DEFECT_STATUS[k].label} ${n}`).join(" · ")}</span>
         </div>
+        <ZipButton label="Fotos & Liste (ZIP)" needsPhotos={false} name={`Mängel ${siteId ? siteName(data, siteId) : "alle Baustellen"}`} run={() => exportDefects(data, rows)} />
         <label className="search">
           <Search size={14} />
           <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Nr., Mangel, Ort" aria-label="Mängel durchsuchen" />
@@ -150,8 +153,13 @@ export function DefectList({ onOpen, openId }: { onOpen: (id: string) => void; o
                   </td>
                   <td className="ui-table-cell nowrap muted">
                     {d.files.length > 0 && (
-                      <span className="hint">
+                      <span className="hint" title="Fotos Mangel">
                         <Paperclip size={13} /> {d.files.length}
+                      </span>
+                    )}
+                    {(d.fixFiles ?? []).length > 0 && (
+                      <span className="hint ok-text" title="Fotos Behebung">
+                        <Paperclip size={13} /> {(d.fixFiles ?? []).length}
                       </span>
                     )}
                   </td>

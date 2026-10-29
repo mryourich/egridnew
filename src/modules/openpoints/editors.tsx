@@ -5,10 +5,12 @@ import { useState } from "react";
 import { Attachments, BlurInput, BlurTextarea, Field, Modal, PersonOptions, SidePanel, useConfirm } from "@/components/app/kit";
 import { Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
+import { exportDefects } from "@/lib/photo-export";
 import { DEFECT_STATUS, DEFECT_STATUSES, PRIORITIES, PRIORITY, POINT_TYPE, WORK_STATUS, WORK_STATUSES } from "@/lib/labels";
 import { activeSites, now, personName, siteName, uid, useStore } from "@/lib/store/store";
 import type { Defect, DefectStatus, OpenPoint, Priority, WorkStatus } from "@/lib/store/types";
 import { defectNo, nextDefectNo, pathLabel } from "./model";
+import { ZipButton } from "./zip-button";
 
 /** Status change with who and when. */
 export function withPointStatus(p: OpenPoint, status: WorkStatus, me: string): OpenPoint {
@@ -175,6 +177,7 @@ export function DefectPanel({ id, onClose }: { id: string; onClose: () => void }
           <Button variant="secondary" size="sm" leftIcon={<Copy size={14} />} onClick={copy}>
             Text kopieren
           </Button>
+          <ZipButton label="Fotos (ZIP)" run={() => exportDefects(data, [d])} name={`${defectNo(d)} ${d.title}`} />
           <Button size="sm" onClick={onClose}>
             Fertig
           </Button>
@@ -217,8 +220,12 @@ export function DefectPanel({ id, onClose }: { id: string; onClose: () => void }
         <Field label="Beschreibung" className="span-2">
           <BlurTextarea value={d.description} rows={4} onSave={(v) => set({ description: v })} />
         </Field>
-        <div className="span-2">
-          <Attachments files={d.files} onChange={(files) => set({ files })} label="Fotos & Dateien" />
+        <div className="span-2 photo-block">
+          <Attachments files={d.files} onChange={(files) => set({ files })} label="Fotos Mangel" />
+        </div>
+        <div className="span-2 photo-block fix">
+          <Attachments files={d.fixFiles ?? []} onChange={(fixFiles) => set({ fixFiles })} label="Fotos Behebung" />
+          {!(d.fixFiles ?? []).length && d.status !== "offen" && <small className="muted">Nach der Behebung den neuen Zustand fotografieren.</small>}
         </div>
         {point && (
           <p className="span-2 muted">
@@ -313,7 +320,7 @@ export function NewDefect({ siteId, point, onClose, onCreated }: { siteId: strin
               <PersonOptions />
             </Select>
           </Field>
-          <Field label="Beschreibung" className="span-2" hint="Fotos können nach dem Erfassen angehängt werden.">
+          <Field label="Beschreibung" className="span-2" hint="Fotos (Mangel und Behebung) werden nach dem Erfassen angehängt.">
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </Field>
         </div>
