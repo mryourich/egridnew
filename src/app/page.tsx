@@ -71,11 +71,10 @@ export default function Landing() {
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
-          <Link href="/" className="lp-logo" aria-label="VYSNER Baustelle – Startseite">
+          <Link href="/" className="lp-logo" aria-label="VYSNER – Startseite">
             <Image src="/brand/vysner-icon.png" alt="" width={28} height={28} priority />
             <span>
               <strong>VYSNER</strong>
-              <small>Baustelle</small>
             </span>
           </Link>
           <nav className="lp-links" aria-label="Seitenbereiche">
