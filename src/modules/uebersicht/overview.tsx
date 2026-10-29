@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, HardHat, Plus, Search } from "lucide-react";
+import { ArrowRight, ClipboardPen, FileText, HardHat, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -12,6 +12,7 @@ import { siteStats } from "@/lib/stats";
 import { personName, siteName, useStore } from "@/lib/store/store";
 import type { Site } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
+import { useCreateSiteReport } from "@/modules/berichte/reports";
 import { SiteDialog } from "./site-dialog";
 
 type Show = "laufend" | "alle" | "archiviert";
@@ -24,6 +25,7 @@ export function Overview() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "number", dir: -1 });
   const [creating, setCreating] = useState(false);
+  const report = useCreateSiteReport();
   const all = siteStats(data, siteId);
   const t = today();
   const scope = <T extends { siteId: string }>(x: T) => !siteId || x.siteId === siteId;
@@ -59,9 +61,17 @@ export function Overview() {
         title="Übersicht"
         sub={`${data.workspace.name} · ${siteId ? siteName(data, siteId) : "alle Baustellen"} · Stand ${fmt(t)}`}
         actions={
-          <Button leftIcon={<Plus size={15} />} onClick={() => setCreating(true)}>
-            Baustelle anlegen
-          </Button>
+          <>
+            <Button variant="secondary" leftIcon={<FileText size={15} />} onClick={() => report.start("bautagesbericht")}>
+              Bautagesbericht
+            </Button>
+            <Button variant="secondary" leftIcon={<ClipboardPen size={15} />} onClick={() => report.start("regie")}>
+              Regieschein
+            </Button>
+            <Button leftIcon={<Plus size={15} />} onClick={() => setCreating(true)}>
+              Baustelle anlegen
+            </Button>
+          </>
         }
       />
 
@@ -242,6 +252,7 @@ export function Overview() {
           </section>
         </div>
       </div>
+      {report.dialog}
       {creating && <SiteDialog onClose={() => setCreating(false)} onSaved={(s) => router.push(`/uebersicht/${s.id}`)} />}
     </div>
   );

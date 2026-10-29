@@ -1,11 +1,11 @@
 "use client";
 
-import { CalendarRange, CheckSquare, ClipboardList, GanttChart, IdCard, LayoutGrid, Menu, Package, Search, Settings, StickyNote, X } from "lucide-react";
+import { CalendarRange, CheckSquare, ClipboardList, FileText, GanttChart, IdCard, LayoutGrid, Menu, Package, Search, Settings, StickyNote, Wrench, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ConfirmProvider, Toaster } from "@/components/app/kit";
-import { StoreProvider } from "@/lib/store/store";
+import { StoreProvider, useStore } from "@/lib/store/store";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./global-search";
 import { SettingsDialog } from "./settings";
@@ -15,6 +15,8 @@ export const NAV = [
   { href: "/uebersicht", label: "Übersicht", icon: LayoutGrid },
   { href: "/openpoints", label: "OpenPoints", icon: ClipboardList },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
+  { href: "/berichte", label: "Berichte", icon: FileText },
+  { href: "/service", label: "Service", icon: Wrench },
   { href: "/kalender", label: "Kalender", icon: CalendarRange },
   { href: "/notizen", label: "Notizen", icon: StickyNote },
   { href: "/material", label: "Material", icon: Package },
@@ -35,6 +37,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Frame({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const { data } = useStore();
+  const lead = !!data.people.find((p) => p.id === data.meId)?.lead;
+  const pending = data.reports.filter((r) => r.status === "unterschrieben").length;
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(false);
   useEffect(() => setOpen(false), [path]);
@@ -50,12 +55,18 @@ function Frame({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav className="nav-list">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.filter((n) => n.href !== "/service" || data.workspace.modules?.service).map(({ href, label, icon: Icon }) => {
             const on = path === href || path.startsWith(`${href}/`);
+            const badge = href === "/berichte" && lead ? pending : 0;
             return (
               <Link key={href} href={href} className={cn("nav-item", on && "on")} aria-current={on ? "page" : undefined} title={label}>
                 <Icon size={17} strokeWidth={1.8} />
                 <span>{label}</span>
+                {badge > 0 && (
+                  <b className="nav-badge" title={`${badge} zur Freigabe`}>
+                    {badge}
+                  </b>
+                )}
               </Link>
             );
           })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, ClipboardList, HardHat, Package, StickyNote, TriangleAlert, UserRound } from "lucide-react";
+import { CheckSquare, ClipboardList, FileText, HardHat, Package, StickyNote, TriangleAlert, UserRound, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { siteName, useStore } from "@/lib/store/store";
@@ -43,6 +43,11 @@ export function GlobalSearch({ icon }: { icon: ReactNode }) {
     const has = (...s: (string | undefined)[]) => s.some((x) => x && norm(x).includes(t));
     const out: Hit[] = [];
     for (const s of data.sites) if (has(s.name, s.number, s.client, s.address)) out.push({ key: `s${s.id}`, group: "Baustellen", icon: <HardHat size={14} />, title: s.name, sub: `${s.number} · ${s.client}`, href: `/uebersicht/${s.id}`, siteId: "" });
+    for (const o of data.orders) {
+      const c = data.customers.find((x) => x.id === o.customerId);
+      if (has(o.no, o.title, o.description, c?.name, c?.city)) out.push({ key: `o${o.id}`, group: "Serviceaufträge", icon: <Wrench size={14} />, title: `${o.no} ${o.title}`, sub: [c?.name, c?.city].filter(Boolean).join(" · "), href: `/service/auftrag/${o.id}`, siteId: "" });
+    }
+    for (const r of data.reports) if (has(r.no, r.text)) out.push({ key: `r${r.id}`, group: "Berichte", icon: <FileText size={14} />, title: r.no, sub: r.text.split("\n")[0], href: `/berichte/${r.id}`, siteId: r.siteId });
     for (const p of data.people) if (has(p.name, p.personnelNo, p.role, p.trade, p.company, ...(p.qualifications ?? []))) out.push({ key: `u${p.id}`, group: "Mitarbeiter", icon: <UserRound size={14} />, title: p.name, sub: [p.personnelNo && `Pers.-Nr. ${p.personnelNo}`, p.role].filter(Boolean).join(" · "), href: `/stammdaten?person=${p.id}`, siteId: "" });
     for (const p of data.points) if (has(p.title, p.note)) out.push({ key: `p${p.id}`, group: "Checkliste", icon: <ClipboardList size={14} />, title: p.title, sub: siteName(data, p.siteId), href: `/openpoints?punkt=${p.id}`, siteId: p.siteId });
     for (const m of data.defects) if (has(m.title, m.description, m.location, `M-${String(m.no).padStart(3, "0")}`)) out.push({ key: `m${m.id}`, group: "Mängel", icon: <TriangleAlert size={14} />, title: `M-${String(m.no).padStart(3, "0")} ${m.title}`, sub: `${siteName(data, m.siteId)}${m.location ? ` · ${m.location}` : ""}`, href: `/openpoints?ansicht=maengel&mangel=${m.id}`, siteId: m.siteId });

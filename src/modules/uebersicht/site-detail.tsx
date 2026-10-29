@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowRight, CalendarRange, CheckSquare, ClipboardList, HardHat, Package, Pencil, StickyNote, Trash2, TriangleAlert } from "lucide-react";
+import { Archive, ArrowRight, CalendarRange, CheckSquare, ClipboardList, ClipboardPen, FileText, HardHat, Package, Pencil, StickyNote, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -12,6 +12,7 @@ import { defectOpen, NOTE_COLORS, SITE_STATUS } from "@/lib/labels";
 import { siteStats } from "@/lib/stats";
 import { personName, useStore } from "@/lib/store/store";
 import { cn } from "@/lib/utils";
+import { useCreateSiteReport } from "@/modules/berichte/reports";
 import { SiteDialog } from "./site-dialog";
 
 export function SiteDetail({ id }: { id: string }) {
@@ -19,6 +20,7 @@ export function SiteDetail({ id }: { id: string }) {
   const router = useRouter();
   const ask = useConfirm();
   const [editing, setEditing] = useState(false);
+  const report = useCreateSiteReport();
   const s = data.sites.find((x) => x.id === id);
 
   if (!s)
@@ -93,6 +95,12 @@ export function SiteDetail({ id }: { id: string }) {
         sub={[s.client, s.address].filter(Boolean).join(" · ") || "Kein Auftraggeber eingetragen"}
         actions={
           <>
+            <Button variant="secondary" leftIcon={<FileText size={14} />} onClick={() => report.start("bautagesbericht", s.id)}>
+              Bautagesbericht
+            </Button>
+            <Button variant="secondary" leftIcon={<ClipboardPen size={14} />} onClick={() => report.start("regie", s.id)}>
+              Regieschein
+            </Button>
             <Button variant="secondary" leftIcon={<Pencil size={14} />} onClick={() => setEditing(true)}>
               Bearbeiten
             </Button>
@@ -214,6 +222,20 @@ export function SiteDetail({ id }: { id: string }) {
           ))}
         </Block>
 
+        <Block title="Berichte" icon={<FileText size={14} />} more="Alle Berichte" onMore={() => open("/berichte")} empty="Noch kein Bautagesbericht oder Regieschein.">
+          {data.reports
+            .filter((r) => r.siteId === s.id)
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .slice(0, 5)
+            .map((r) => (
+              <button type="button" key={r.id} onClick={() => router.push(`/berichte/${r.id}`)}>
+                <span className="mono muted nowrap">{r.no}</span>
+                <span className="title">{r.kind === "regie" ? "Regieschein" : "Bautagesbericht"} · {fmt(r.date)}</span>
+                <StatusBadge tone={r.status === "freigegeben" ? "green" : r.status === "unterschrieben" ? "amber" : r.status === "zurueck" ? "red" : "neutral"}>{r.status === "unterschrieben" ? "Zur Freigabe" : r.status === "freigegeben" ? "Freigegeben" : r.status === "zurueck" ? "Zurückgegeben" : "Entwurf"}</StatusBadge>
+              </button>
+            ))}
+        </Block>
+
         <Block title="Notizen" icon={<StickyNote size={14} />} more="Notizen" onMore={() => open("/notizen")} empty="Keine Notizen zu dieser Baustelle.">
           {notes.map((n) => (
             <button type="button" key={n.id} onClick={() => open(`/notizen?notiz=${n.id}`)}>
@@ -253,6 +275,7 @@ export function SiteDetail({ id }: { id: string }) {
         </section>
       </div>
       {editing && <SiteDialog site={s} onClose={() => setEditing(false)} />}
+      {report.dialog}
     </div>
   );
 }

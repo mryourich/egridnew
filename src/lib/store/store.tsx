@@ -118,7 +118,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const keep = <T extends { siteId: string }>(l: T[]) => l.filter((x) => x.siteId !== id);
         for (const x of d.points.filter((y) => y.siteId === id)) files.push(...x.files.map((f) => f.id));
         for (const x of d.defects.filter((y) => y.siteId === id)) files.push(...[...x.files, ...(x.fixFiles ?? [])].map((f) => f.id));
-        next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), entries: keep(d.entries), notes: keep(d.notes), materials: keep(d.materials) };
+        for (const r of d.reports.filter((y) => y.siteId === id)) files.push(...r.files.map((f) => f.id), ...(r.pdf ? [r.pdf.id] : []));
+        next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), entries: keep(d.entries), notes: keep(d.notes), materials: keep(d.materials), reports: keep(d.reports) };
       }
       if (key === "points") {
         // a node takes its children; defects stay but lose the link
@@ -135,6 +136,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           points: d.points.map((x) => (x.assigneeIds.includes(id) ? { ...x, assigneeIds: un(x.assigneeIds) } : x)),
           defects: d.defects.map((x) => (x.ownerId === id ? { ...x, ownerId: "" } : x)),
           tasks: d.tasks.map((x) => (x.ownerId === id ? { ...x, ownerId: "" } : x)),
+          orders: d.orders.map((x) => (x.techId === id ? { ...x, techId: "", status: x.status === "geplant" ? "offen" : x.status } : x)),
           entries: d.entries.filter((x) => x.rowId !== id),
           absences: d.absences.filter((x) => x.personId !== id)
         };
@@ -142,6 +144,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (key === "defects") {
         const x = d.defects.find((y) => y.id === id);
         if (x) files.push(...[...x.files, ...(x.fixFiles ?? [])].map((f) => f.id));
+      }
+      if (key === "orders") {
+        // an order takes its reports along
+        const o = d.orders.find((y) => y.id === id);
+        if (o) files.push(...o.files.map((f) => f.id));
+        for (const r of d.reports.filter((y) => y.orderId === id)) files.push(...r.files.map((f) => f.id), ...(r.pdf ? [r.pdf.id] : []));
+        next = { ...next, reports: d.reports.filter((r) => r.orderId !== id) };
+      }
+      if (key === "reports") {
+        const r = d.reports.find((y) => y.id === id);
+        if (r) files.push(...r.files.map((f) => f.id), ...(r.pdf ? [r.pdf.id] : []));
       }
       if (key === "entries") next = { ...next, entries: next.entries.map((e) => (e.links?.includes(id) ? { ...e, links: e.links.filter((l) => l !== id) } : e)) };
       if (files.length) void dropFiles(files);

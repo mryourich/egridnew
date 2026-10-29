@@ -50,6 +50,11 @@ export async function storeFile(file: File, by: string): Promise<FileRef> {
   return { id, name: file.name, mime: blob.type || file.type || "application/octet-stream", size: blob.size, addedBy: by, addedAt: now() };
 }
 
+/** Stores a generated file (PDF) under a given id. */
+export async function storeBlob(id: string, blob: Blob) {
+  await tx("readwrite", (s) => s.put(blob, id));
+}
+
 export async function readFile(id: string): Promise<Blob | undefined> {
   try {
     return (await tx<Blob>("readonly", (s) => s.get(id))) ?? undefined;
