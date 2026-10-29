@@ -246,7 +246,7 @@ function NewTask({ onClose, onCreated }: { onClose: () => void; onCreated: (id: 
         </Field>
         <Field label="Zuständig">
           <Select value={x.ownerId} onChange={(e) => set({ ownerId: e.target.value })}>
-            <PersonOptions none={false} />
+            <PersonOptions none={false} siteId={x.siteId} keep={x.ownerId} />
           </Select>
         </Field>
         <Field label="Priorität">
@@ -323,7 +323,7 @@ function TaskPanel({ id, onClose }: { id: string; onClose: () => void }) {
         </Field>
         <Field label="Zuständig">
           <Select value={x.ownerId} onChange={(e) => set({ ownerId: e.target.value })}>
-            <PersonOptions />
+            <PersonOptions siteId={x.siteId} keep={x.ownerId} />
           </Select>
         </Field>
         <Field label="Fällig am">

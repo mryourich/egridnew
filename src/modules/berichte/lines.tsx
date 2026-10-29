@@ -24,6 +24,7 @@ export function WorkLines({ value, onChange, date, prices, readOnly }: { value: 
         <thead>
           <tr>
             <th className="ui-table-head">Name</th>
+            <th className="ui-table-head" title="Im PDF steht die Funktion">Funktion (im PDF)</th>
             <th className="ui-table-head">Datum</th>
             <th className="ui-table-head">von</th>
             <th className="ui-table-head">bis</th>
@@ -53,6 +54,7 @@ export function WorkLines({ value, onChange, date, prices, readOnly }: { value: 
                   </Select>
                 )}
               </td>
+              <td className="ui-table-cell muted nowrap">{data.people.find((p) => p.id === w.personId)?.role || "–"}</td>
               <td className="ui-table-cell">{readOnly ? w.date : <Input type="date" value={w.date} aria-label="Datum" onChange={(e) => set(i, { date: e.target.value })} />}</td>
               <td className="ui-table-cell">{readOnly ? w.from : <Input type="time" value={w.from} aria-label="von" onChange={(e) => set(i, { from: e.target.value })} />}</td>
               <td className="ui-table-cell">{readOnly ? w.to : <Input type="time" value={w.to} aria-label="bis" onChange={(e) => set(i, { to: e.target.value })} />}</td>
@@ -69,7 +71,7 @@ export function WorkLines({ value, onChange, date, prices, readOnly }: { value: 
             </tr>
           ))}
           <tr className="ui-table-row">
-            <td className="ui-table-cell muted" colSpan={5}>
+            <td className="ui-table-cell muted" colSpan={6}>
               {value.length} {value.length === 1 ? "Person" : "Personen"}
             </td>
             <td className="ui-table-cell num">

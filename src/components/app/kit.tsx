@@ -288,20 +288,35 @@ export function PeopleStack({ ids, max = 3 }: { ids: string[]; max?: number }) {
   );
 }
 
-/** Active people as options. */
-export function PersonOptions({ none = "Niemand" }: { none?: string | false }) {
+/** Team of a site: site management and members. Without a site: everyone active. */
+export function teamOf(data: ReturnType<typeof useStore>["data"], siteId?: string) {
+  const site = siteId ? data.sites.find((x) => x.id === siteId) : undefined;
+  return data.people
+    .filter((p) => p.active && (!site || p.id === site.managerId || site.memberIds.includes(p.id)))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+/**
+ * People as options – on a site only its team (who is on the site may be put in charge).
+ * Someone already chosen stays in the list even if no longer on the team.
+ */
+export function PersonOptions({ none = "Niemand", siteId, keep }: { none?: string | false; siteId?: string; keep?: string }) {
   const { data } = useStore();
+  const list = teamOf(data, siteId);
+  const extra = keep && !list.some((p) => p.id === keep) ? data.people.find((p) => p.id === keep) : undefined;
   return (
     <>
       {none !== false && <option value="">{none}</option>}
-      {data.people
-        .filter((p) => p.active)
-        .sort((a, b) => a.name.localeCompare(b.name, "de"))
-        .map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
+      {extra && (
+        <option value={extra.id}>
+          {extra.name} (nicht im Team)
+        </option>
+      )}
+      {list.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name} · {p.role}
+        </option>
+      ))}
     </>
   );
 }
