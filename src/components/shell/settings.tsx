@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { BlurInput, Field, Modal, useConfirm } from "@/components/app/kit";
 import { Button, IconButton, Switch, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
@@ -20,7 +21,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         </TabsList>
         <div style={{ marginTop: 16 }}>
           <TabsContent value="team">
-            <People />
+            <People onDone={onClose} />
           </TabsContent>
           <TabsContent value="firma">
             <Company />
@@ -34,7 +35,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function People() {
+function People({ onDone }: { onDone: () => void }) {
   const { data, save, remove, notify } = useStore();
   const ask = useConfirm();
   const people = [...data.people].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, "de"));
@@ -54,7 +55,12 @@ function People() {
   return (
     <div className="settings-people">
       <div className="toolbar" style={{ marginBottom: 8 }}>
-        <span className="muted">{people.filter((p) => p.active).length} aktiv · Änderungen werden beim Verlassen des Feldes gespeichert.</span>
+        <span className="muted">
+          {people.filter((p) => p.active).length} aktiv · Personalnummer, Adresse, SV-Nr. und Qualifikationen unter{" "}
+          <Link href="/stammdaten" onClick={onDone}>
+            Stammdaten
+          </Link>
+        </span>
         <span className="grow" />
         <Button size="sm" leftIcon={<Plus size={14} />} onClick={add}>
           Mitarbeiter

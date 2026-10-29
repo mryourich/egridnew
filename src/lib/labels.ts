@@ -48,3 +48,13 @@ export const NOTE_COLORS: Record<string, { label: string; bg: string; edge: stri
   red: { label: "Rot", bg: "#f6e1e1", edge: "#cf9a9a" },
   grey: { label: "Grau", bg: "#eceef1", edge: "#b9bfc8" }
 };
+
+export const EMPLOYMENT: Record<import("./store/types").Employment, string> = {
+  vollzeit: "Vollzeit",
+  teilzeit: "Teilzeit",
+  lehrling: "Lehrling",
+  geringfuegig: "Geringfügig",
+  leiharbeiter: "Leiharbeiter",
+  subunternehmer: "Subunternehmer"
+};
+export const EMPLOYMENTS = Object.keys(EMPLOYMENT) as import("./store/types").Employment[];

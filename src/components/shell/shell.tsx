@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, CheckSquare, ClipboardList, LayoutGrid, Menu, Package, Search, Settings, StickyNote, X } from "lucide-react";
+import { CalendarRange, CheckSquare, ClipboardList, GanttChart, IdCard, LayoutGrid, Menu, Package, Search, Settings, StickyNote, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -17,7 +17,9 @@ export const NAV = [
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/kalender", label: "Kalender", icon: CalendarRange },
   { href: "/notizen", label: "Notizen", icon: StickyNote },
-  { href: "/material", label: "Material", icon: Package }
+  { href: "/material", label: "Material", icon: Package },
+  { href: "/planner", label: "Planner", icon: GanttChart },
+  { href: "/stammdaten", label: "Stammdaten", icon: IdCard }
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

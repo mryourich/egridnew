@@ -818,3 +818,123 @@
 .book-after {
   font-size: var(--fs-md);
 }
+
+/* ------------------------------------------------------------------ Planner, Stammdaten */
+.today-strip {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.today-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-left: 1px solid var(--border);
+}
+.today-cell:first-child {
+  border-left: 3px solid var(--accent);
+}
+.today-cell small {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.today-cell strong {
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+.today-cell > span {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.today-cell.signal > span {
+  color: var(--signal);
+  font-weight: 550;
+}
+.today-cell.sites > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  white-space: normal;
+}
+.site-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.site-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.form-section {
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-sm) !important;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.form-section:first-child {
+  margin-top: 0;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  padding-left: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+}
+.tag .ui-icon-button {
+  width: 22px;
+  height: 22px;
+}
+.tag-add {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-width: 260px;
+}
+.tag-add .ui-input {
+  height: 26px;
+}
+@media (max-width: 1000px) {
+  .today-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+  .today-cell {
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 760px) {
+  .list-rows > div,
+  .list-rows > a,
+  .list-rows > button {
+    flex-wrap: wrap;
+  }
+  .panel-head.wrap,
+  .panel-head {
+    flex-wrap: wrap;
+  }
+}

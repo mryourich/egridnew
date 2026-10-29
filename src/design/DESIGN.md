@@ -12,7 +12,8 @@ bei `prefers-reduced-motion` aus). Desktop zuerst, Tablet voll bedienbar (Touch-
 | `base.css` | Grundtypografie der App (nur innerhalb `.app`, die Website bleibt unberührt) |
 | `components.css` | Stil der Komponentenbibliothek `components/ui` (eGrid) und der App-Bausteine `components/app/kit.tsx` |
 | `shell.css` | Rahmen: Seitenleiste, Kopfleiste, Suche, Baustellen- und Benutzerauswahl |
-| `modules.css` | Layout der Module (Übersicht, OpenPoints, Notizen, Material) |
+| `modules.css` | Layout der Module (Übersicht, OpenPoints, Notizen, Material, Planner, Stammdaten) |
+| `src/app/landing.css` | Website – gleiche Farben und Formen wie die App |
 | `modules/kalender/gantt.css` | Planungstafel (VYSNER-Gantt) |
 
 ## Farben
