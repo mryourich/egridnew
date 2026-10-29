@@ -47,7 +47,6 @@ function Frame({ children }: { children: ReactNode }) {
           <img src="/brand/vysner-icon.png" alt="" width={26} height={26} />
           <span>
             <strong>VYSNER</strong>
-            <small>Baustelle</small>
           </span>
         </Link>
         <nav className="nav-list">
