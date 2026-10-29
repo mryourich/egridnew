@@ -90,7 +90,10 @@ export type Defect = Stamped & {
   priority: Priority;
   ownerId: string;
   due: ISODate | "";
+  /** photos of the defect */
   files: FileRef[];
+  /** photos of the repair */
+  fixFiles?: FileRef[];
   fixedBy?: string;
   fixedAt?: string;
 };
@@ -151,6 +154,9 @@ export type Note = Stamped & {
   order: number;
 };
 
+/** One booking on an item: withdrawal, receipt, order, correction. */
+export type StockMove = { id: string; at: string; by: string; kind: "entnahme" | "zugang" | "bestellung" | "korrektur"; qty: number; note?: string };
+
 export type MaterialItem = Stamped & {
   id: string;
   siteId: string;
@@ -164,7 +170,11 @@ export type MaterialItem = Stamped & {
   supplier: string;
   ordered: boolean;
   orderedAt?: string;
+  /** quantity of the open order */
+  orderedQty?: number;
   note: string;
+  /** bookings, newest last */
+  log?: StockMove[];
 };
 
 export type Workspace = { id: string; name: string; address: string };

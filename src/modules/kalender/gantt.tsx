@@ -168,6 +168,8 @@ export function Gantt() {
   );
   const [dropAt, setDropAt] = useState("");
   const [narrow, setNarrow] = useState(false);
+  const [viewH, setViewH] = useState(0);
+  const headRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const hover = useRef<{ row: string; half: number } | null>(null);
@@ -177,6 +179,13 @@ export function Gantt() {
     timer: ReturnType<typeof setTimeout>;
   } | null>(null);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setViewH(el.clientHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   useEffect(() => {
     const fit = () => setNarrow(window.innerWidth < 760);
     fit();
@@ -542,7 +551,9 @@ export function Gantt() {
       top += height;
     }
   }
-  const bodyH = top;
+  // empty rows down to the bottom, like a paper planning board
+  const fillers = Math.max(0, Math.ceil((viewH - (headRef.current?.offsetHeight ?? 60) - top) / LANE));
+  const bodyH = top + fillers * LANE;
 
   /* ---------------------------------------------------------------- actions */
   const insert = (
@@ -1263,7 +1274,7 @@ export function Gantt() {
         onPointerUpCapture={() => clearTimeout(longPress.current?.timer)}
       >
         <div className="g-inner" style={{ width: leftW + timelineW }}>
-          <div className="g-head">
+          <div className="g-head" ref={headRef}>
             <div className="g-corner">
               <span>{site ? "Team" : "Mitarbeiter"}</span>
               <span>Info</span>
@@ -1692,6 +1703,17 @@ export function Gantt() {
                 </div>
               );
             })}
+
+            {Array.from({ length: fillers }, (_, i) => (
+              <div key={`f${i}`} className="g-row filler" style={{ height: LANE }}>
+                <div className="g-left" onDoubleClick={addRow} title={i === 0 ? "Doppelklick = neue freie Zeile" : undefined}>
+                  <span className="g-name" />
+                  <span className="g-info" />
+                  <span className="g-status" />
+                </div>
+                <div className="g-lane" style={{ width: timelineW }} onDoubleClick={addRow} />
+              </div>
+            ))}
 
             {/* links, notes, drag tips and the selection frame on top of the timeline */}
             <div

@@ -683,3 +683,138 @@
 .input-icon .ui-input {
   padding-left: 28px;
 }
+.photo-block {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--signal);
+  border-radius: var(--radius);
+}
+.photo-block.fix {
+  border-left-color: var(--ok);
+}
+
+/* ------------------------------------------------------------------ Material: order list, log, booking */
+.prio-panel {
+  border-left: 3px solid var(--signal);
+}
+.link-cell {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.link-cell:hover strong {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.order-qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.order-qty .ui-input {
+  width: 80px;
+  height: var(--control-h-sm);
+  text-align: right;
+}
+.panel-toggle {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.panel-toggle:hover {
+  background: var(--surface-2);
+}
+.panel-tools {
+  padding: 8px var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+.order-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.stock-stats {
+  font-size: var(--fs-sm);
+}
+.move-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.move-log li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--surface-3);
+  font-size: var(--fs-sm);
+}
+.move-log li:last-child {
+  border-bottom: 0;
+}
+.move-kind {
+  width: 78px;
+  flex: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.move-kind.entnahme {
+  color: var(--signal);
+}
+.move-kind.zugang {
+  color: var(--ok);
+}
+.move-kind.bestellung {
+  color: var(--info);
+}
+.book {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.book-kind button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  font-size: var(--fs-md);
+}
+.book-qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.book-qty .ui-input {
+  width: 110px;
+  height: 48px;
+  font-size: 24px;
+  font-weight: 650;
+  text-align: center;
+}
+.book-qty .unit {
+  color: var(--muted);
+  min-width: 40px;
+}
+.book-after {
+  font-size: var(--fs-md);
+}

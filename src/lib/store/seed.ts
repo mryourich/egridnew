@@ -4,7 +4,7 @@ import type { CalendarEntry, Data, Defect, MaterialItem, Note, OpenPoint, Person
 /** Bump when the stored shape changes. */
 export const DATA_VERSION = 1;
 /** Bump when the sample company changes – saved demo data is then replaced. */
-export const DEMO_VERSION = 1;
+export const DEMO_VERSION = 2;
 
 export const SITE_COLORS = ["#0e5a7a", "#3d6b45", "#7a4e0e", "#5a3d7a", "#7a1f2b", "#2f4f6f", "#56606b"];
 
@@ -222,6 +222,22 @@ export function createDemo(): Data {
     mat("mt-12", "s-steyr", "Notleuchte LED 3 h", "NL-LED3", "9120001160310", 2, "Stk", 2, "Schäcke", false),
     mat("mt-13", "s-enns", "Gewindestange M10", "GS-M10", "9120001160327", 0, "Stk", 100, "Würth", true)
   ];
+
+  // booking history: a few withdrawals and earlier orders, open orders with their quantity
+  const move = (kind: "entnahme" | "zugang" | "bestellung", qty: number, n: number, by: string) => ({ id: `mv-${kind}-${n}-${qty}`, at: at(-n, 7 + (n % 8)), by, kind, qty });
+  const history: Record<string, ReturnType<typeof move>[]> = {
+    "mt-1": [move("bestellung", 200, 40, me), move("zugang", 200, 36, "p-wagner"), move("entnahme", 25, 9, "p-pichler"), move("entnahme", 40, 4, "p-pichler")],
+    "mt-2": [move("bestellung", 60, 30, me), move("zugang", 60, 27, "p-wagner"), move("entnahme", 12, 6, "p-pichler"), move("entnahme", 24, 3, "p-steiner"), move("bestellung", 40, 2, me)],
+    "mt-4": [move("bestellung", 10, 25, me), move("zugang", 10, 22, "p-wagner"), move("entnahme", 4, 8, "p-wagner"), move("entnahme", 3, 2, "p-wagner")],
+    "mt-6": [move("entnahme", 2, 5, "p-steiner"), move("bestellung", 12, 1, me)],
+    "mt-8": [move("bestellung", 30, 3, "p-berger")],
+    "mt-10": [move("bestellung", 30, 50, "p-berger"), move("zugang", 30, 45, "p-moser"), move("entnahme", 18, 10, "p-hofer"), move("entnahme", 12, 3, "p-hofer")],
+    "mt-13": [move("bestellung", 200, 1, "p-berger")]
+  };
+  for (const m of materials) {
+    if (history[m.id]) m.log = history[m.id];
+    if (m.ordered) m.orderedQty = [...(m.log ?? [])].reverse().find((x) => x.kind === "bestellung")?.qty;
+  }
 
   return {
     version: DATA_VERSION,

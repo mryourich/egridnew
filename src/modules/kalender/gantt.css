@@ -266,9 +266,22 @@
 .g-empty {
   position: sticky;
   left: 0;
-  padding: 24px 16px;
+  z-index: 6;
+  height: 0;
+  overflow: visible;
+  padding: 0 16px;
+  line-height: 44px;
   color: var(--muted);
   font-size: 13px;
+  white-space: nowrap;
+}
+.g-row.filler .g-left {
+  cursor: default;
+}
+.g-row.filler .g-name,
+.g-row.filler .g-info,
+.g-row.filler .g-status {
+  height: var(--lane);
 }
 
 .g-group {

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Download, FileText, Paperclip, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Camera, Download, FileText, Paperclip, X } from "lucide-react";
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle, IconButton, Input, SheetContent, SheetHeader, SheetOverlay, SheetTitle, StatusBadge, Textarea } from "@/components/ui";
@@ -10,6 +10,7 @@ import { downloadFile, isImage, storeFile, useFileUrl } from "@/lib/store/files"
 import { personName, useStore } from "@/lib/store/store";
 import type { FileRef, Priority } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
+import { CameraCapture } from "./camera";
 
 /* ------------------------------------------------------------------ modal */
 
@@ -381,25 +382,29 @@ function Preview({ f, onClose }: { f: FileRef; onClose: () => void }) {
   );
 }
 
-/** Photos and files of a record: add, preview, download, remove. */
+/** Photos and files of a record: camera (several shots at once), add, preview, download, remove. */
 export function Attachments({ files, onChange, label = "Fotos & Dateien" }: { files: FileRef[]; onChange: (files: FileRef[]) => void; label?: string }) {
   const { data, notify } = useStore();
   const input = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<FileRef | null>(null);
-  const [busy, setBusy] = useState(false);
-  const add = async (list: FileList | null) => {
-    if (!list?.length) return;
-    setBusy(true);
+  const [busy, setBusy] = useState(0);
+  const [camera, setCamera] = useState(false);
+  const add = async (list: File[]) => {
+    if (!list.length) return;
+    setBusy(list.length);
     const added: FileRef[] = [];
-    for (const f of Array.from(list)) {
+    for (const f of list) {
       try {
         added.push(await storeFile(f, data.meId));
       } catch (e) {
         notify(e instanceof Error ? e.message : "Datei konnte nicht gespeichert werden", { tone: "error" });
       }
     }
-    setBusy(false);
-    if (added.length) onChange([...files, ...added]);
+    setBusy(0);
+    if (added.length) {
+      onChange([...files, ...added]);
+      notify(`${added.length} ${added.length === 1 ? "Datei" : "Dateien"} hochgeladen`);
+    }
   };
   return (
     <div className="field">
@@ -418,12 +423,17 @@ export function Attachments({ files, onChange, label = "Fotos & Dateien" }: { fi
             </IconButton>
           </div>
         ))}
-        <button type="button" className="file-add" onClick={() => input.current?.click()} disabled={busy}>
+        <button type="button" className="file-add" onClick={() => setCamera(true)} disabled={!!busy}>
+          <Camera size={16} />
+          Kamera
+        </button>
+        <button type="button" className="file-add" onClick={() => input.current?.click()} disabled={!!busy}>
           <Paperclip size={16} />
-          {busy ? "Speichert …" : "Hinzufügen"}
+          {busy ? `Speichert ${busy} …` : "Datei / Galerie"}
         </button>
       </div>
-      <input ref={input} type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" hidden onChange={(e) => (void add(e.target.files), (e.target.value = ""))} />
+      <input ref={input} type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" hidden onChange={(e) => (void add(Array.from(e.target.files ?? [])), (e.target.value = ""))} />
+      {camera && <CameraCapture title={label} onClose={() => setCamera(false)} onDone={(list) => (setCamera(false), void add(list))} />}
       {open && <Preview f={open} onClose={() => setOpen(null)} />}
     </div>
   );
