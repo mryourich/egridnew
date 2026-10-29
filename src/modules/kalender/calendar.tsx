@@ -9,7 +9,7 @@ export function CalendarPage() {
   const { data, siteId } = useStore();
   return (
     <div className="page full">
-      <PageHead title="Kalender" sub={siteId ? `Bauzeitplan ${siteName(data, siteId)}` : "Einsatzplanung aller Baustellen"} />
+      <PageHead title="Kalender" sub={siteId ? `Bauzeitplan ${siteName(data, siteId)}` : "Alle Baustellen – für den Bauzeitplan einer Baustelle oben die Baustelle wählen"} />
       <Gantt />
     </div>
   );

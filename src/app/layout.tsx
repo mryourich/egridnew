@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description: "VYSNER Baustelle – Checklisten, Mängel, Aufgaben, Einsatzplanung, Notizen und Material für Handwerk und Bau.",
   icons: { icon: "/brand/vysner-icon.png", apple: "/brand/vysner-tile.png" },
   alternates: { canonical: "/" },
-  openGraph: { type: "website", url: "https://vysner.com", siteName: "VYSNER", title: "VYSNER TeamGrid – Jedes Projekt im Griff", images: ["/landing/tg-uebersicht.jpg"] }
+  openGraph: { type: "website", url: "https://vysner.com", siteName: "VYSNER", title: "VYSNER Baustelle – Die Baustelle im Griff", images: ["/landing/bs-uebersicht.jpg"] }
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0a1226"
+  themeColor: "#1c2127"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

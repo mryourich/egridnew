@@ -3,102 +3,85 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Building2,
+  CalendarRange,
   Camera,
-  Car,
   Check,
+  CheckSquare,
   ClipboardList,
-  FileText,
-  FolderKanban,
-  FolderOpen,
-  ListTree,
-  Network,
-  NotebookPen,
-  ShieldCheck,
-  Smartphone,
-  TriangleAlert,
-  Users,
-  UsersRound
+  FolderDown,
+  GanttChart,
+  IdCard,
+  LayoutGrid,
+  MonitorSmartphone,
+  Package,
+  ScanLine,
+  StickyNote,
+  TriangleAlert
 } from "lucide-react";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "VYSNER TeamGrid – Projekte, Offene Punkte und Mängel für Bau-, Service- und Projektteams" },
+  title: { absolute: "VYSNER Baustelle – Checklisten, Mängel, Einsatzplanung und Material für Handwerk und Bau" },
   description:
-    "VYSNER TeamGrid gliedert jedes Projekt in Bereiche und Punkte, hält Mängel mit Foto und Frist fest und zeigt jeder Rolle genau das, was sie braucht – vom Monteur bis zur Geschäftsführung. Für kleine und große Firmen."
+    "Die Baustellen-App für Handwerk und Mittelstand in Österreich und Deutschland: Checklisten und Mängel mit Fotodoku, Aufgaben, Bauzeitplan, Einsatzplanung der Firma, Notizen und Lagerbestand mit Barcode-Scan."
 };
 
-const flow = [
-  { icon: ListTree, name: "Gliedern", who: "Projektleitung", text: "Bereiche anlegen – Gebäude, Geschoß, Abschnitt – und darin die Punkte, die erledigt werden müssen." },
-  { icon: Smartphone, name: "Abarbeiten", who: "Team vor Ort", text: "Jeder sieht seine Punkte, hakt ab und hängt Fotos an – am Handy, direkt aus der Kamera." },
-  { icon: TriangleAlert, name: "Nachweisen", who: "Bauleitung", text: "Mängel mit Foto, Ort, Frist und Zuständigkeit. Geschlossen wird erst, wenn es passt." },
-  { icon: FileText, name: "Berichten", who: "Büro / Leitung", text: "Statusbericht, Mängelbericht und Offene-Punkte-Liste als PDF – aus dem, was ohnehin erfasst wurde." }
+const modules = [
+  { icon: LayoutGrid, name: "Übersicht", text: "Alle Baustellen mit Fortschritt, offenen Mängeln, fälligen Aufgaben und Material unter Minimum." },
+  { icon: ClipboardList, name: "OpenPoints", text: "Checkliste nach Bereichen zum Abhaken und Mängelliste mit Status, Priorität, Zuständigkeit und Frist." },
+  { icon: CheckSquare, name: "Aufgaben", text: "Eigene und zugewiesene Aufgaben, gefiltert nach Status und Fälligkeit." },
+  { icon: CalendarRange, name: "Kalender", text: "Bauzeitplan je Baustelle in Halbtagen – ziehen, verlängern, verknüpfen." },
+  { icon: GanttChart, name: "Planner", text: "Einsatzplanung der ganzen Firma: wer arbeitet wann auf welcher Baustelle, wer ist abwesend." },
+  { icon: StickyNote, name: "Notizen", text: "Haftnotizen je Baustelle oder persönlich, farbig markiert und frei sortierbar." },
+  { icon: Package, name: "Material", text: "Bestand je Baustelle, Barcode-Scan am Handy, Nachbestellliste und Wareneingang." },
+  { icon: IdCard, name: "Stammdaten", text: "Mitarbeiter mit Personalnummer, Kontakt, SV-Nummer, Beschäftigung und Qualifikationen." }
 ];
 
-const features = [
+const details = [
   {
-    kicker: "Projekte",
-    title: "Alle Projekte auf einer Seite – nüchtern und vollständig.",
-    text: "Fortschritt, offene Punkte, Mängel und Termine je Projekt in einer Zeile. Ohne bunte Kacheln, ohne Suchen.",
-    points: ["Fortschritt aus den erledigten Punkten – kein Schätzwert", "Überfälliges in Rot", "Filter nach Status, Suche nach Nummer und Auftraggeber", "Fertige Projekte ins Archiv"],
-    img: "/landing/tg-projekte.jpg",
-    alt: "Projektliste in VYSNER TeamGrid"
+    kicker: "OpenPoints",
+    title: "Abhaken, fotografieren, nachweisen.",
+    text: "Die Baustelle so gegliedert, wie sie gebaut wird: Bereich, Abschnitt, Punkt. Aus jedem Punkt wird mit einem Klick ein Mangel – mit Nummer, Ort, Frist und Zuständigkeit.",
+    points: ["Fotos direkt mit der Handykamera – mehrere hintereinander, dann alle hochladen", "Mangel mit eigenen Fotos für Mangel und Behebung", "Fotodoku als ZIP mit Ordnern wie die Struktur, plus Liste für Excel", "Fortschritt in Prozent je Bereich und Baustelle"],
+    img: "/landing/bs-checkliste.jpg",
+    alt: "Checkliste mit Struktur nach Bereichen"
   },
   {
-    kicker: "Offene Punkte",
-    title: "Jeder Bereich, jeder Punkt – abhakbar.",
-    text: "Das Projekt so gegliedert, wie es auf der Baustelle aussieht. Links die Bereiche, rechts die Punkte mit Status, Zuständigkeit und Frist.",
-    points: ["Bereich › Unterbereich › Abschnitt › Punkt", "Fortschritt je Bereich in Prozent", "Fotos und Dateien je Punkt, Mangel mit einem Klick", "Bereiche samt Punkten duplizieren"],
-    img: "/landing/tg-punkte.jpg",
-    alt: "Offene Punkte nach Bereichen"
+    kicker: "Planner",
+    title: "Jeder weiß, wo wer arbeitet.",
+    text: "Die ganze Mannschaft auf einer Tafel – eigene Leute, Leiharbeiter und Subunternehmer. Einsätze in Halbtagen, Urlaub und Krankenstand gleich daneben.",
+    points: ["Tag, Woche, Monat – Heute immer markiert", "Balken ziehen, verlängern, kopieren, verknüpfen", "Heute auf einen Blick: eingeplant, abwesend, frei", "Österreichische Feiertage eingetragen"],
+    img: "/landing/bs-planner.jpg",
+    alt: "Einsatzplanung der Firma im Planner"
   },
   {
-    kicker: "Mängel",
-    title: "Erfassen. Zuweisen. Schließen – mit Nachweis.",
-    text: "Kein Mangel geht verloren. Jeder hat eine Nummer, einen Ort, eine Frist und einen Verantwortlichen.",
-    points: ["Fortlaufende Nummer je Projekt (M-001 …)", "Aus einem offenen Punkt oder frei erfasst", "Auf Wunsch schließt nur die Projektleitung", "Wer, wann, was – lückenlos nachvollziehbar"],
-    img: "/landing/tg-maengel.jpg",
-    alt: "Mangel bearbeiten"
-  },
-  {
-    kicker: "Berichte",
-    title: "Berichte, die Auftraggeber gern lesen.",
-    text: "Sauber gesetzt, mit Firmenadresse und Stand – als PDF gespeichert oder gedruckt.",
-    points: ["Statusbericht für Bauherr und Geschäftsführung", "Mängelbericht mit Fotos", "Offene-Punkte-Liste für die Begehung", "Immer der aktuelle Stand"],
-    img: "/landing/tg-bericht.jpg",
-    alt: "Mängelbericht als PDF",
-    doc: true
+    kicker: "Material",
+    title: "Scannen statt suchen.",
+    text: "Wer etwas aus dem Lager nimmt, scannt den Barcode mit dem Handy und tippt die Menge – der Bestand stimmt. Was unter den Mindestbestand fällt, steht oben auf der Bestellliste.",
+    points: ["Code-128-Etiketten drucken, Herstellercodes übernehmen", "Kamera am Handy oder Handscanner", "Bestellmenge, Bestellhistorie, Bestellliste als CSV", "Jede Buchung mit Person und Uhrzeit"],
+    img: "/landing/bs-material.jpg",
+    alt: "Material mit Nachbestellliste"
   }
 ];
 
-const parts = [
-  { icon: ListTree, name: "Offene Punkte", text: "Bereiche und Punkte mit Status, Frist und Fotos" },
-  { icon: TriangleAlert, name: "Mängel", text: "Nummer, Ort, Priorität, Frist, Nachweis" },
-  { icon: ClipboardList, name: "Aufgaben", text: "Bestellen, anrufen, reservieren – mit Zuständigkeit" },
-  { icon: NotebookPen, name: "Notizen", text: "Baustellen-Journal, Wichtiges angeheftet" },
-  { icon: FolderOpen, name: "Dokumente", text: "Pläne, Protokolle, Fotos mit Freigabestatus" },
-  { icon: FileText, name: "Berichte", text: "Status, Mängel, Offene Punkte als PDF" }
-];
-
-const hub = [
-  { icon: UsersRound, name: "People", text: "Mitarbeiter, Qualifikationen, Abwesenheiten" },
-  { icon: Car, name: "Fleet", text: "Fahrzeuge, Reservierungen, Wartung" },
-  { icon: FolderKanban, name: "Datei-Zentrale", text: "Firmendokumente, Freigaben, Fristen" }
-];
+const trades = ["Installateure & Haustechnik", "Elektrotechnik", "Lüftung & Klima", "Baumeister & Bauunternehmen", "Trockenbau & Ausbau", "Industriemontage"];
 
 export default function Landing() {
   return (
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-in">
-          <Link href="/" className="lp-logo" aria-label="VYSNER">
-            <Image src="/brand/vysner-logo.png" alt="VYSNER" width={160} height={32} priority />
+          <Link href="/" className="lp-logo" aria-label="VYSNER Baustelle – Startseite">
+            <Image src="/brand/vysner-icon.png" alt="" width={28} height={28} priority />
+            <span>
+              <strong>VYSNER</strong>
+              <small>Baustelle</small>
+            </span>
           </Link>
-          <nav className="lp-links" aria-label="Seite">
-            <a href="#ablauf">Ablauf</a>
+          <nav className="lp-links" aria-label="Seitenbereiche">
+            <a href="#module">Module</a>
             <a href="#funktionen">Funktionen</a>
-            <a href="#rollen">Rollen</a>
-            <a href="#hub">Ausblick</a>
+            <a href="#ablauf">Ablauf</a>
             <a href="#preis">Preis</a>
           </nav>
           <span className="lp-spacer" />
@@ -106,298 +89,209 @@ export default function Landing() {
             Anmelden
           </Link>
           <Link href="/demo" className="lp-btn lp-btn-primary lp-hide-sm">
-            Demo starten
+            Demo öffnen
           </Link>
         </div>
       </header>
 
       <section className="lp-hero">
         <div className="lp-wrap lp-hero-in">
-          <div className="lp-hero-copy">
-            <span className="lp-pill">
-              <Building2 size={14} /> TeamGrid – für Bau-, Service- und Projektteams
-            </span>
-            <h1>
-              Jedes Projekt im Griff. <span className="lp-grad">Offene Punkte, Mängel, Nachweise.</span>
-            </h1>
-            <p className="lp-lead">
-              VYSNER TeamGrid gliedert Projekte in Bereiche und Punkte, hält Mängel mit Foto und Frist fest und zeigt jeder Rolle genau das, was sie braucht – vom Monteur bis zur Geschäftsführung.
-            </p>
+          <div className="lp-hero-text">
+            <span className="lp-kicker">Für Handwerk und Mittelstand · Österreich und Deutschland</span>
+            <h1>Die Baustelle im Griff. Ohne Zettelwirtschaft.</h1>
+            <p>Checklisten und Mängel mit Fotodoku, Bauzeitplan und Einsatzplanung, Aufgaben, Notizen und Lagerbestand mit Barcode-Scan – in einer App, am PC im Büro und am Handy auf der Baustelle.</p>
             <div className="lp-cta">
               <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
-                Demo ansehen <ArrowRight size={18} />
+                Demo mit Beispielbetrieb <ArrowRight size={18} />
               </Link>
               <Link href="/demo?start=leer" className="lp-btn lp-btn-outline lp-btn-lg">
                 Leer starten
               </Link>
             </div>
-            <ul className="lp-ticks">
+            <ul className="lp-facts">
               <li>
-                <Check size={15} /> Für 5 oder 500 Mitarbeiter
+                <Check size={15} /> Keine Installation – läuft im Browser
               </li>
               <li>
-                <Check size={15} /> Monteure gratis
+                <Check size={15} /> PC, Tablet und Handy
               </li>
               <li>
-                <Check size={15} /> Ohne Installation
+                <Check size={15} /> Datum, Feiertage und Begriffe für Österreich
               </li>
             </ul>
           </div>
-          <div className="lp-hero-visual" aria-hidden>
-            <div className="lp-browser">
-              <div className="lp-browser-bar">
-                <i />
-                <i />
-                <i />
-                <span>vysner.com</span>
-              </div>
-              <img src="/landing/tg-uebersicht.jpg" alt="" width={2040} height={990} />
-            </div>
-            <div className="lp-phone lp-phone-hero">
-              <img src="/landing/tg-handy-punkte.jpg" alt="" width={780} height={1560} />
-            </div>
+          <figure className="lp-shot lp-hero-shot">
+            <Image src="/landing/bs-uebersicht.jpg" alt="Übersicht aller Baustellen mit Kennzahlen" width={1600} height={1000} priority sizes="(max-width: 1000px) 100vw, 720px" />
+          </figure>
+        </div>
+      </section>
+
+      <section className="lp-band" aria-label="Kurz gesagt">
+        <div className="lp-wrap lp-band-in">
+          <div>
+            <Camera size={20} />
+            <strong>Fotos vom Handy</strong>
+            <span>mehrere auf einmal, direkt am Punkt oder Mangel</span>
+          </div>
+          <div>
+            <ScanLine size={20} />
+            <strong>Barcode-Scan</strong>
+            <span>Entnahme buchen, Bestand stimmt</span>
+          </div>
+          <div>
+            <FolderDown size={20} />
+            <strong>Fotodoku als ZIP</strong>
+            <span>Ordner wie Bereiche, Mangel und Behebung</span>
+          </div>
+          <div>
+            <TriangleAlert size={20} />
+            <strong>Was dringend ist</strong>
+            <span>überfällig, unter Minimum, hohe Priorität – oben</span>
           </div>
         </div>
       </section>
 
-      <section className="lp-strip">
-        <div className="lp-wrap lp-strip-in">
-          <span>
-            <ListTree size={16} /> Offene Punkte nach Bereichen
-          </span>
-          <span>
-            <TriangleAlert size={16} /> Mängel mit Foto und Frist
-          </span>
-          <span>
-            <Network size={16} /> Sichtbarkeit nach Organigramm
-          </span>
-          <span>
-            <FileText size={16} /> Berichte als PDF
-          </span>
-          <span>
-            <Users size={16} /> Monteure gratis
-          </span>
-        </div>
-      </section>
-
-      <section id="ablauf" className="lp-roles">
+      <section id="module" className="lp-section">
         <div className="lp-wrap">
-          <div className="lp-head lp-head-dark">
-            <span className="lp-kicker">Ein Ablauf</span>
-            <h2>Vom ersten Bereich bis zur Abnahme – ohne Listen in Excel und Fotos im Chat.</h2>
-            <p>Die Projektleitung gliedert, das Team arbeitet ab und dokumentiert, Mängel werden nachweisbar geschlossen. Am Ende steht der Bericht.</p>
+          <div className="lp-head">
+            <span className="lp-kicker">Module</span>
+            <h2>Acht Module. Eine Baustelle.</h2>
+            <p>Oben die Baustelle wählen – jedes Modul zeigt genau diese. Oder alle auf einmal.</p>
           </div>
-          <ol className="lp-chain">
-            {flow.map((r, i) => (
-              <li key={r.name}>
-                <span className="lp-chain-step">{i + 1}</span>
-                <span className="lp-chain-icon">
-                  <r.icon size={22} />
-                </span>
-                <strong>{r.name}</strong>
-                <em className="lp-chain-who">{r.who}</em>
-                <p>{r.text}</p>
-              </li>
+          <div className="lp-modules">
+            {modules.map(({ icon: Icon, name, text }) => (
+              <article key={name} className="lp-module">
+                <Icon size={20} strokeWidth={1.8} />
+                <h3>{name}</h3>
+                <p>{text}</p>
+              </article>
             ))}
-          </ol>
+          </div>
         </div>
       </section>
 
-      <section id="funktionen" className="lp-features">
-        <div className="lp-wrap">
-          {features.map((f, i) => (
-            <article key={f.kicker} className={`lp-feature ${i % 2 ? "lp-flip" : ""}`}>
-              <div className="lp-feature-copy">
-                <span className="lp-kicker">{f.kicker}</span>
-                <h2>{f.title}</h2>
-                <p>{f.text}</p>
+      <section id="funktionen" className="lp-section lp-alt">
+        <div className="lp-wrap lp-details">
+          {details.map((d, i) => (
+            <article key={d.kicker} className={`lp-detail ${i % 2 ? "flip" : ""}`}>
+              <div className="lp-detail-text">
+                <span className="lp-kicker">{d.kicker}</span>
+                <h2>{d.title}</h2>
+                <p>{d.text}</p>
                 <ul>
-                  {f.points.map((p) => (
+                  {d.points.map((p) => (
                     <li key={p}>
-                      <Check size={16} /> {p}
+                      <Check size={15} /> {p}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className={`lp-shot ${f.doc ? "lp-shot-doc" : ""}`}>
-                <img src={f.img} alt={f.alt} loading="lazy" />
-              </div>
+              <figure className="lp-shot">
+                <Image src={d.img} alt={d.alt} width={1600} height={950} sizes="(max-width: 1000px) 100vw, 640px" />
+              </figure>
             </article>
           ))}
-
-          <article className="lp-feature lp-mobile">
-            <div className="lp-feature-copy">
-              <span className="lp-kicker">Am Handy</span>
-              <h2>Auf der Baustelle genauso wie im Büro.</h2>
-              <p>Dieselbe Oberfläche im Browser – ohne App-Installation. Punkte abhaken, Foto direkt aus der Kamera, Mangel melden.</p>
-              <ul>
-                <li>
-                  <Check size={16} /> Monteure sehen nur ihre Projekte
-                </li>
-                <li>
-                  <Check size={16} /> „Foto“ öffnet die Kamera
-                </li>
-                <li>
-                  <Check size={16} /> Mangel in drei Feldern gemeldet
-                </li>
-                <li>
-                  <Check size={16} /> Funktioniert auch bei schlechtem Netz
-                </li>
-              </ul>
-            </div>
-            <div className="lp-phones" aria-hidden>
-              <div className="lp-phone">
-                <img src="/landing/tg-handy-punkte.jpg" alt="" loading="lazy" width={780} height={1560} />
-              </div>
-              <div className="lp-phone lp-phone-2">
-                <img src="/landing/tg-handy-mangel.jpg" alt="" loading="lazy" width={780} height={1560} />
-              </div>
-            </div>
-          </article>
         </div>
       </section>
 
-      <section id="rollen" className="lp-why">
-        <div className="lp-wrap lp-why-in">
-          <div>
-            <span className="lp-why-icon">
-              <Network size={22} />
-            </span>
-            <strong>Jeder sieht, was ihm zugeteilt ist</strong>
-            <p>Ein Projekt sehen nur, wer es angelegt hat, die Projektleitung und eingeladene Leute – und die Leiter darüber im Organigramm. Nichts wird für alle sichtbar, nur weil es angelegt wurde.</p>
+      <section className="lp-section lp-mobile">
+        <div className="lp-wrap lp-mobile-in">
+          <div className="lp-phones">
+            <figure className="lp-phone">
+              <Image src="/landing/bs-handy-scan.jpg" alt="Entnahme nach dem Scan am Handy buchen" width={600} height={1200} sizes="260px" />
+            </figure>
+            <figure className="lp-phone">
+              <Image src="/landing/bs-handy-punkt.jpg" alt="Checklistenpunkt am Handy mit Fotos" width={600} height={1200} sizes="260px" />
+            </figure>
           </div>
-          <div>
-            <span className="lp-why-icon">
-              <ShieldCheck size={22} />
-            </span>
-            <strong>Rollen wie im Betrieb</strong>
-            <p>Admin, Geschäftsführung, Bereichs-, Team- und Projektleitung, Koordination, Bauleitung, Monteure, Lehrlinge, Externe – jede Rolle mit klaren Rechten.</p>
-          </div>
-          <div>
-            <span className="lp-why-icon">
-              <Camera size={22} />
-            </span>
-            <strong>Nachweis statt Zuruf</strong>
-            <p>Wer hat was wann erledigt, gemeldet oder geschlossen – jeder Eintrag trägt Name und Zeitstempel. Auf Wunsch nur mit Foto abschließbar.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="umfang" className="lp-modules">
-        <div className="lp-wrap">
-          <div className="lp-head">
-            <span className="lp-kicker">TeamGrid</span>
-            <h2>Alles, was ein Projekt braucht. Übersichtlich.</h2>
-            <p>Links das Projektmenü, rechts die Arbeit. Keine verschachtelten Dialoge, keine Spielereien.</p>
-          </div>
-          <div className="lp-module-grid lp-module-grid-3">
-            {parts.map((m) => (
-              <div key={m.name} className="lp-module">
-                <span className="lp-module-icon">
-                  <m.icon size={22} />
-                </span>
-                <strong>{m.name}</strong>
-                <p>{m.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="hub" className="lp-modules">
-        <div className="lp-wrap">
-          <div className="lp-head">
-            <span className="lp-kicker">Ausblick</span>
-            <h2>TeamGrid ist das erste Modul des VYSNER Unternehmens-Hubs.</h2>
-            <p>Mitarbeiter, Fahrzeuge und Firmendokumente kommen dazu – in derselben Oberfläche, mit denselben Rollen.</p>
-          </div>
-          <div className="lp-module-grid lp-module-grid-3">
-            {hub.map((m) => (
-              <div key={m.name} className="lp-module lp-soon">
-                <span className="lp-module-icon">
-                  <m.icon size={22} />
-                </span>
-                <div>
-                  <strong>
-                    {m.name} <em>bald</em>
-                  </strong>
-                  <p>{m.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="preis" className="lp-price">
-        <div className="lp-wrap">
-          <div className="lp-head">
-            <span className="lp-kicker">Preis</span>
-            <h2>Ein Fixpreis für die Firma. Monteure gratis.</h2>
-            <p>Bezahlt werden die Zugänge für Leitung, Koordination und Bauleitung – nie die Leute auf der Baustelle.</p>
-          </div>
-          <div className="lp-price-card">
-            <div>
-              <strong>Firmenlizenz</strong>
-              <span className="lp-price-tag">Fixpreis pro Monat</span>
-              <small>Preis auf Anfrage – abhängig von der Zahl der Leitungs-Zugänge.</small>
-            </div>
+          <div className="lp-detail-text">
+            <span className="lp-kicker">Auf der Baustelle</span>
+            <h2>Am Handy genau das Nötige.</h2>
+            <p>Die Monteure brauchen kein Schulungshandbuch: Punkt öffnen, Fotos machen, abhaken. Material scannen, Menge tippen, fertig. Im Büro landet alles mit Name und Uhrzeit.</p>
             <ul>
               <li>
-                <Check size={16} /> Leitung, Koordination und Bauleitung inklusive
+                <MonitorSmartphone size={15} /> Gleiche App am PC, Tablet und Handy
               </li>
               <li>
-                <Check size={16} /> Monteure, Lehrlinge und Externe unbegrenzt
+                <Camera size={15} /> Rückkamera für Fotos und Barcodes
               </li>
               <li>
-                <Check size={16} /> Offene Punkte, Mängel, Aufgaben, Dokumente, Berichte
-              </li>
-              <li>
-                <Check size={16} /> Am PC und am Handy im Browser
+                <IdCard size={15} /> „Angemeldet als“ – jede Änderung mit Person
               </li>
             </ul>
-            <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
-              Kostenlos testen <ArrowRight size={18} />
-            </Link>
           </div>
         </div>
       </section>
 
-      <section className="lp-steps">
+      <section id="ablauf" className="lp-section">
         <div className="lp-wrap">
           <div className="lp-head">
-            <span className="lp-kicker">So geht&apos;s</span>
-            <h2>In drei Schritten startklar.</h2>
+            <span className="lp-kicker">Ablauf</span>
+            <h2>In einer Stunde startklar.</h2>
           </div>
-          <ol className="lp-step-list">
+          <ol className="lp-steps">
             <li>
               <span>1</span>
-              <strong>Benutzer anlegen</strong>
-              <p>Leute mit Rolle und Vorgesetztem eintragen – daraus ergibt sich, wer was sieht.</p>
+              <strong>Mitarbeiter anlegen</strong>
+              <p>Stammdaten mit Personalnummer und Funktion – Leiharbeiter und Subunternehmer mit ihrer Firma.</p>
             </li>
             <li>
               <span>2</span>
-              <strong>Projekt anlegen und einladen</strong>
-              <p>Name, Auftraggeber, Ort, Projektleitung. Dann das Team einladen.</p>
+              <strong>Baustellen anlegen</strong>
+              <p>Nummer, Auftraggeber, Adresse, Zeitraum, Bauleitung und Team. Dann Bereiche und Punkte der Checkliste.</p>
             </li>
             <li>
               <span>3</span>
-              <strong>Bereiche und Punkte</strong>
-              <p>Projekt gliedern, Punkte zuweisen – das Team arbeitet ab und dokumentiert.</p>
+              <strong>Einplanen und loslegen</strong>
+              <p>Im Planner die Leute auf die Baustellen ziehen. Ab jetzt wird auf der Baustelle abgehakt, fotografiert und gescannt.</p>
             </li>
           </ol>
+          <div className="lp-trades">
+            <span>Gemacht für</span>
+            {trades.map((t) => (
+              <em key={t}>{t}</em>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="preis" className="lp-section lp-alt">
+        <div className="lp-wrap lp-price">
+          <div className="lp-detail-text">
+            <span className="lp-kicker">Preis</span>
+            <h2>Ein Fixpreis für die Firma. Monteure gratis.</h2>
+            <p>Bezahlt werden die Zugänge für Leitung, Bauleitung und Büro – nie die Leute auf der Baustelle.</p>
+          </div>
+          <div className="lp-price-card">
+            <strong>Firmenlizenz</strong>
+            <span>Fixpreis pro Monat · Preis auf Anfrage</span>
+            <ul>
+              <li>
+                <Check size={15} /> Alle acht Module
+              </li>
+              <li>
+                <Check size={15} /> Monteure, Lehrlinge und Externe unbegrenzt
+              </li>
+              <li>
+                <Check size={15} /> PC, Tablet und Handy im Browser
+              </li>
+            </ul>
+            <Link href="/demo" className="lp-btn lp-btn-primary lp-btn-lg">
+              Kostenlos ausprobieren <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
       </section>
 
       <section className="lp-final">
         <div className="lp-wrap lp-final-in">
           <div>
-            <h2>Sehen Sie selbst.</h2>
-            <p>Die Demo-Firma ist sofort startklar – mit Projekten, Offenen Punkten, Mängeln und Berichten. Oben rechts lässt sich jede Rolle ausprobieren.</p>
+            <h2>Selbst ausprobieren.</h2>
+            <p>Der Beispielbetrieb hat vier Baustellen mit Checklisten, Mängeln, Einsätzen und Material. Nichts installieren, nichts anmelden.</p>
           </div>
           <div className="lp-cta">
             <Link href="/demo" className="lp-btn lp-btn-white lp-btn-lg">
-              Demo starten <ArrowRight size={18} />
+              Demo öffnen <ArrowRight size={18} />
             </Link>
             <Link href="/demo?start=leer" className="lp-btn lp-btn-glass lp-btn-lg">
               Leer starten
@@ -408,8 +302,11 @@ export default function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
-          <Image src="/brand/vysner-logo.png" alt="VYSNER" width={125} height={25} />
-          <span>TeamGrid – Projekte, Offene Punkte und Mängel.</span>
+          <span className="lp-logo small">
+            <Image src="/brand/vysner-icon.png" alt="" width={20} height={20} />
+            <strong>VYSNER</strong>
+          </span>
+          <span>Baustellen-App für Handwerk und Mittelstand</span>
           <span className="lp-spacer" />
           <Link href="/demo">Demo</Link>
           <Link href="/uebersicht">Anmelden</Link>

@@ -15,13 +15,39 @@ export type Stamped = {
   updatedAt?: string;
 };
 
+export type Employment = "vollzeit" | "teilzeit" | "lehrling" | "geringfuegig" | "leiharbeiter" | "subunternehmer";
+
 export type Person = {
   id: string;
+  /** shown everywhere: "Vorname Nachname" */
   name: string;
   /** e.g. Bauleiter, Monteur, Lehrling */
   role: string;
   phone: string;
   active: boolean;
+  /* master data (Stammdaten) – all optional so older data keeps working */
+  personnelNo?: string;
+  firstName?: string;
+  lastName?: string;
+  /** own company or the subcontractor / temp agency */
+  company?: string;
+  email?: string;
+  birthDate?: ISODate | "";
+  /** Sozialversicherungsnummer (AT: 10 digits) */
+  svNo?: string;
+  street?: string;
+  zip?: string;
+  city?: string;
+  entryDate?: ISODate | "";
+  exitDate?: ISODate | "";
+  employment?: Employment;
+  weeklyHours?: number;
+  trade?: string;
+  qualifications?: string[];
+  licenses?: string;
+  emergencyName?: string;
+  emergencyPhone?: string;
+  note?: string;
 };
 
 export type SiteStatus = "geplant" | "aktiv" | "abnahme" | "pausiert" | "archiviert";

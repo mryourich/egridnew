@@ -4,7 +4,7 @@ import type { CalendarEntry, Data, Defect, MaterialItem, Note, OpenPoint, Person
 /** Bump when the stored shape changes. */
 export const DATA_VERSION = 1;
 /** Bump when the sample company changes – saved demo data is then replaced. */
-export const DEMO_VERSION = 2;
+export const DEMO_VERSION = 3;
 
 export const SITE_COLORS = ["#0e5a7a", "#3d6b45", "#7a4e0e", "#5a3d7a", "#7a1f2b", "#2f4f6f", "#56606b"];
 
@@ -52,15 +52,38 @@ export function createDemo(): Data {
     { id: "p-steiner", name: "Daniel Steiner", role: "Monteur", phone: "+43 676 230 44 12", active: true },
     { id: "p-moser", name: "Andreas Moser", role: "Elektriker", phone: "+43 699 118 50 03", active: true },
     { id: "p-hofer", name: "Julia Hofer", role: "Technikerin", phone: "+43 699 118 50 04", active: true },
-    { id: "p-leitner", name: "Kevin Leitner", role: "Lehrling", phone: "+43 660 771 02 98", active: true }
+    { id: "p-leitner", name: "Kevin Leitner", role: "Lehrling", phone: "+43 660 771 02 98", active: true },
+    { id: "p-gruber", name: "Markus Gruber", role: "Monteur", phone: "+43 676 230 44 13", active: true },
+    { id: "p-bauer", name: "Florian Bauer", role: "Installateur", phone: "+43 676 230 44 14", active: true },
+    { id: "p-petrovic", name: "Ivan Petrović", role: "Helfer", phone: "+43 660 512 33 07", active: true },
+    { id: "p-schmid", name: "Michael Schmid", role: "Elektriker", phone: "+43 664 980 21 55", active: true }
   ];
+  // master data: personnel number, address, social security, entry date, employment, qualifications
+  const master: Record<string, Partial<Person>> = {
+    "p-huber": { personnelNo: "1001", birthDate: "1979-03-14", svNo: "1235 140379", street: "Linzer Straße 12", zip: "4020", city: "Linz", entryDate: "2008-04-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Meister Gas/Wasser/Heizung", "Ersthelfer", "Sicherheitsvertrauensperson"], licenses: "B, BE" },
+    "p-berger": { personnelNo: "1002", birthDate: "1986-09-02", svNo: "2349 020986", street: "Hauptplatz 3", zip: "4600", city: "Wels", entryDate: "2015-02-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Gebäudetechnik", qualifications: ["DI (FH) Gebäudetechnik", "Baustellenkoordinatorin"], licenses: "B" },
+    "p-wagner": { personnelNo: "1003", birthDate: "1975-06-21", svNo: "3456 210675", street: "Bahnhofstraße 8", zip: "4040", city: "Linz", entryDate: "2001-08-15", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Polier", "Ersthelfer", "Staplerschein"], licenses: "B, C, CE" },
+    "p-pichler": { personnelNo: "1004", birthDate: "1992-11-30", svNo: "4560 301192", street: "Kirchengasse 5", zip: "4061", city: "Pasching", entryDate: "2014-09-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Lehrabschluss Installations- und Gebäudetechnik", "Druckprobe Heizung"], licenses: "B" },
+    "p-steiner": { personnelNo: "1005", birthDate: "1990-01-17", svNo: "5675 170190", street: "Am Anger 22", zip: "4050", city: "Traun", entryDate: "2016-03-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Lüftungsmonteur", "Hubarbeitsbühne"], licenses: "B" },
+    "p-moser": { personnelNo: "1006", birthDate: "1984-04-08", svNo: "6781 080484", street: "Feldweg 4", zip: "4600", city: "Wels", entryDate: "2012-05-02", employment: "vollzeit", weeklyHours: 38.5, trade: "Elektrotechnik", qualifications: ["Elektrotechniker", "E-Befund / Prüfungen ÖVE"], licenses: "B" },
+    "p-hofer": { personnelNo: "1007", birthDate: "1995-12-11", svNo: "7899 111295", street: "Schillerstraße 19", zip: "4020", city: "Linz", entryDate: "2021-01-11", employment: "teilzeit", weeklyHours: 30, trade: "Lüftung / Sprinkler", qualifications: ["HTL Gebäudetechnik"], licenses: "B" },
+    "p-leitner": { personnelNo: "1008", birthDate: "2008-07-25", svNo: "8901 250708", street: "Dorfstraße 2", zip: "4481", city: "Asten", entryDate: "2024-09-01", employment: "lehrling", weeklyHours: 38.5, trade: "Installateur", qualifications: ["2. Lehrjahr"], licenses: "–" },
+    "p-gruber": { personnelNo: "1009", birthDate: "1988-02-03", svNo: "1018 030288", street: "Gartenweg 7", zip: "4470", city: "Enns", entryDate: "2019-04-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Schweißer (WIG)"], licenses: "B" },
+    "p-bauer": { personnelNo: "1010", birthDate: "1997-10-19", svNo: "1126 191097", street: "Rosenstraße 11", zip: "4400", city: "Steyr", entryDate: "2022-06-07", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Ersthelfer"], licenses: "B" },
+    "p-petrovic": { personnelNo: "L-201", company: "Personaldienst Linz GmbH", birthDate: "1991-05-28", entryDate: "2026-09-15", exitDate: "2026-12-18", employment: "leiharbeiter", weeklyHours: 38.5, trade: "Helfer", qualifications: [], licenses: "B" },
+    "p-schmid": { personnelNo: "S-301", company: "Elektro Schmid OG", email: "office@schmid-demo.at", entryDate: "2026-10-01", employment: "subunternehmer", trade: "Elektrotechnik", qualifications: ["Konzessionierter Elektrotechniker"], licenses: "B" }
+  };
+  for (const p of people) {
+    const [firstName, ...rest] = p.name.split(" ");
+    Object.assign(p, { firstName, lastName: rest.join(" "), email: `${firstName.toLowerCase()}.${rest.join("").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}@demo-haustechnik.at`, emergencyName: "", emergencyPhone: "", note: "" }, master[p.id]);
+  }
   const me = "p-huber";
   const stamp = (n = -20) => ({ createdBy: me, createdAt: at(n) });
 
   const sites: Site[] = [
-    { id: "s-linz", number: "2025-031", name: "Wohnanlage Linz-Urfahr", client: "WSG Wohnbau GmbH", address: "Hagenstraße 42, 4040 Linz", status: "aktiv", start: d(-62), end: d(48), managerId: "p-huber", memberIds: ["p-wagner", "p-pichler", "p-steiner", "p-leitner"], color: SITE_COLORS[0], note: "Bauteil A und B, 46 Wohneinheiten, Haustechnik und Elektro.", ...stamp(-70) },
-    { id: "s-wels", number: "2025-044", name: "Bürogebäude Wels Nord", client: "Pöttinger Immobilien KG", address: "Dr.-Schauer-Straße 8, 4600 Wels", status: "aktiv", start: d(-24), end: d(70), managerId: "p-berger", memberIds: ["p-moser", "p-hofer", "p-steiner"], color: SITE_COLORS[1], note: "Lüftung, Sprinkler, Elektro 3 Geschoße.", ...stamp(-30) },
-    { id: "s-steyr", number: "2025-019", name: "Schule Steyr – Sanierung", client: "Stadt Steyr, Gebäudemanagement", address: "Promenade 3, 4400 Steyr", status: "abnahme", start: d(-140), end: d(6), managerId: "p-huber", memberIds: ["p-wagner", "p-moser"], color: SITE_COLORS[2], note: "Abnahme mit Bauherr am Freitag.", ...stamp(-150) },
+    { id: "s-linz", number: "2025-031", name: "Wohnanlage Linz-Urfahr", client: "WSG Wohnbau GmbH", address: "Hagenstraße 42, 4040 Linz", status: "aktiv", start: d(-62), end: d(48), managerId: "p-huber", memberIds: ["p-wagner", "p-pichler", "p-steiner", "p-leitner", "p-gruber", "p-petrovic"], color: SITE_COLORS[0], note: "Bauteil A und B, 46 Wohneinheiten, Haustechnik und Elektro.", ...stamp(-70) },
+    { id: "s-wels", number: "2025-044", name: "Bürogebäude Wels Nord", client: "Pöttinger Immobilien KG", address: "Dr.-Schauer-Straße 8, 4600 Wels", status: "aktiv", start: d(-24), end: d(70), managerId: "p-berger", memberIds: ["p-moser", "p-hofer", "p-steiner", "p-schmid"], color: SITE_COLORS[1], note: "Lüftung, Sprinkler, Elektro 3 Geschoße.", ...stamp(-30) },
+    { id: "s-steyr", number: "2025-019", name: "Schule Steyr – Sanierung", client: "Stadt Steyr, Gebäudemanagement", address: "Promenade 3, 4400 Steyr", status: "abnahme", start: d(-140), end: d(6), managerId: "p-huber", memberIds: ["p-wagner", "p-moser", "p-bauer"], color: SITE_COLORS[2], note: "Abnahme mit Bauherr am Freitag.", ...stamp(-150) },
     { id: "s-enns", number: "2025-052", name: "Halle Enns – Erweiterung", client: "Logistik Enns GmbH", address: "Industriezeile 17, 4470 Enns", status: "geplant", start: d(21), end: d(110), managerId: "p-berger", memberIds: ["p-pichler", "p-hofer"], color: SITE_COLORS[3], note: "Baubeginn nach Fertigstellung Fundamente.", ...stamp(-12) }
   ];
 
@@ -178,6 +201,11 @@ export function createDemo(): Data {
     entry("e-9", { siteId: "s-steyr", rowId: "p-wagner", title: "Abnahme", start: work(d(4)), end: work(d(4)), symbol: true, icon: "flag" }),
     entry("e-10", { siteId: "s-linz", rowId: "p-leitner", title: "Dämmung Steigleitungen", start: w(0), end: w(2) }),
     entry("e-11", { siteId: "s-enns", rowId: "p-berger", title: "Planfreigabe", start: w(7), end: w(8) }),
+    entry("e-13", { siteId: "s-steyr", rowId: "p-bauer", title: "Restarbeiten Umkleiden", start: w(-2), end: w(3) }),
+    entry("e-14", { siteId: "s-linz", rowId: "p-gruber", title: "Tiefgarage Entwässerung", start: w(1), end: w(8) }),
+    entry("e-15", { siteId: "s-linz", rowId: "p-petrovic", title: "Helfer Bauteil A", start: w(-5), end: w(9) }),
+    entry("e-16", { siteId: "s-wels", rowId: "p-schmid", title: "Elektro Subunternehmer", start: w(5), end: w(12) }),
+    entry("e-17", { siteId: "s-enns", rowId: "p-gruber", title: "Baustelleneinrichtung", start: w(15), end: w(16) }),
     entry("e-12", { siteId: "s-wels", rowId: "p-berger", title: "Kranhub Dach", start: work(d(4)), end: work(d(4)), symbol: true, icon: "lift" })
   ];
 
@@ -255,7 +283,7 @@ export function createDemo(): Data {
       { id: "a-2", personId: "p-leitner", type: "schulung", start: w(3), end: w(3), note: "Berufsschule" },
       { id: "a-3", personId: "p-hofer", type: "krank", start: d(-3), end: d(-2), note: "" }
     ],
-    calendar: { groups: [{ id: "g-buero", name: "Bauleitung & Technik" }, { id: "g-bau", name: "Montage" }], memberGroup: { "p-huber": "g-buero", "p-berger": "g-buero", "p-hofer": "g-buero", "p-wagner": "g-bau", "p-pichler": "g-bau", "p-steiner": "g-bau", "p-moser": "g-bau", "p-leitner": "g-bau", "r-kran": "g-bau" }, rows: [{ id: "r-kran", name: "Kran / Hebegeräte" }] },
+    calendar: { groups: [{ id: "g-buero", name: "Bauleitung & Technik" }, { id: "g-bau", name: "Montage" }, { id: "g-fremd", name: "Leiharbeit & Subunternehmer" }], memberGroup: { "p-huber": "g-buero", "p-berger": "g-buero", "p-hofer": "g-buero", "p-wagner": "g-bau", "p-pichler": "g-bau", "p-steiner": "g-bau", "p-moser": "g-bau", "p-leitner": "g-bau", "p-gruber": "g-bau", "p-bauer": "g-bau", "p-petrovic": "g-fremd", "p-schmid": "g-fremd", "r-kran": "g-bau" }, rows: [{ id: "r-kran", name: "Kran / Hebegeräte" }] },
     notes,
     materials
   };

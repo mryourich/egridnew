@@ -123,11 +123,12 @@ type Menu = {
  * Click = select · drag = move / resize · drag on empty space = select several · double click = rename or new bar ·
  * right click (long press on touch) = menu · Del, F2, Ctrl+C / V / D and the arrow keys work on the selection.
  */
-export function Gantt() {
+export function Gantt({ company = false }: { company?: boolean }) {
   const { data, save, remove, setLayout, notify, siteId, restore } = useStore();
   const ask = useConfirm();
   const t = today();
-  const site = data.sites.find((s) => s.id === siteId) ?? null;
+  // the Planner always shows the whole company, the calendar follows the site chosen in the top bar
+  const site = company ? null : (data.sites.find((s) => s.id === siteId) ?? null);
   const layout: CalendarLayout = data.calendar;
   const saveLayout = (patch: Partial<CalendarLayout>) => setLayout({ ...layout, ...patch });
   const sites = activeSites(data);

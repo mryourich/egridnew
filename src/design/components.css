@@ -1091,3 +1091,33 @@ button.kpi:hover {
   padding: 16px;
   text-align: center;
 }
+
+/* small screens: dialogs fit the phone, footer buttons wrap */
+@media (max-width: 560px) {
+  .ui-dialog-overlay {
+    padding: 8px;
+    align-items: end;
+  }
+  .ui-dialog-content {
+    max-height: calc(100dvh - 16px);
+  }
+  .ui-dialog-header,
+  .ui-dialog-body,
+  .ui-dialog-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .ui-dialog-footer {
+    flex-wrap: wrap;
+  }
+  .ui-dialog-footer > .grow {
+    display: none;
+  }
+  .ui-dialog-footer .ui-button {
+    flex: 1 1 auto;
+  }
+  .ui-dialog-footer .ui-button:last-child {
+    flex-basis: 100%;
+    height: var(--touch);
+  }
+}

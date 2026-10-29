@@ -1,7 +1,8 @@
 # VYSNER
 
 - **Website** `/` (`src/app/page.tsx`, `src/app/landing.css`)
-- **Baustellen-App** auf eGrid-Basis: `/uebersicht`, `/openpoints`, `/aufgaben`, `/kalender`, `/notizen`, `/material`
+- **Baustellen-App** auf eGrid-Basis: `/uebersicht`, `/openpoints`, `/aufgaben`, `/kalender`, `/notizen`, `/material`,
+  `/planner`, `/stammdaten`
   – Beispielbetrieb über `/demo`, leer starten über `/demo?start=leer`.
 
 Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan).
@@ -14,7 +15,7 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
 | `src/components/ui` | Komponentenbibliothek aus eGrid (Button, Dialog, Tabelle, Tabs, …) |
 | `src/components/app/kit.tsx` | App-Bausteine: Dialog, Seitenpanel, Bestätigung, Felder, Leerzustand, Dateianhänge |
 | `src/components/shell` | Seitenleiste, Kopfleiste, globale Suche, Baustellen- und Benutzerauswahl, Einstellungen |
-| `src/modules/*` | die sechs Module, jedes für sich lauffähig |
+| `src/modules/*` | die acht Module, jedes für sich lauffähig |
 | `src/lib/store` | Datenmodell (`types.ts`), Speicher (`store.tsx`, localStorage), Dateien (`files.ts`, IndexedDB), Beispieldaten (`seed.ts`) |
 | `src/design` | Design-System, siehe [`src/design/DESIGN.md`](src/design/DESIGN.md) |
 | `supabase/` | Schema aus eGrid für die spätere Anbindung (siehe `docs/VERCEL_SUPABASE_SETUP.md`) |
@@ -29,6 +30,12 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
 - **Aufgaben** – Meine / Zugewiesen / Alle, Filter nach Status und Fälligkeit, Schnellerfassung.
 - **Kalender** – VYSNER-Planungstafel: Tag/Woche/Monat, Halbtage, Ziehen und Größe ändern, Abwesenheiten,
   Symbole, Kommentare, Verknüpfungen, Heute-Markierung, Zeitraum wächst beim Scrollen, leere Zeilen bis unten.
+- **Planner** – Ressourcenplanung der ganzen Firma auf der VYSNER-Planungstafel, unabhängig von der
+  Baustellenauswahl: wer arbeitet wann auf welcher Baustelle, Abwesenheiten, Leiste „Heute“ (eingeplant, abwesend, frei).
+  Der **Kalender** zeigt dagegen den Bauzeitplan der oben gewählten Baustelle.
+- **Stammdaten** – Mitarbeiter mit Personalnummer (eindeutig), Vor-/Nachname, Geburtsdatum, SV-Nummer (Prüfziffer
+  AT), Adresse, Kontakt, Notfallkontakt, Firma (eigener Betrieb, Leiharbeit, Subunternehmer), Beschäftigung,
+  Wochenstunden, Ein-/Austritt, Gewerk, Qualifikationen, Führerschein. Export als CSV.
 - **Notizen** – Haftnotizen je Baustelle oder persönlich, Farben, per Griff sortierbar.
 - **Material** – oben *Nachbestellen* (unter Mindestbestand, mit Bestellmenge, Bestellhistorie, Bestellliste als CSV),
   dann *Bestellt – Lieferung offen* („Geliefert" bucht den Zugang), darunter alle Artikel. „Scannen & buchen": Barcode
