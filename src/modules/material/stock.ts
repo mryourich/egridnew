@@ -13,11 +13,24 @@ export function book(m: MaterialItem, kind: StockMove["kind"], qty: number, by: 
   return { ...m, qty: next, log: [...(m.log ?? []), move].slice(-200) };
 }
 
-/** Records an order of a quantity. */
+/** Asks for a reorder: the item moves into "Nachbestellen" until someone marks it ordered. */
+export function request(m: MaterialItem, qty: number, by: string, note?: string): MaterialItem {
+  const move: StockMove = { id: uid(), at: now(), by, kind: "anforderung", qty, ...(note ? { note } : {}) };
+  return { ...m, requestedQty: qty, requestedBy: by, requestedAt: now(), log: [...(m.log ?? []), move].slice(-200) };
+}
+
+export function cancelRequest(m: MaterialItem): MaterialItem {
+  return { ...m, requestedQty: undefined, requestedBy: undefined, requestedAt: undefined };
+}
+
+/** Records an order of a quantity; an open request is fulfilled with it. */
 export function order(m: MaterialItem, qty: number, by: string): MaterialItem {
   const move: StockMove = { id: uid(), at: now(), by, kind: "bestellung", qty };
-  return { ...m, ordered: true, orderedQty: qty, orderedAt: now(), log: [...(m.log ?? []), move].slice(-200) };
+  return { ...cancelRequest(m), ordered: true, orderedQty: qty, orderedAt: now(), log: [...(m.log ?? []), move].slice(-200) };
 }
+
+/** Items that need ordering: requested, or below the minimum – and not ordered yet. */
+export const needsOrder = (m: MaterialItem) => !m.ordered && (!!m.requestedQty || isLow(m));
 
 export function cancelOrder(m: MaterialItem): MaterialItem {
   return { ...m, ordered: false, orderedQty: undefined, orderedAt: undefined };
@@ -34,4 +47,4 @@ export const suggest = (m: MaterialItem) => Math.max(1, Math.ceil(m.minQty * 2 -
 export const orders = (m: MaterialItem) => (m.log ?? []).filter((x) => x.kind === "bestellung");
 export const withdrawals = (m: MaterialItem) => (m.log ?? []).filter((x) => x.kind === "entnahme");
 
-export const MOVE_LABEL: Record<StockMove["kind"], string> = { entnahme: "Entnahme", zugang: "Zugang", bestellung: "Bestellung", korrektur: "Korrektur" };
+export const MOVE_LABEL: Record<StockMove["kind"], string> = { entnahme: "Entnahme", zugang: "Zugang", anforderung: "Anforderung", bestellung: "Bestellung", korrektur: "Korrektur" };

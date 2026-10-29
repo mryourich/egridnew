@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Attachments, BlurInput, BlurTextarea, Empty, Field, Modal, PageHead, StatusBadge, useConfirm } from "@/components/app/kit";
-import { Button, Input, Select, Switch, Textarea } from "@/components/ui";
+import { Button, Input, Select, Textarea } from "@/components/ui";
 import { fmt, inRange, weekdayLong } from "@/lib/date";
 import { fmtDateTime } from "@/lib/format";
 import { readFile } from "@/lib/store/files";
@@ -249,9 +249,6 @@ export function ReportPage({ id }: { id: string }) {
                 <Field label="Grund / Bezug" className="span-2">
                   <BlurInput value={r.reason} disabled={!editable} placeholder="z. B. nicht im Leistungsverzeichnis, Kundenwunsch vor Ort" onSave={(v) => set({ reason: v })} />
                 </Field>
-                <label className="check-row span-2">
-                  <Switch checked={r.withPrices} disabled={!editable} onChange={(e) => set({ withPrices: e.target.checked })} /> Mit Preisen (Stundensätze, Materialpreise)
-                </label>
               </>
             )}
           </div>
@@ -273,17 +270,17 @@ export function ReportPage({ id }: { id: string }) {
           )
         }
       >
-        <WorkLines value={r.workers} onChange={(workers) => set({ workers })} date={r.date} prices={r.kind === "regie" && r.withPrices} readOnly={!editable} />
+        <WorkLines value={r.workers} onChange={(workers) => set({ workers })} date={r.date} prices={false} readOnly={!editable} />
       </Block>
 
       {r.kind !== "bautagesbericht" && (
         <Block title="Material">
-          <MaterialLines value={r.materials} onChange={(materials) => set({ materials })} prices={r.kind === "regie" && r.withPrices} readOnly={!editable} />
+          <MaterialLines value={r.materials} onChange={(materials) => set({ materials })} prices={false} readOnly={!editable} />
         </Block>
       )}
       {r.kind !== "service" && (
         <Block title="Geräte">
-          <DeviceLines value={r.devices} onChange={(devices) => set({ devices })} prices={r.kind === "regie" && r.withPrices} readOnly={!editable} />
+          <DeviceLines value={r.devices} onChange={(devices) => set({ devices })} prices={false} readOnly={!editable} />
         </Block>
       )}
 

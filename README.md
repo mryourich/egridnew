@@ -39,7 +39,7 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
   Wochenstunden, Ein-/Austritt, Gewerk, Qualifikationen, Führerschein. Export als CSV.
 - **Berichte** – Bautagesbericht (Witterung, Personal aus dem Planner, Arbeiten, Lieferungen, Behinderungen,
   Anordnungen, Besuche, Fotos) und Regieschein (angeordnet von, Grund, Arbeitskräfte von–bis, Material, Geräte,
-  optional mit Preisen) je Baustelle – auch direkt aus Übersicht und Baustellenseite. Unterschrift am Gerät
+  nur Stunden, Mengen und Material, keine Preise) je Baustelle – auch direkt aus Übersicht und Baustellenseite. Unterschrift am Gerät
   (Auftraggeber, Auftragnehmer) → PDF wird erstellt → Freigabe durch Team-/Bauleitung („Darf Berichte freigeben“)
   oder Zurückgeben mit Kommentar.
 - **Service** (Modul, pro Firma einschaltbar) – Kunden, Serviceaufträge, Disposition (Woche × Techniker, Aufträge
@@ -50,7 +50,9 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
   UID aus *Einstellungen › Firmendaten*, fortlaufende Nummern (BTB-/RS-/SB-Jahr-Nr.), Bezug, Unterschriften mit Name in
   Blockbuchstaben, Ort und Zeit, Freigabevermerk, Prüfsumme (SHA-256) und Seitenzahl in der Fußzeile.
 - **Notizen** – Haftnotizen je Baustelle oder persönlich, Farben, per Griff sortierbar.
-- **Material** – oben *Nachbestellen* (unter Mindestbestand, mit Bestellmenge, Bestellhistorie, Bestellliste als CSV),
+- **Material** – Menge anfordern (im Artikel oder direkt nach dem Scan) → steht in *Nachbestellen* mit Person und Zeit →
+  der Besteller markiert „Als bestellt“. *Nachbestellen* zeigt Anforderungen und alles unter Mindestbestand (Bestellmenge,
+  Bestellhistorie, Bestellliste als CSV),
   dann *Bestellt – Lieferung offen* („Geliefert" bucht den Zugang), darunter alle Artikel. „Scannen & buchen": Barcode
   mit der Handykamera oder dem Handscanner erfassen, Menge eingeben – die Entnahme wird vom Bestand abgebucht und mit
   Person und Zeit protokolliert. `/material?scan=1` öffnet direkt die Kamera (Lesezeichen am Homescreen).

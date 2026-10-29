@@ -1,10 +1,10 @@
 import { addDays, isWeekend, startOfWeek, today } from "../date";
-import type { CalendarEntry, Customer, Data, Report, ServiceOrder, Defect, MaterialItem, Note, OpenPoint, Person, PointType, Site, Task, WorkStatus } from "./types";
+import type { CalendarEntry, Customer, Data, Report, ServiceOrder, StockMove, Defect, MaterialItem, Note, OpenPoint, Person, PointType, Site, Task, WorkStatus } from "./types";
 
 /** Bump when the stored shape changes. */
 export const DATA_VERSION = 1;
 /** Bump when the sample company changes – saved demo data is then replaced. */
-export const DEMO_VERSION = 4;
+export const DEMO_VERSION = 5;
 
 export const SITE_COLORS = ["#0e5a7a", "#3d6b45", "#7a4e0e", "#5a3d7a", "#7a1f2b", "#2f4f6f", "#56606b"];
 
@@ -262,7 +262,7 @@ export function createDemo(): Data {
 
   // booking history: a few withdrawals and earlier orders, open orders with their quantity
   const move = (kind: "entnahme" | "zugang" | "bestellung", qty: number, n: number, by: string) => ({ id: `mv-${kind}-${n}-${qty}`, at: at(-n, 7 + (n % 8)), by, kind, qty });
-  const history: Record<string, ReturnType<typeof move>[]> = {
+  const history: Record<string, StockMove[]> = {
     "mt-1": [move("bestellung", 200, 40, me), move("zugang", 200, 36, "p-wagner"), move("entnahme", 25, 9, "p-pichler"), move("entnahme", 40, 4, "p-pichler")],
     "mt-2": [move("bestellung", 60, 30, me), move("zugang", 60, 27, "p-wagner"), move("entnahme", 12, 6, "p-pichler"), move("entnahme", 24, 3, "p-steiner"), move("bestellung", 40, 2, me)],
     "mt-4": [move("bestellung", 10, 25, me), move("zugang", 10, 22, "p-wagner"), move("entnahme", 4, 8, "p-wagner"), move("entnahme", 3, 2, "p-wagner")],
@@ -271,6 +271,9 @@ export function createDemo(): Data {
     "mt-10": [move("bestellung", 30, 50, "p-berger"), move("zugang", 30, 45, "p-moser"), move("entnahme", 18, 10, "p-hofer"), move("entnahme", 12, 3, "p-hofer")],
     "mt-13": [move("bestellung", 200, 1, "p-berger")]
   };
+  // a fitter asked for more insulation from the site
+  history["mt-3"] = [move("entnahme", 30, 2, "p-leitner"), { id: "mv-req-mt3", at: at(0, 7), by: "p-pichler", kind: "anforderung" as const, qty: 40 }];
+  Object.assign(materials.find((m) => m.id === "mt-3")!, { requestedQty: 40, requestedBy: "p-pichler", requestedAt: at(0, 7) });
   for (const m of materials) {
     if (history[m.id]) m.log = history[m.id];
     if (m.ordered) m.orderedQty = [...(m.log ?? [])].reverse().find((x) => x.kind === "bestellung")?.qty;

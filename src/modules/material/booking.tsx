@@ -8,7 +8,7 @@ import { fmtNum, parseNum } from "@/lib/format";
 import { siteName, useStore } from "@/lib/store/store";
 import type { MaterialItem } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
-import { book, isLow } from "./stock";
+import { book, isLow, request, suggest } from "./stock";
 
 /**
  * After a scan: how many were taken (or delivered)? Booking updates the stock and the log right away,
@@ -21,6 +21,7 @@ export function BookDialog({ item, onClose, onNext }: { item: MaterialItem; onCl
   // hand scanners send Enter after the code – that key must not book right away
   const opened = useRef(Date.now());
   const [kind, setKind] = useState<"entnahme" | "zugang">("entnahme");
+  const [reorder, setReorder] = useState("");
   const n = parseNum(qty);
   const valid = Number.isFinite(n) && n > 0;
   const after = valid ? Math.max(0, kind === "entnahme" ? m.qty - n : m.qty + n) : m.qty;
@@ -79,6 +80,34 @@ export function BookDialog({ item, onClose, onNext }: { item: MaterialItem; onCl
           <small className="muted"> · Mindestbestand {fmtNum(m.minQty)}</small>
         </p>
         {kind === "entnahme" && valid && n > m.qty && <p className="signal-text">Mehr als der gebuchte Bestand – der Bestand wird auf 0 gesetzt.</p>}
+        <div className="book-reorder">
+          {m.ordered ? (
+            <span className="muted">Bereits bestellt{m.orderedQty ? `: ${fmtNum(m.orderedQty)} ${m.unit}` : ""}</span>
+          ) : m.requestedQty ? (
+            <span className="muted">
+              Nachbestellung angefordert: {fmtNum(m.requestedQty)} {m.unit}
+            </span>
+          ) : (
+            <>
+              <span>Nachbestellen anfordern</span>
+              <Input value={reorder} onChange={(e) => setReorder(e.target.value)} placeholder={String(suggest(after < m.minQty ? { ...m, qty: after } : m))} inputMode="decimal" aria-label="Nachbestellmenge" />
+              <span className="muted">{m.unit}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const r = parseNum(reorder || String(suggest(after < m.minQty ? { ...m, qty: after } : m)));
+                  if (!Number.isFinite(r) || r <= 0) return notify("Bitte eine Menge größer 0 eingeben", { tone: "error" });
+                  save("materials", request(m, r, data.meId));
+                  notify(`Angefordert: ${fmtNum(r)} ${m.unit} ${m.name}`);
+                }}
+              >
+                Anfordern
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </Modal>
   );

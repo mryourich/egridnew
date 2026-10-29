@@ -183,7 +183,7 @@ export type Note = Stamped & {
 };
 
 /** One booking on an item: withdrawal, receipt, order, correction. */
-export type StockMove = { id: string; at: string; by: string; kind: "entnahme" | "zugang" | "bestellung" | "korrektur"; qty: number; note?: string };
+export type StockMove = { id: string; at: string; by: string; kind: "entnahme" | "zugang" | "anforderung" | "bestellung" | "korrektur"; qty: number; note?: string };
 
 export type MaterialItem = Stamped & {
   id: string;
@@ -200,6 +200,10 @@ export type MaterialItem = Stamped & {
   orderedAt?: string;
   /** quantity of the open order */
   orderedQty?: number;
+  /** someone asked for a reorder: quantity, who, when – the orderer then marks it ordered */
+  requestedQty?: number;
+  requestedBy?: string;
+  requestedAt?: string;
   note: string;
   /** bookings, newest last */
   log?: StockMove[];
