@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // a new id per build: the offline worker swaps all cached files on every update
-  env: { NEXT_PUBLIC_BUILD_ID: String(Date.now()) },
-  // addresses of the earlier app keep working
+  // the app is being rebuilt: its addresses lead to the website for now
   async redirects() {
-    return ["/app", "/teamgrid", "/heute"].map((source) => ({ source, destination: "/start", permanent: false }));
+    return ["/demo", "/start", "/dashboard", "/projekte/:path*", "/planung/:path*", "/team/:path*", "/zeiten/:path*", "/kunden/:path*", "/abrechnung/:path*", "/einstellungen/:path*", "/druck/:path*", "/app", "/teamgrid", "/heute"].map((source) => ({ source, destination: "/", permanent: false }));
   }
 };
 
