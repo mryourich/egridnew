@@ -251,6 +251,8 @@ export async function buildReportPdf(data: Data, r: Report, hash: string): Promi
   const order: ServiceOrder | undefined = data.orders.find((o) => o.id === r.orderId);
   const customer = data.customers.find((c) => c.id === (r.customerId || order?.customerId));
   const person = (id: string) => data.people.find((p) => p.id === id)?.name ?? "";
+  /** in the reports staff appear with their function, not by name */
+  const role = (w: WorkLine) => data.people.find((p) => p.id === w.personId)?.role || w.name || "Arbeitskraft";
 
   /* header */
   d.text(co.firm, M, d.y - 12, 13, d.bold);
@@ -292,8 +294,8 @@ export async function buildReportPdf(data: Data, r: Report, hash: string): Promi
   const sumH = workers.reduce((s, w) => s + w.h, 0);
   const workTable = (prices: boolean) =>
     d.table(
-      prices ? ["Name", "Datum", "von", "bis", "Pause", "Std.", "Satz", "Betrag"] : ["Name", "Datum", "von", "bis", "Pause (min)", "Stunden"],
-      workers.map((w) => [w.name || person(w.personId), fmt(w.date), w.from, w.to, String(w.pause || 0), fmtNum(w.h), ...(prices ? [w.rate ? fmtEuro(w.rate) : "", w.rate ? fmtEuro(w.rate * w.h) : ""] : [])]),
+      prices ? ["Funktion", "Datum", "von", "bis", "Pause", "Std.", "Satz", "Betrag"] : ["Funktion", "Datum", "von", "bis", "Pause (min)", "Stunden"],
+      workers.map((w) => [role(w), fmt(w.date), w.from, w.to, String(w.pause || 0), fmtNum(w.h), ...(prices ? [w.rate ? fmtEuro(w.rate) : "", w.rate ? fmtEuro(w.rate * w.h) : ""] : [])]),
       prices ? [26, 12, 8, 8, 8, 8, 12, 14] : [34, 16, 10, 10, 14, 12],
       prices ? ["l", "l", "l", "l", "r", "r", "r", "r"] : ["l", "l", "l", "l", "r", "r"],
       prices ? ["Summe", "", "", "", "", fmtNum(sumH), "", fmtEuro(workers.reduce((s, w) => s + (w.rate ?? 0) * w.h, 0))] : ["Summe", "", "", "", "", fmtNum(sumH)]

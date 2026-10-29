@@ -2,7 +2,7 @@
 
 import { Copy, Trash2, TriangleAlert } from "lucide-react";
 import { useState } from "react";
-import { Attachments, BlurInput, BlurTextarea, Field, Modal, PersonOptions, SidePanel, useConfirm } from "@/components/app/kit";
+import { Attachments, BlurInput, BlurTextarea, Field, Modal, PersonOptions, SidePanel, teamOf, useConfirm } from "@/components/app/kit";
 import { Button, Checkbox, Input, Select, Textarea } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 import { exportDefects } from "@/lib/photo-export";
@@ -93,11 +93,9 @@ export function PointPanel({ id, onClose, onDefect }: { id: string; onClose: () 
               <Input type="date" value={p.due} onChange={(e) => set({ due: e.target.value })} />
             </Field>
             <div className="field span-2">
-              <span>Zuständig</span>
+              <span>Zuständig <small className="muted">– nur Team der Baustelle</small></span>
               <div className="check-grid">
-                {data.people
-                  .filter((x) => x.active || p.assigneeIds.includes(x.id))
-                  .sort((a, b) => a.name.localeCompare(b.name, "de"))
+                {[...teamOf(data, p.siteId), ...data.people.filter((x) => p.assigneeIds.includes(x.id) && !teamOf(data, p.siteId).some((y) => y.id === x.id))]
                   .map((x) => (
                     <label key={x.id} className="check-row">
                       <Checkbox checked={p.assigneeIds.includes(x.id)} onChange={(e) => set({ assigneeIds: e.target.checked ? [...p.assigneeIds, x.id] : p.assigneeIds.filter((y) => y !== x.id) })} />
@@ -208,7 +206,7 @@ export function DefectPanel({ id, onClose }: { id: string; onClose: () => void }
         </Field>
         <Field label="Zuständig">
           <Select value={d.ownerId} onChange={(e) => set({ ownerId: e.target.value })}>
-            <PersonOptions />
+            <PersonOptions siteId={d.siteId} keep={d.ownerId} />
           </Select>
         </Field>
         <Field label="Frist">
@@ -317,7 +315,7 @@ export function NewDefect({ siteId, point, onClose, onCreated }: { siteId: strin
           </Field>
           <Field label="Zuständig" className="span-2">
             <Select value={ownerId} onChange={(e) => setOwner(e.target.value)}>
-              <PersonOptions />
+              <PersonOptions siteId={site} keep={ownerId} />
             </Select>
           </Field>
           <Field label="Beschreibung" className="span-2" hint="Fotos (Mangel und Behebung) werden nach dem Erfassen angehängt.">

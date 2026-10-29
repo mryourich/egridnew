@@ -393,6 +393,7 @@ function Block({ title, action, children }: { title: string; action?: ReactNode;
 
 /** Short summary shown to the client before signing. */
 function Summary({ r }: { r: Report }) {
+  const { data } = useStore();
   return (
     <div className="sign-summary">
       <p>
@@ -400,7 +401,7 @@ function Summary({ r }: { r: Report }) {
       </p>
       {r.workers.length > 0 && (
         <p>
-          <strong>Arbeitskräfte:</strong> {r.workers.map((w) => `${w.name} ${w.from}–${w.to}`).join(", ")}
+          <strong>Arbeitskräfte:</strong> {r.workers.map((w) => `${data.people.find((p) => p.id === w.personId)?.role || w.name} ${w.from}–${w.to}`).join(", ")}
         </p>
       )}
       {r.materials.length > 0 && (
