@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const APP = ["uebersicht", "openpoints", "aufgaben", "kalender", "notizen", "material", "planner", "stammdaten"];
+const APP = ["uebersicht", "openpoints", "aufgaben", "mein-tag", "kalender", "berichte", "notizen", "material", "planner", "service", "stammdaten"];
 
 const nextConfig = {
   reactStrictMode: true,

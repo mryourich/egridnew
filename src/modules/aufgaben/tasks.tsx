@@ -68,7 +68,7 @@ export function Tasks() {
   return (
     <div className="page">
       <PageHead
-        title="Aufgaben"
+        title="Meine Aufgaben"
         sub={`${siteId ? siteName(data, siteId) : "Alle Baustellen"} · angemeldet als ${personName(data, me)}`}
         actions={
           <Button leftIcon={<Plus size={15} />} onClick={() => setCreating(true)}>

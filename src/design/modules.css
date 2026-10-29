@@ -1331,3 +1331,11 @@
   height: var(--control-h-sm);
   text-align: right;
 }
+.job-row .title {
+  white-space: normal;
+}
+.job-addr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
