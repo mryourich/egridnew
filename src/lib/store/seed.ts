@@ -4,7 +4,7 @@ import type { CalendarEntry, Customer, Data, Report, ServiceOrder, StockMove, De
 /** Bump when the stored shape changes. */
 export const DATA_VERSION = 1;
 /** Bump when the sample company changes – saved demo data is then replaced. */
-export const DEMO_VERSION = 5;
+export const DEMO_VERSION = 6;
 
 export const SITE_COLORS = ["#0e5a7a", "#3d6b45", "#7a4e0e", "#5a3d7a", "#7a1f2b", "#2f4f6f", "#56606b"];
 
@@ -13,7 +13,7 @@ export function createEmpty(): Data {
     version: DATA_VERSION,
     workspace: { id: "ws", name: "Mein Betrieb", address: "" },
     meId: "me",
-    people: [{ id: "me", name: "Ich", role: "Bauleitung", phone: "", active: true }],
+    people: [{ id: "me", name: "Ich", role: "Geschäftsführung", phone: "", active: true, lead: true }],
     sites: [],
     points: [],
     defects: [],
@@ -48,20 +48,20 @@ export function createDemo(): Data {
   const at = (n: number, h = 9) => new Date(`${addDays(t, n)}T${String(h).padStart(2, "0")}:15:00`).toISOString();
 
   const people: Person[] = [
-    { id: "p-huber", name: "Thomas Huber", role: "Bauleiter", phone: "+43 664 412 18 20", active: true },
-    { id: "p-berger", name: "Martina Berger", role: "Projektleiterin", phone: "+43 664 412 18 21", active: true },
+    { id: "p-huber", name: "Thomas Huber", role: "Bauleitung", phone: "+43 664 412 18 20", active: true },
+    { id: "p-berger", name: "Martina Berger", role: "Projektleitung", phone: "+43 664 412 18 21", active: true },
     { id: "p-wagner", name: "Stefan Wagner", role: "Polier", phone: "+43 676 230 44 10", active: true },
     { id: "p-pichler", name: "Lukas Pichler", role: "Monteur", phone: "+43 676 230 44 11", active: true },
     { id: "p-steiner", name: "Daniel Steiner", role: "Monteur", phone: "+43 676 230 44 12", active: true },
     { id: "p-moser", name: "Andreas Moser", role: "Elektriker", phone: "+43 699 118 50 03", active: true },
-    { id: "p-hofer", name: "Julia Hofer", role: "Technikerin", phone: "+43 699 118 50 04", active: true },
+    { id: "p-hofer", name: "Julia Hofer", role: "Techniker", phone: "+43 699 118 50 04", active: true },
     { id: "p-leitner", name: "Kevin Leitner", role: "Lehrling", phone: "+43 660 771 02 98", active: true },
     { id: "p-gruber", name: "Markus Gruber", role: "Monteur", phone: "+43 676 230 44 13", active: true },
     { id: "p-bauer", name: "Florian Bauer", role: "Installateur", phone: "+43 676 230 44 14", active: true },
     { id: "p-petrovic", name: "Ivan Petrović", role: "Helfer", phone: "+43 660 512 33 07", active: true },
     { id: "p-schmid", name: "Michael Schmid", role: "Elektriker", phone: "+43 664 980 21 55", active: true },
     { id: "p-eder", name: "Patrick Eder", role: "Servicetechniker", phone: "+43 676 230 44 20", active: true },
-    { id: "p-lang", name: "Sandra Lang", role: "Servicetechnikerin", phone: "+43 676 230 44 21", active: true }
+    { id: "p-lang", name: "Sandra Lang", role: "Servicetechniker", phone: "+43 676 230 44 21", active: true }
   ];
   // master data: personnel number, address, social security, entry date, employment, qualifications
   const master: Record<string, Partial<Person>> = {

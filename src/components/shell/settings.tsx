@@ -4,6 +4,8 @@ import { Download, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { BlurInput, Field, Modal, useConfirm } from "@/components/app/kit";
+import { PositionSelect } from "@/components/app/position-select";
+import { LEAD_POSITIONS } from "@/lib/labels";
 import { Button, IconButton, Switch, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import { DATA_VERSION } from "@/lib/store/seed";
 import { uid, useStore } from "@/lib/store/store";
@@ -88,7 +90,7 @@ function People({ onDone }: { onDone: () => void }) {
                   <BlurInput data-person={p.id} value={p.name} aria-label="Name" onSave={(v) => (v ? set(p, { name: v }) : notify("Name darf nicht leer sein", { tone: "error" }))} />
                 </td>
                 <td className="ui-table-cell">
-                  <BlurInput value={p.role} aria-label="Funktion" list="roles" onSave={(v) => set(p, { role: v })} />
+                  <PositionSelect value={p.role} aria-label="Funktion" onChange={(v) => set(p, { role: v, ...(LEAD_POSITIONS.includes(v) ? { lead: true } : {}) })} />
                 </td>
                 <td className="ui-table-cell">
                   <BlurInput value={p.phone} aria-label="Telefon" type="tel" onSave={(v) => set(p, { phone: v })} />
@@ -106,11 +108,6 @@ function People({ onDone }: { onDone: () => void }) {
           </tbody>
         </table>
       </div>
-      <datalist id="roles">
-        {["Bauleiter", "Projektleiter", "Polier", "Vorarbeiter", "Monteur", "Elektriker", "Techniker", "Lehrling", "Büro", "Subunternehmer"].map((r) => (
-          <option key={r} value={r} />
-        ))}
-      </datalist>
     </div>
   );
 }

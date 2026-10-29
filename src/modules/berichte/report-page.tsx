@@ -12,7 +12,7 @@ import { readFile } from "@/lib/store/files";
 import { now, personName, uid, useStore } from "@/lib/store/store";
 import type { Report, Signature } from "@/lib/store/types";
 import { DeviceLines, MaterialLines, WorkLines } from "./lines";
-import { freeze, KIND_LABEL, previewPdf, sharePdf, STATUS_LABEL } from "./model";
+import { approveReport, canApprove, freeze, KIND_LABEL, previewPdf, sharePdf, STATUS_LABEL } from "./model";
 import { SignatureDialog } from "./signature";
 
 const WEATHER = ["Sonnig", "Heiter", "Bewölkt", "Regen", "Starkregen", "Schnee", "Frost", "Nebel", "Wind / Sturm", "Hitze"];
@@ -66,7 +66,7 @@ export function ReportPage({ id }: { id: string }) {
   const order = data.orders.find((o) => o.id === r.orderId);
   const customer = data.customers.find((c) => c.id === (r.customerId || order?.customerId));
   const place = site?.address.split(",").pop()?.trim().replace(/^\d+\s*/, "") || customer?.city || "";
-  const lead = !!me?.lead;
+  const lead = canApprove(data);
   const ref = site ? site.name : customer ? `${customer.name}${order ? ` · ${order.no}` : ""}` : "";
 
   const missing = [
@@ -83,9 +83,10 @@ export function ReportPage({ id }: { id: string }) {
   const finish = async (signed: Report) => {
     setBusy(true);
     try {
-      const out = await freeze(data, { ...signed, status: "unterschrieben", returnNote: undefined });
+      // whoever may release and signs it himself releases it right away
+      const out = await freeze(data, lead ? { ...signed, status: "freigegeben", approvedBy: data.meId, approvedAt: now(), returnNote: undefined } : { ...signed, status: "unterschrieben", returnNote: undefined });
       save("reports", out);
-      notify(`${KIND_LABEL[r.kind]} ${r.no} unterschrieben – PDF erstellt, wartet auf Freigabe`);
+      notify(lead ? `${KIND_LABEL[r.kind]} ${r.no} unterschrieben und freigegeben – PDF im Archiv` : `${KIND_LABEL[r.kind]} ${r.no} unterschrieben – PDF erstellt, wartet auf Freigabe`);
     } catch {
       notify("PDF konnte nicht erstellt werden", { tone: "error" });
     } finally {
@@ -107,9 +108,7 @@ export function ReportPage({ id }: { id: string }) {
   const approve = async () => {
     setBusy(true);
     try {
-      const out = await freeze(data, { ...r, status: "freigegeben", approvedBy: data.meId, approvedAt: now() });
-      save("reports", out);
-      if (r.kind === "service" && order) save("orders", { ...order, status: "freigegeben" });
+      await approveReport(data, r, save);
       notify(`${r.no} freigegeben`);
     } catch {
       notify("PDF konnte nicht erstellt werden", { tone: "error" });
@@ -172,7 +171,7 @@ export function ReportPage({ id }: { id: string }) {
             )}
             {editable && (
               <Button leftIcon={<FileSignature size={15} />} onClick={startSigning} disabled={busy}>
-                {busy ? "PDF wird erstellt …" : "Unterschreiben & abschließen"}
+                {busy ? "PDF wird erstellt …" : lead ? "Unterschreiben & freigeben" : "Unterschreiben & abschließen"}
               </Button>
             )}
             {r.status === "unterschrieben" && lead && (
@@ -194,7 +193,16 @@ export function ReportPage({ id }: { id: string }) {
           <Undo2 size={16} /> <span>Zurückgegeben: {r.returnNote}</span>
         </div>
       )}
-      {r.status === "unterschrieben" && !lead && <p className="muted">Unterschrieben – wartet auf Freigabe durch die Team- oder Bauleitung.</p>}
+      {r.status === "unterschrieben" && !lead && (
+        <p className="muted">
+          Unterschrieben – wartet auf Freigabe durch{" "}
+          {data.people
+            .filter((p) => p.lead && p.active)
+            .map((p) => p.name)
+            .join(", ") || "die Team- oder Bauleitung"}
+          .
+        </p>
+      )}
       {r.status === "freigegeben" && (
         <p className="ok-text">
           Freigegeben von {personName(data, r.approvedBy ?? "")} am {fmtDateTime(r.approvedAt)}

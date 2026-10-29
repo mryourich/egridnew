@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardPen, FileText, Plus, Search } from "lucide-react";
+import { CheckCircle2, ClipboardPen, FileText, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -10,7 +10,7 @@ import { fmt, today } from "@/lib/date";
 import { activeSites, inSite, siteName, useStore } from "@/lib/store/store";
 import type { Report, ReportKind } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
-import { KIND_LABEL, newReport, STATUS_LABEL } from "./model";
+import { approveReport, canApprove, KIND_LABEL, newReport, STATUS_LABEL } from "./model";
 
 type Show = "alle" | "freigabe" | "entwurf" | "freigegeben";
 type SortKey = "no" | "date" | "kind" | "status";
@@ -82,7 +82,20 @@ function NewSiteReport({ kind, onClose, onCreate }: { kind: ReportKind; onClose:
 
 /** Bautagesberichte and Regiescheine of the sites, plus service reports – with release. */
 export function Reports() {
-  const { data, siteId } = useStore();
+  const { data, siteId, save, notify } = useStore();
+  const lead = canApprove(data);
+  const [busy, setBusy] = useState("");
+  const release = async (r: Report) => {
+    setBusy(r.id);
+    try {
+      await approveReport(data, r, save);
+      notify(`${r.no} freigegeben`);
+    } catch {
+      notify("PDF konnte nicht erstellt werden", { tone: "error" });
+    } finally {
+      setBusy("");
+    }
+  };
   const router = useRouter();
   const { start, dialog } = useCreateSiteReport();
   const [show, setShow] = useState<Show>("alle");
@@ -172,6 +185,7 @@ export function Reports() {
                   <SortHead k="status" sort={sort} onSort={setSort}>
                     Status
                   </SortHead>
+                  {lead && <th className="ui-table-head" aria-label="Freigabe" />}
                 </tr>
               </thead>
               <tbody>
@@ -196,6 +210,15 @@ export function Reports() {
                     <td className="ui-table-cell">
                       <StatusBadge tone={STATUS_LABEL[r.status].tone}>{STATUS_LABEL[r.status].label}</StatusBadge>
                     </td>
+                    {lead && (
+                      <td className="ui-table-cell num" onClick={(e) => e.stopPropagation()}>
+                        {r.status === "unterschrieben" && (
+                          <Button size="sm" leftIcon={<CheckCircle2 size={14} />} disabled={busy === r.id} onClick={() => void release(r)}>
+                            {busy === r.id ? "…" : "Freigeben"}
+                          </Button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

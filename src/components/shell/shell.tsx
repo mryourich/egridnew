@@ -1,12 +1,15 @@
 "use client";
 
-import { CalendarRange, CheckSquare, ClipboardList, FileText, GanttChart, IdCard, LayoutGrid, Menu, Package, Search, Settings, StickyNote, Sun, Wrench, X } from "lucide-react";
+import { CalendarRange, CheckSquare, ClipboardList, FileText, GanttChart, IdCard, LayoutGrid, Menu, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Sun, Wrench, X } from "lucide-react";
+
+const COLLAPSE_KEY = "vysner:nav-collapsed";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ConfirmProvider, Toaster } from "@/components/app/kit";
 import { StoreProvider, useStore } from "@/lib/store/store";
 import { cn } from "@/lib/utils";
+import { canApprove } from "@/modules/berichte/model";
 import { GlobalSearch } from "./global-search";
 import { SettingsDialog } from "./settings";
 import { SitePicker, UserMenu } from "./top-controls";
@@ -54,14 +57,31 @@ export function AppShell({ children }: { children: ReactNode }) {
 function Frame({ children }: { children: ReactNode }) {
   const path = usePathname();
   const { data } = useStore();
-  const lead = !!data.people.find((p) => p.id === data.meId)?.lead;
+  const lead = canApprove(data);
   const pending = data.reports.filter((r) => r.status === "unterschrieben").length;
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   useEffect(() => setOpen(false), [path]);
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {
+      // expanded
+    }
+  }, []);
+  const toggleNav = () =>
+    setCollapsed((c) => {
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
+      } catch {
+        // only for this visit
+      }
+      return !c;
+    });
 
   return (
-    <div className={cn("app", open && "nav-open")}>
+    <div className={cn("app", open && "nav-open", collapsed && "nav-collapsed")}>
       <aside className="nav" aria-label="Hauptnavigation">
         <Link href="/uebersicht" className="nav-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -95,6 +115,10 @@ function Frame({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="nav-foot">
+          <button type="button" className="nav-item nav-toggle" onClick={toggleNav} title={collapsed ? "Menü ausklappen" : "Menü einklappen"} aria-label={collapsed ? "Menü ausklappen" : "Menü einklappen"} aria-expanded={!collapsed}>
+            {collapsed ? <PanelLeftOpen size={17} strokeWidth={1.8} /> : <PanelLeftClose size={17} strokeWidth={1.8} />}
+            <span>Menü einklappen</span>
+          </button>
           <button type="button" className="nav-item" onClick={() => setSettings(true)} title="Einstellungen">
             <Settings size={17} strokeWidth={1.8} />
             <span>Einstellungen</span>

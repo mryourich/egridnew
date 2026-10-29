@@ -58,3 +58,7 @@ export const EMPLOYMENT: Record<import("./store/types").Employment, string> = {
   subunternehmer: "Subunternehmer"
 };
 export const EMPLOYMENTS = Object.keys(EMPLOYMENT) as import("./store/types").Employment[];
+
+/** Functions in the company – chosen from a list, not typed. The first four may release reports by default. */
+export const POSITIONS = ["Geschäftsführung", "Bauleitung", "Projektleitung", "Teamleitung", "Polier", "Vorarbeiter", "Techniker", "Servicetechniker", "Monteur", "Installateur", "Elektriker", "Helfer", "Lehrling", "Büro", "Leiharbeiter", "Subunternehmer"];
+export const LEAD_POSITIONS = ["Geschäftsführung", "Bauleitung", "Projektleitung", "Teamleitung"];
