@@ -1576,7 +1576,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                       return (
                         <div
                           key={a.id}
-                          className={`g-abs ${drag?.id === a.id ? "active" : ""}`}
+                          className={`g-abs ${drag?.id === a.id ? "active" : ""} ${(e2 - s + 1) * dw <= 30 ? "narrow" : ""}`}
                           style={
                             {
                               left: s * dw,
@@ -1591,7 +1591,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                           onContextMenu={(e) => absMenu(e, a)}
                         >
                           <span>{ABSENCE[a.type].label}</span>
-                          {(e2 - s + 1) * dw > 30 && (
+                          {(
                             <i
                               className="h l"
                               onPointerDown={(e) =>
@@ -1599,7 +1599,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                               }
                             />
                           )}
-                          {(e2 - s + 1) * dw > 30 && (
+                          {(
                             <i
                               className="h r"
                               onPointerDown={(e) =>
@@ -1618,7 +1618,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                       return (
                         <div
                           key={j.id}
-                          className={`g-job ${j.done ? "done" : ""} ${sel.includes(j.id) ? "sel" : ""} ${drag?.id === j.id ? "active" : ""} ${q && !hit(j) ? "dim" : ""} ${linkFrom === j.id ? "link-src" : ""}`}
+                          className={`g-job ${w <= 30 ? "narrow" : ""} ${j.done ? "done" : ""} ${sel.includes(j.id) ? "sel" : ""} ${drag?.id === j.id ? "active" : ""} ${q && !hit(j) ? "dim" : ""} ${linkFrom === j.id ? "link-src" : ""}`}
                           style={{
                             left: s * hw,
                             width: Math.max(6, w - 1),
@@ -1656,7 +1656,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                                 {p && !j.title ? p.name : labelOf(j)}
                               </span>
                               {j.comment && <i className="g-flag" />}
-                              {w > 30 && (
+                              {(
                                 <i
                                   className="h l"
                                   onPointerDown={(e) =>
@@ -1664,7 +1664,7 @@ export function Gantt({ company = false }: { company?: boolean }) {
                                   }
                                 />
                               )}
-                              {w > 30 && (
+                              {(
                                 <i
                                   className="h r"
                                   onPointerDown={(e) =>

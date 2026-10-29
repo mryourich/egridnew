@@ -1,32 +1,51 @@
 "use client";
 
 import { Check, ChevronDown, HardHat, Settings } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/app/kit";
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui";
 import { activeSites, personName, useStore } from "@/lib/store/store";
 import { cn } from "@/lib/utils";
 
-/** Small menu that closes on outside click and Esc. */
+/**
+ * Small menu that closes on outside click and Esc. It floats (fixed position) so lists that scroll – like the
+ * checklist structure – never cut it off; near the bottom of the screen it opens upwards.
+ */
 export function Pop({ trigger, children, className, align = "right" }: { trigger: (open: boolean, toggle: () => void) => ReactNode; children: (close: () => void) => ReactNode; className?: string; align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!open || !ref.current || !menu.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const m = menu.current.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom - 8;
+    const top = below >= m.height || r.top < m.height ? Math.min(r.bottom + 4, window.innerHeight - m.height - 8) : r.top - m.height - 4;
+    const left = align === "left" ? Math.min(r.left, window.innerWidth - m.width - 8) : Math.max(8, r.right - m.width);
+    setPos({ position: "fixed", top: Math.max(8, top), left: Math.max(8, left), right: "auto", maxHeight: window.innerHeight - 16, overflowY: "auto" });
+  }, [open, align]);
   useEffect(() => {
     if (!open) return;
     const out = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    // the menu is placed once; scrolling the page closes it instead of leaving it behind
+    const scroll = (e: Event) => !menu.current?.contains(e.target as Node) && setOpen(false);
     window.addEventListener("pointerdown", out);
     window.addEventListener("keydown", esc);
+    window.addEventListener("scroll", scroll, true);
+    window.addEventListener("resize", () => setOpen(false), { once: true });
     return () => {
       window.removeEventListener("pointerdown", out);
       window.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", scroll, true);
     };
   }, [open]);
   return (
     <div className={cn("ui-dropdown", className)} ref={ref}>
-      {trigger(open, () => setOpen((o) => !o))}
+      {trigger(open, () => (setPos({ visibility: "hidden", position: "fixed" }), setOpen((o) => !o)))}
       {open && (
-        <div className="ui-dropdown-content" style={align === "left" ? { left: 0, right: "auto" } : undefined} role="menu">
+        <div className="ui-dropdown-content" ref={menu} style={pos} role="menu">
           {children(() => setOpen(false))}
         </div>
       )}

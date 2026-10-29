@@ -73,6 +73,7 @@ export function SiteDetail({ id }: { id: string }) {
     if (!(await ask({ title: `„${s.name}“ löschen?`, text: `Alle ${count} Einträge dieser Baustelle (Checkliste, Mängel, Aufgaben, Termine, Material, Notizen) werden mitgelöscht. Archivieren behält sie.` }))) return;
     const before = data;
     remove("sites", s.id);
+    setSiteId("");
     router.push("/uebersicht");
     notify("Baustelle gelöscht", { undo: () => restore(before) });
   };
@@ -82,7 +83,10 @@ export function SiteDetail({ id }: { id: string }) {
       <PageHead
         crumbs={
           <>
-            <Link href="/uebersicht">Übersicht</Link> / <span>{s.number}</span>
+            <button type="button" className="link" onClick={() => setSiteId("")}>
+              Alle Baustellen
+            </button>{" "}
+            / <span>{s.number}</span>
           </>
         }
         title={

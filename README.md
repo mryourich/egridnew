@@ -58,7 +58,11 @@ Next.js 16 (App Router), React 19, TypeScript, lucide-react, zxing (Barcode-Scan
   Person und Zeit protokolliert. `/material?scan=1` öffnet direkt die Kamera (Lesezeichen am Homescreen).
   Barcode Code 128 als Etikett (drucken / SVG).
 
-Die Baustellenauswahl in der Kopfleiste filtert alle Module („Alle Baustellen" zeigt alles). „Angemeldet als" wählt
+Menü in drei Gruppen: **Persönlich** (Meine Aufgaben, Mein Tag), **Baustelle** (Übersicht, OpenPoints, Kalender, Berichte,
+Notizen, Material), **Firma** (Planner, Service, Stammdaten). Die Baustellenauswahl in der Kopfleiste filtert alle
+Baustellen-Module; mit gewählter Baustelle zeigt die Übersicht direkt diese Baustelle. Sichtbar sind nur Baustellen, auf
+denen man Bauleitung oder im Team ist (oder die man angelegt hat) – wer „Darf Berichte freigeben“ hat, sieht alle.
+**Mein Tag**: Einsatz laut Planner mit Navigation, Serviceaufträge, fällige Aufgaben und eigene Checklistenpunkte. „Angemeldet als" wählt
 die Person auf diesem Gerät, bis die Anmeldung über Supabase kommt.
 
 ## Daten

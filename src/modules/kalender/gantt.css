@@ -960,3 +960,22 @@ input.g-status:focus {
   flex: 1;
   max-height: none;
 }
+
+/* short bars (one day in week view): handles sit just outside, the bar itself still moves */
+.g-job.narrow .h,
+.g-abs.narrow .h {
+  width: 8px;
+  z-index: 2;
+}
+.g-job.narrow .h.l,
+.g-abs.narrow .h.l {
+  left: -8px;
+}
+.g-job.narrow .h.r,
+.g-abs.narrow .h.r {
+  right: -8px;
+}
+.g-job .h:hover,
+.g-abs .h:hover {
+  background: rgb(0 0 0 / 18%);
+}

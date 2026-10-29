@@ -13,13 +13,20 @@ import { personName, siteName, useStore } from "@/lib/store/store";
 import type { Site } from "@/lib/store/types";
 import { cn } from "@/lib/utils";
 import { useCreateSiteReport } from "@/modules/berichte/reports";
+import { SiteDetail } from "./site-detail";
 import { SiteDialog } from "./site-dialog";
 
 type Show = "laufend" | "alle" | "archiviert";
 type SortKey = "number" | "name" | "status" | "end" | "progress" | "defects";
 
+/** Übersicht: all sites – or, with a site chosen in the top bar, straight that site. */
 export function Overview() {
-  const { data, siteId } = useStore();
+  const { siteId } = useStore();
+  return siteId ? <SiteDetail id={siteId} /> : <AllSites />;
+}
+
+function AllSites() {
+  const { data, siteId, setSiteId } = useStore();
   const router = useRouter();
   const [show, setShow] = useState<Show>("laufend");
   const [q, setQ] = useState("");
@@ -156,7 +163,7 @@ export function Overview() {
                 </thead>
                 <tbody>
                   {rows.map(({ s, st }) => (
-                    <SiteRow key={s.id} s={s} st={st} active={s.id === siteId} onOpen={() => router.push(`/uebersicht/${s.id}`)} />
+                    <SiteRow key={s.id} s={s} st={st} active={s.id === siteId} onOpen={() => setSiteId(s.id)} />
                   ))}
                 </tbody>
               </table>
@@ -253,7 +260,7 @@ export function Overview() {
         </div>
       </div>
       {report.dialog}
-      {creating && <SiteDialog onClose={() => setCreating(false)} onSaved={(s) => router.push(`/uebersicht/${s.id}`)} />}
+      {creating && <SiteDialog onClose={() => setCreating(false)} onSaved={(s) => setSiteId(s.id)} />}
     </div>
   );
 }
@@ -263,7 +270,7 @@ function SiteRow({ s, st, active, onOpen }: { s: Site; st: ReturnType<typeof sit
     <tr className={cn("ui-table-row clickable", active && "selected")} onClick={onOpen}>
       <td className="ui-table-cell nowrap muted">{s.number}</td>
       <td className="ui-table-cell">
-        <Link href={`/uebersicht/${s.id}`} className="site-cell" onClick={(e) => e.stopPropagation()}>
+        <Link href={`/uebersicht/${s.id}`} className="site-cell" onClick={(e) => (e.preventDefault(), e.stopPropagation(), onOpen())}>
           <span className="swatch" style={{ background: s.color }} />
           <span>
             <strong>{s.name}</strong>

@@ -59,6 +59,40 @@ export function branchOf(points: Data["points"], id: string) {
   return ids;
 }
 
+/** Collections that belong to a site – hidden from people who are not on it. */
+const SITE_BOUND = ["points", "defects", "tasks", "notes", "materials", "reports"] as const;
+
+/**
+ * Who sees a site: team or construction management ("Darf freigeben") see all, everyone else only the sites
+ * they lead, belong to or created. The Planner keeps all entries, so everybody knows where everybody works.
+ */
+export function visibleSiteIds(d: Data) {
+  const me = d.people.find((p) => p.id === d.meId);
+  if (!me || me.lead) return null;
+  return new Set(d.sites.filter((s) => s.managerId === me.id || s.memberIds.includes(me.id) || s.createdBy === me.id).map((s) => s.id));
+}
+
+/** The data as the signed-in person sees it. */
+function viewOf(d: Data): Data {
+  const ids = visibleSiteIds(d);
+  if (!ids) return d;
+  const v = { ...d, sites: d.sites.filter((s) => ids.has(s.id)) } as Data;
+  for (const k of SITE_BOUND) (v as Record<string, unknown>)[k] = (d[k] as { siteId: string }[]).filter((x) => !x.siteId || ids.has(x.siteId));
+  return v;
+}
+
+/** Undo snapshots are taken from the view – records the person could not see are kept. */
+function mergeHidden(snapshot: Data, full: Data): Data {
+  const ids = visibleSiteIds(full);
+  if (!ids) return snapshot;
+  const out = { ...snapshot, sites: [...snapshot.sites, ...full.sites.filter((s) => !ids.has(s.id) && !snapshot.sites.some((x) => x.id === s.id))] } as Data;
+  for (const k of SITE_BOUND) {
+    const hidden = (full[k] as { id: string; siteId: string }[]).filter((x) => x.siteId && !ids.has(x.siteId));
+    (out as Record<string, unknown>)[k] = [...(snapshot[k] as { id: string }[]), ...hidden.filter((h) => !(snapshot[k] as { id: string }[]).some((x) => x.id === h.id))];
+  }
+  return out;
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Data | null>(null);
   const [siteId, setSite] = useState("");
@@ -171,23 +205,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const view = useMemo(() => data && viewOf(data), [data]);
   const value = useMemo<Store | null>(
     () =>
-      data && {
-        data,
+      view && {
+        data: view,
         save,
         remove,
-        restore: (snapshot) => setData(snapshot),
+        restore: (snapshot) => setData((d) => (d ? mergeHidden(snapshot, d) : snapshot)),
         setLayout: (calendar) => setData((d) => d && { ...d, calendar }),
         setMe: (meId) => setData((d) => d && { ...d, meId }),
         reset: (kind) => (setData(kind === "demo" ? createDemo() : createEmpty()), setSiteId("")),
-        siteId: data.sites.some((s) => s.id === siteId) ? siteId : "",
+        siteId: view.sites.some((s) => s.id === siteId) ? siteId : "",
         setSiteId,
         notify,
         toast,
         dismiss: () => setToast(null)
       },
-    [data, save, remove, siteId, setSiteId, notify, toast]
+    [view, save, remove, siteId, setSiteId, notify, toast]
   );
 
   if (!value) return <div className="app-boot" aria-label="Lädt" />;

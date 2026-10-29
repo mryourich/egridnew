@@ -15,14 +15,14 @@ import { cn } from "@/lib/utils";
 import { CustomerDialog, OrderDialog } from "./dialogs";
 import { addressOf, isDone, mapsUrl, ORDER_STATUS, ORDER_STATUSES, ordersOf, routeUrl, technicians } from "./model";
 
-type View = "tag" | "disposition" | "auftraege" | "kunden";
+type View = "disposition" | "auftraege" | "kunden";
 
 /** Service: orders for customers – planned weekly per technician, worked off on the tablet. */
 export function Service() {
   const { data } = useStore();
   const q = useQuery();
   const lead = !!data.people.find((p) => p.id === data.meId)?.lead;
-  const view = (["tag", "disposition", "auftraege", "kunden"] as View[]).includes(q.get("ansicht") as View) ? (q.get("ansicht") as View) : lead ? "disposition" : "tag";
+  const view = (["disposition", "auftraege", "kunden"] as View[]).includes(q.get("ansicht") as View) ? (q.get("ansicht") as View) : lead ? "disposition" : "auftraege";
   const [creating, setCreating] = useState(false);
   const [newCustomer, setNewCustomer] = useState(false);
   const router = useRouter();
@@ -38,7 +38,7 @@ export function Service() {
     <div className="page">
       <PageHead
         title="Service"
-        sub={lead ? "Aufträge disponieren, Berichte freigeben" : `Aufträge von ${personName(data, data.meId)}`}
+        sub={lead ? "Aufträge disponieren, Berichte freigeben" : "Aufträge und Kunden – die eigenen Aufträge des Tages stehen unter „Mein Tag“"}
         actions={
           <>
             <Seg<View>
@@ -46,7 +46,6 @@ export function Service() {
               value={view}
               onChange={(v) => q.set({ ansicht: v })}
               options={[
-                { value: "tag", label: "Mein Tag" },
                 { value: "disposition", label: "Disposition" },
                 { value: "auftraege", label: "Aufträge" },
                 { value: "kunden", label: "Kunden" }
@@ -64,11 +63,10 @@ export function Service() {
           </>
         }
       />
-      {view === "tag" && <MyDay />}
       {view === "disposition" && <Dispatch />}
       {view === "auftraege" && <OrderList />}
       {view === "kunden" && <Customers />}
-      {creating && <OrderDialog defaults={view === "tag" ? { techId: data.meId, date: today() } : undefined} onClose={() => setCreating(false)} onSaved={(o) => view === "tag" && router.push(`/service/auftrag/${o.id}`)} />}
+      {creating && <OrderDialog onClose={() => setCreating(false)} onSaved={(o) => router.push(`/service/auftrag/${o.id}`)} />}
       {newCustomer && <CustomerDialog onClose={() => setNewCustomer(false)} />}
     </div>
   );
@@ -76,13 +74,10 @@ export function Service() {
 
 /* ------------------------------------------------------------------ Mein Tag */
 
-function MyDay() {
+/** Service orders of one person on one day – used by "Mein Tag". */
+export function DayOrders({ date, who }: { date: string; who: string }) {
   const { data } = useStore();
-  const q = useQuery();
   const router = useRouter();
-  const date = q.get("tag") || today();
-  const lead = !!data.people.find((p) => p.id === data.meId)?.lead;
-  const who = (lead && q.get("techniker")) || data.meId;
   const list = ordersOf(data, who, date);
   const cust = (o: ServiceOrder) => data.customers.find((c) => c.id === o.customerId);
   const open = list.filter((o) => !isDone(o));
@@ -90,40 +85,21 @@ function MyDay() {
   const done = list.length - open.length;
 
   return (
-    <>
-      <div className="toolbar">
-        <div className="seg">
-          <button type="button" aria-label="Vorheriger Tag" onClick={() => q.set({ tag: addDays(date, -1) })}>
-            <ChevronLeft size={14} />
-          </button>
-          <button type="button" className={cn(date === today() && "on")} onClick={() => q.set({ tag: null })}>
-            Heute
-          </button>
-          <button type="button" aria-label="Nächster Tag" onClick={() => q.set({ tag: addDays(date, 1) })}>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-        <strong>
-          {weekdayLong(date)}, {fmt(date)}
-        </strong>
-        {lead && (
-          <Select value={who} onChange={(e) => q.set({ techniker: e.target.value === data.meId ? null : e.target.value })} aria-label="Techniker" className="filter-select">
-            {[...new Map([...technicians(data), ...data.people.filter((p) => p.id === data.meId)].map((p) => [p.id, p])).values()].map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id === data.meId ? `${p.name} (ich)` : p.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        <span className="count">
+    <section className="panel">
+      <div className="panel-head">
+        <Wrench size={15} className="muted" />
+        <h3>Serviceaufträge</h3>
+        <span className="muted">
           {done} von {list.length} erledigt
         </span>
+        <span className="grow" />
         {route && (
-          <a className="ui-button ui-button-secondary ui-button-size-default" href={route} target="_blank" rel="noreferrer">
-            <Route size={15} /> Tagesroute
+          <a className="ui-button ui-button-secondary ui-button-size-sm" href={route} target="_blank" rel="noreferrer">
+            <Route size={14} /> Tagesroute
           </a>
         )}
       </div>
+      <div className="panel-body">
       {list.length ? (
         <ol className="day-list">
           {list.map((o, i) => {
@@ -163,9 +139,10 @@ function MyDay() {
           })}
         </ol>
       ) : (
-        <Empty icon={<Wrench size={28} />} title="Keine Aufträge an diesem Tag" text="Die Teamleitung teilt die Aufträge in der Disposition zu." />
+        <p className="muted">Keine Serviceaufträge an diesem Tag.</p>
       )}
-    </>
+      </div>
+    </section>
   );
 }
 

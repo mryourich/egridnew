@@ -336,3 +336,40 @@
     right: 6px;
   }
 }
+.nav-list {
+  gap: 0;
+  overflow-y: auto;
+}
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-group + .nav-group {
+  margin-top: 14px;
+}
+.nav-group-label {
+  padding: 0 10px 4px;
+  color: var(--nav-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@media (max-width: 1180px) {
+  .nav-group-label {
+    height: 1px;
+    margin: 0 12px 6px;
+    padding: 0;
+    overflow: hidden;
+    background: rgb(255 255 255 / 10%);
+    color: transparent;
+  }
+  .nav-open .nav-group-label {
+    height: auto;
+    margin: 0;
+    padding: 0 10px 4px;
+    background: none;
+    color: var(--nav-muted);
+  }
+}
