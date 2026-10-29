@@ -6,7 +6,8 @@ import { Avatar, BlurInput, BlurTextarea, Empty, Field, Modal, PageHead, Seg, Si
 import { Button, IconButton, Input, Select, Switch } from "@/components/ui";
 import { fmt, inRange, today } from "@/lib/date";
 import { fmtNum, parseNum } from "@/lib/format";
-import { EMPLOYMENT, EMPLOYMENTS } from "@/lib/labels";
+import { EMPLOYMENT, EMPLOYMENTS, LEAD_POSITIONS } from "@/lib/labels";
+import { PositionSelect } from "@/components/app/position-select";
 import { personName, siteName, uid, useStore } from "@/lib/store/store";
 import type { Employment, Person } from "@/lib/store/types";
 import { useQuery } from "@/lib/use-query";
@@ -221,7 +222,7 @@ function NewPerson({ onClose, onCreated }: { onClose: () => void; onCreated: (id
     setTried(true);
     if (Object.values(errs).some(Boolean)) return;
     const id = uid();
-    save("people", { id, name: `${first.trim()} ${last.trim()}`, firstName: first.trim(), lastName: last.trim(), personnelNo: no.trim(), role: role.trim(), phone: "", active: true, employment, company: external ? company.trim() : "", entryDate: entry, weeklyHours: employment === "teilzeit" ? 20 : employment === "subunternehmer" ? undefined : 38.5, qualifications: [] });
+    save("people", { id, name: `${first.trim()} ${last.trim()}`, firstName: first.trim(), lastName: last.trim(), personnelNo: no.trim(), role, lead: LEAD_POSITIONS.includes(role), phone: "", active: true, employment, company: external ? company.trim() : "", entryDate: entry, weeklyHours: employment === "teilzeit" ? 20 : employment === "subunternehmer" ? undefined : 38.5, qualifications: [] });
     notify(`${first.trim()} ${last.trim()} angelegt`);
     onCreated(id);
   };
@@ -253,7 +254,7 @@ function NewPerson({ onClose, onCreated }: { onClose: () => void; onCreated: (id
           <Input value={no} onChange={(ev) => setNo(ev.target.value)} className="mono" />
         </Field>
         <Field label="Funktion">
-          <Input value={role} onChange={(ev) => setRole(ev.target.value)} list="person-roles" />
+          <PositionSelect value={role} onChange={setRole} />
         </Field>
         <Field label="Beschäftigung">
           <Select value={employment} onChange={(ev) => setEmployment(ev.target.value as Employment)}>
@@ -273,18 +274,10 @@ function NewPerson({ onClose, onCreated }: { onClose: () => void; onCreated: (id
           </Field>
         )}
       </div>
-      <RoleList />
     </Modal>
   );
 }
 
-const RoleList = () => (
-  <datalist id="person-roles">
-    {["Bauleiter", "Projektleiter", "Polier", "Vorarbeiter", "Monteur", "Installateur", "Elektriker", "Techniker", "Helfer", "Lehrling", "Büro"].map((r) => (
-      <option key={r} value={r} />
-    ))}
-  </datalist>
-);
 
 function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, save, remove, notify, restore } = useStore();
@@ -384,8 +377,8 @@ function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
         <Field label="Firma" hint="Leer = eigener Betrieb">
           <BlurInput value={p.company ?? ""} placeholder={data.workspace.name} onSave={(v) => set({ company: v })} />
         </Field>
-        <Field label="Funktion">
-          <BlurInput value={p.role} list="person-roles" onSave={(v) => set({ role: v })} />
+        <Field label="Funktion" hint={LEAD_POSITIONS.includes(p.role) ? "Leitungsfunktion – darf Berichte freigeben" : undefined}>
+          <PositionSelect value={p.role} onChange={(v) => set({ role: v, ...(LEAD_POSITIONS.includes(v) ? { lead: true } : {}) })} />
         </Field>
         <Field label="Gewerk">
           <BlurInput value={p.trade ?? ""} placeholder="z. B. Installateur, Elektro" onSave={(v) => set({ trade: v })} />
@@ -471,7 +464,6 @@ function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
         </Field>
         <p className="span-2 muted stamp">Personenbezogene Daten – nur für die Personalverwaltung. Gespeichert auf diesem Gerät{personName(data, data.meId) ? `, bearbeitet als ${personName(data, data.meId)}` : ""}.</p>
       </div>
-      <RoleList />
     </SidePanel>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardPen, FileSignature, FileText, MapPin, Navigation, Pause, Pencil, Phone, Play, Plus, Trash2, Wrench } from "lucide-react";
+import { CheckCircle2, ClipboardPen, FileSignature, FileText, MapPin, Navigation, Pause, Pencil, Phone, Play, Plus, Trash2, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import { fmtDateTime, fmtNum } from "@/lib/format";
 import { now, personName, uid, useStore } from "@/lib/store/store";
 import type { Report, ServiceOrder, Signature, WorkLine } from "@/lib/store/types";
 import { MaterialLines } from "@/modules/berichte/lines";
-import { freeze, KIND_LABEL, newReport, STATUS_LABEL } from "@/modules/berichte/model";
+import { approveReport, canApprove, freeze, KIND_LABEL, newReport, STATUS_LABEL } from "@/modules/berichte/model";
 import { SignatureDialog } from "@/modules/berichte/signature";
 import { OrderDialog } from "./dialogs";
 import { addressOf, isDone, mapsUrl, minutesOf, ORDER_STATUS } from "./model";
@@ -55,6 +55,18 @@ export function OrderPage({ id }: { id: string }) {
   const serviceReport = reports.find((r) => r.kind === "service");
   const regie = reports.filter((r) => r.kind === "regie");
   const me = data.people.find((p) => p.id === data.meId);
+  const lead = canApprove(data);
+  const release = async (r: Report) => {
+    setBusy(true);
+    try {
+      await approveReport(data, r, save);
+      notify(`${r.no} freigegeben`);
+    } catch {
+      notify("PDF konnte nicht erstellt werden", { tone: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const start = () => set({ times: [...o.times, { from: now() }], status: "in_arbeit" });
   const stop = () => set({ times: o.times.map((t) => (t.to ? t : { ...t, to: now() })) });
@@ -98,12 +110,13 @@ export function OrderPage({ id }: { id: string }) {
         reservation: accepted === "vorbehalt" ? reservation.trim() : "",
         signClient: clientSig ?? undefined,
         signContractor: techSig,
-        status: "unterschrieben"
+        // a technician who may release signs and releases in one go
+        ...(lead ? { status: "freigegeben" as const, approvedBy: data.meId, approvedAt: now() } : { status: "unterschrieben" as const })
       });
       const report = await freeze(data, serviceReport ? { ...base, id: serviceReport.id, no: serviceReport.no } : base);
       save("reports", report);
-      save("orders", { ...o, times, status: "erledigt" });
-      notify(`Unterschrieben – ${report.no} als PDF erstellt und an die Teamleitung zur Freigabe übergeben`);
+      save("orders", { ...o, times, status: lead ? "freigegeben" : "erledigt" });
+      notify(lead ? `Unterschrieben und freigegeben – ${report.no} im Archiv` : `Unterschrieben – ${report.no} als PDF erstellt und an die Teamleitung zur Freigabe übergeben`);
     } catch {
       notify("PDF konnte nicht erstellt werden", { tone: "error" });
     } finally {
@@ -257,7 +270,22 @@ export function OrderPage({ id }: { id: string }) {
             Regieschein
           </Button>
         </div>
-        {regie.length ? <ReportRows reports={regie} /> : <p className="panel-body muted">Zusatzarbeiten außerhalb des Auftrags als Regieschein erfassen und vom Kunden bestätigen lassen.</p>}
+        {regie.length ? (
+          <>
+            <ReportRows reports={regie} />
+            {lead && regie.some((r) => r.status === "unterschrieben") && (
+              <div className="panel-body">
+                {regie
+                  .filter((r) => r.status === "unterschrieben")
+                  .map((r) => (
+                    <Button key={r.id} size="sm" leftIcon={<CheckCircle2 size={14} />} disabled={busy} onClick={() => void release(r)}>
+                      {r.no} freigeben
+                    </Button>
+                  ))}
+              </div>
+            )}
+          </>
+        ) : <p className="panel-body muted">Zusatzarbeiten außerhalb des Auftrags als Regieschein erfassen und vom Kunden bestätigen lassen.</p>}
       </section>
 
       <section className="panel finish">
@@ -266,7 +294,14 @@ export function OrderPage({ id }: { id: string }) {
         </div>
         <div className="panel-body">
           {serviceReport && serviceReport.status !== "zurueck" ? (
-            <ReportRows reports={[serviceReport]} />
+            <>
+              <ReportRows reports={[serviceReport]} />
+              {lead && serviceReport.status === "unterschrieben" && (
+                <Button size="lg" leftIcon={<CheckCircle2 size={16} />} disabled={busy} onClick={() => void release(serviceReport)} style={{ marginTop: 10 }}>
+                  Arbeitsbericht freigeben
+                </Button>
+              )}
+            </>
           ) : (
             <>
               {serviceReport?.status === "zurueck" && <p className="signal-text">Zurückgegeben: {serviceReport.returnNote}</p>}

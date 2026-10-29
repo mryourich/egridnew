@@ -2,7 +2,7 @@
 
 import { now, uid } from "@/lib/store/id";
 import { readFile, storeBlob } from "@/lib/store/files";
-import type { Data, FileRef, Report, ReportKind } from "@/lib/store/types";
+import type { Data, FileRef, Report, ReportKind, ServiceOrder } from "@/lib/store/types";
 import { buildReportPdf, contentHash, TITLES } from "@/lib/pdf/report-pdf";
 import { downloadBlob, safeName } from "@/lib/zip";
 
@@ -95,4 +95,19 @@ export async function sharePdf(r: Report, text: string) {
   }
   downloadBlob(blob, r.pdf.name);
   return true;
+}
+
+/** May the signed-in person release reports? Team/site management – or anyone while nobody has the right. */
+export function canApprove(data: Data) {
+  const me = data.people.find((p) => p.id === data.meId);
+  return !!me?.lead || !data.people.some((p) => p.lead && p.active);
+}
+
+/** Releases a signed report: the PDF gets the release note, a service order is closed. */
+export async function approveReport(data: Data, r: Report, save: <K extends "reports" | "orders">(k: K, item: K extends "reports" ? Report : ServiceOrder) => void) {
+  const out = await freeze(data, { ...r, status: "freigegeben", approvedBy: data.meId, approvedAt: now() });
+  save("reports", out);
+  const order = data.orders.find((o) => o.id === r.orderId);
+  if (r.kind === "service" && order) save("orders", { ...order, status: "freigegeben" });
+  return out;
 }

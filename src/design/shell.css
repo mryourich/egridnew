@@ -373,3 +373,43 @@
     color: var(--nav-muted);
   }
 }
+
+/* desktop: menu folds to an icon rail on request */
+@media (min-width: 1181px) {
+  .app.nav-collapsed {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+  .nav-collapsed .nav-brand {
+    justify-content: center;
+    padding: 0;
+  }
+  .nav-collapsed .nav-brand span,
+  .nav-collapsed .nav-item span {
+    display: none;
+  }
+  .nav-collapsed .nav-item {
+    justify-content: center;
+    height: var(--touch);
+    padding: 0;
+    position: relative;
+  }
+  .nav-collapsed .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+  }
+  .nav-collapsed .nav-group-label {
+    height: 1px;
+    margin: 0 12px 6px;
+    padding: 0;
+    overflow: hidden;
+    background: rgb(255 255 255 / 10%);
+    color: transparent;
+  }
+}
+/* the rail on tablets has no room to fold further */
+@media (max-width: 1180px) {
+  .nav-toggle {
+    display: none !important;
+  }
+}
