@@ -1,0 +1,84 @@
+/* App base: only inside .app, so the website keeps its own look. */
+.app,
+.app-boot,
+.app-modal-root {
+  font-family: var(--font);
+  font-size: var(--fs);
+  line-height: var(--lh);
+  color: var(--text);
+}
+.app {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+.app-boot {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+.app :where(h1, h2, h3, h4, p) {
+  margin: 0;
+}
+.app :where(h1) {
+  font-size: var(--fs-xl);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.app :where(h2) {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+}
+.app :where(h3) {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.app :where(a) {
+  color: var(--accent);
+  text-decoration: none;
+}
+.app :where(a:hover) {
+  text-decoration: underline;
+}
+.app :where(button) {
+  cursor: pointer;
+}
+.app :where(button:disabled) {
+  cursor: not-allowed;
+}
+.app :where(:focus-visible) {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.app ::selection {
+  background: rgb(14 90 122 / 22%);
+}
+.muted {
+  color: var(--muted);
+}
+.num,
+.kpi strong,
+.due {
+  font-variant-numeric: tabular-nums;
+}
+.num {
+  text-align: right;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.grow {
+  flex: 1;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app-modal-root * {
+    transition: none !important;
+  }
+}

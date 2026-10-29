@@ -1,0 +1,81 @@
+/*
+ * VYSNER Baustelle – design tokens.
+ * Grey scale + petrol as the one working colour + signal orange for warnings.
+ * Every colour, size and radius in the app comes from here (see DESIGN.md).
+ */
+:root {
+  /* surfaces */
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eceef1;
+  --border: #d7dbe1;
+  --border-strong: #b9bfc8;
+
+  /* text */
+  --text: #16191d;
+  --text-2: #3c434c;
+  --muted: #6b7380;
+  --faint: #9aa1ab;
+
+  /* accent: petrol */
+  --accent: #0e5a7a;
+  --accent-hover: #0b4964;
+  --accent-soft: #e4eef3;
+  --accent-text: #ffffff;
+
+  /* signal: orange (below minimum, overdue, high priority) */
+  --signal: #c2620a;
+  --signal-soft: #fbeedf;
+
+  /* states */
+  --ok: #2f6b3f;
+  --ok-soft: #e5f0e8;
+  --danger: #a3252f;
+  --danger-soft: #f7e3e5;
+  --info: #3a5873;
+  --info-soft: #e6ecf2;
+
+  /* side bar: graphite */
+  --nav-bg: #1c2127;
+  --nav-bg-2: #252b33;
+  --nav-text: #c3c9d1;
+  --nav-muted: #7f8893;
+  --nav-active: #ffffff;
+
+  /* type */
+  --font: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --lh: 1.45;
+
+  /* 4 px grid */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+
+  /* shape */
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-lg: 4px;
+  --shadow-pop: 0 6px 24px rgb(20 24 30 / 16%), 0 1px 3px rgb(20 24 30 / 10%);
+  --shadow-card: 0 1px 2px rgb(20 24 30 / 5%);
+
+  /* controls */
+  --control-h: 32px;
+  --control-h-sm: 26px;
+  --touch: 40px;
+
+  /* layout */
+  --nav-w: 216px;
+  --top-h: 52px;
+  --focus: 0 0 0 2px var(--surface), 0 0 0 4px rgb(14 90 122 / 45%);
+}
