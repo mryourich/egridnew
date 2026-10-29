@@ -16,7 +16,8 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
       <Tabs defaultValue="team" value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="team">Mitarbeiter</TabsTrigger>
-          <TabsTrigger value="firma">Betrieb</TabsTrigger>
+          <TabsTrigger value="firma">Firmendaten</TabsTrigger>
+          <TabsTrigger value="module">Funktionen</TabsTrigger>
           <TabsTrigger value="daten">Daten</TabsTrigger>
         </TabsList>
         <div style={{ marginTop: 16 }}>
@@ -25,6 +26,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </TabsContent>
           <TabsContent value="firma">
             <Company />
+          </TabsContent>
+          <TabsContent value="module">
+            <Modules />
           </TabsContent>
           <TabsContent value="daten">
             <DataTab onDone={onClose} />
@@ -113,15 +117,65 @@ function People({ onDone }: { onDone: () => void }) {
 
 function Company() {
   const { data, restore } = useStore();
+  const w = data.workspace;
   const set = (patch: Partial<Data["workspace"]>) => restore({ ...data, workspace: { ...data.workspace, ...patch } });
   return (
     <div className="form-grid">
-      <Field label="Name des Betriebs" className="span-2">
-        <BlurInput value={data.workspace.name} onSave={(v) => v && set({ name: v })} />
+      <p className="span-2 muted">Diese Angaben stehen auf Bautagesberichten, Regiescheinen und Arbeitsberichten (Firmenangaben nach § 14 UGB).</p>
+      <Field label="Firmenwortlaut" className="span-2">
+        <BlurInput value={w.name} onSave={(v) => v && set({ name: v })} />
       </Field>
-      <Field label="Adresse" className="span-2">
-        <BlurInput value={data.workspace.address} onSave={(v) => set({ address: v })} placeholder="Straße, PLZ Ort" />
+      <Field label="Rechtsform" hint="z. B. GmbH, OG, KG, e.U.">
+        <BlurInput value={w.legalForm ?? ""} onSave={(v) => set({ legalForm: v })} />
       </Field>
+      <Field label="Sitz">
+        <BlurInput value={w.seat ?? ""} onSave={(v) => set({ seat: v })} placeholder="z. B. Linz" />
+      </Field>
+      <Field label="Firmenbuchnummer">
+        <BlurInput value={w.fbNo ?? ""} onSave={(v) => set({ fbNo: v })} placeholder="FN 123456 a" />
+      </Field>
+      <Field label="Firmenbuchgericht">
+        <BlurInput value={w.fbCourt ?? ""} onSave={(v) => set({ fbCourt: v })} placeholder="Landesgericht Linz" />
+      </Field>
+      <Field label="UID-Nummer">
+        <BlurInput value={w.uid ?? ""} className="mono" onSave={(v) => set({ uid: v.replace(/\s/g, "").toUpperCase() })} placeholder="ATU12345678" />
+      </Field>
+      <Field label="Adresse">
+        <BlurInput value={w.address} onSave={(v) => set({ address: v })} placeholder="Straße, PLZ Ort" />
+      </Field>
+      <Field label="Telefon">
+        <BlurInput value={w.phone ?? ""} type="tel" onSave={(v) => set({ phone: v })} />
+      </Field>
+      <Field label="E-Mail">
+        <BlurInput value={w.email ?? ""} type="email" onSave={(v) => set({ email: v })} />
+      </Field>
+      <Field label="Website" className="span-2">
+        <BlurInput value={w.web ?? ""} onSave={(v) => set({ web: v })} />
+      </Field>
+    </div>
+  );
+}
+
+function Modules() {
+  const { data, restore } = useStore();
+  const w = data.workspace;
+  const set = (patch: Partial<Data["workspace"]>) => restore({ ...data, workspace: { ...data.workspace, ...patch } });
+  return (
+    <div className="form-grid">
+      <label className="check-row span-2">
+        <Switch checked={!!w.modules?.service} onChange={(e) => set({ modules: { ...w.modules, service: e.target.checked } })} />
+        <span>
+          <strong>Service & Kundendienst</strong>
+          <br />
+          <small className="muted">Kunden, Serviceaufträge, Disposition je Techniker, „Mein Tag“ am Tablet, Übernahmebestätigung mit Unterschrift</small>
+        </span>
+      </label>
+      {w.modules?.service && (
+        <Field label="Aufträge je Techniker und Tag (Richtwert)">
+          <BlurInput value={String(w.maxPerDay ?? 10)} inputMode="numeric" onSave={(v) => set({ maxPerDay: Math.max(1, Math.min(30, Number(v) || 10)) })} />
+        </Field>
+      )}
+      <p className="span-2 muted">Freigeben dürfen Mitarbeiter mit „Darf Berichte freigeben“ in den Stammdaten.</p>
     </div>
   );
 }

@@ -48,6 +48,8 @@ export type Person = {
   emergencyName?: string;
   emergencyPhone?: string;
   note?: string;
+  /** may approve reports (Teamleitung, Bauleitung) */
+  lead?: boolean;
 };
 
 export type SiteStatus = "geplant" | "aktiv" | "abnahme" | "pausiert" | "archiviert";
@@ -181,7 +183,7 @@ export type Note = Stamped & {
 };
 
 /** One booking on an item: withdrawal, receipt, order, correction. */
-export type StockMove = { id: string; at: string; by: string; kind: "entnahme" | "zugang" | "bestellung" | "korrektur"; qty: number; note?: string };
+export type StockMove = { id: string; at: string; by: string; kind: "entnahme" | "zugang" | "anforderung" | "bestellung" | "korrektur"; qty: number; note?: string };
 
 export type MaterialItem = Stamped & {
   id: string;
@@ -198,12 +200,128 @@ export type MaterialItem = Stamped & {
   orderedAt?: string;
   /** quantity of the open order */
   orderedQty?: number;
+  /** someone asked for a reorder: quantity, who, when – the orderer then marks it ordered */
+  requestedQty?: number;
+  requestedBy?: string;
+  requestedAt?: string;
   note: string;
   /** bookings, newest last */
   log?: StockMove[];
 };
 
-export type Workspace = { id: string; name: string; address: string };
+/** Company data for documents (§ 14 UGB: Firma, Rechtsform, Sitz, Firmenbuchnummer, Firmenbuchgericht). */
+export type Workspace = {
+  id: string;
+  name: string;
+  address: string;
+  legalForm?: string;
+  seat?: string;
+  fbNo?: string;
+  fbCourt?: string;
+  uid?: string;
+  phone?: string;
+  email?: string;
+  web?: string;
+  /** optional modules switched on for this company */
+  modules?: { service?: boolean };
+  /** service orders per technician and day */
+  maxPerDay?: number;
+};
+
+/* ------------------------------------------------------------------ Service */
+
+export type Customer = Stamped & {
+  id: string;
+  no: string;
+  name: string;
+  contact: string;
+  street: string;
+  zip: string;
+  city: string;
+  phone: string;
+  email: string;
+  uid: string;
+  note: string;
+};
+
+export type OrderStatus = "offen" | "geplant" | "in_arbeit" | "erledigt" | "freigegeben";
+
+export type MaterialLine = { id: string; name: string; qty: number; unit: string; price?: number };
+export type WorkLine = { id: string; personId: string; name: string; date: ISODate; from: string; to: string; pause: number; rate?: number };
+export type DeviceLine = { id: string; name: string; hours: number; rate?: number };
+
+/** A service order: customer, address, what to do, who does it on which day. */
+export type ServiceOrder = Stamped & {
+  id: string;
+  no: string;
+  customerId: string;
+  /** where the work is – empty = customer address */
+  street: string;
+  zip: string;
+  city: string;
+  title: string;
+  description: string;
+  priority: Priority;
+  techId: string;
+  date: ISODate | "";
+  /** order within the day */
+  seq: number;
+  status: OrderStatus;
+  /** start/stop stamps of the technician */
+  times: { from: string; to?: string }[];
+  workDone: string;
+  materials: MaterialLine[];
+  files: FileRef[];
+};
+
+/* ------------------------------------------------------------------ Reports (Bautagesbericht, Regieschein, Servicebericht) */
+
+export type ReportKind = "bautagesbericht" | "regie" | "service";
+export type ReportStatus = "entwurf" | "unterschrieben" | "freigegeben" | "zurueck";
+
+export type Signature = { name: string; png: string; at: string; place: string };
+
+export type Report = Stamped & {
+  id: string;
+  kind: ReportKind;
+  /** BTB-2026-001, RS-2026-001, SB-2026-001 */
+  no: string;
+  status: ReportStatus;
+  /** a site report or a service report */
+  siteId: string;
+  orderId: string;
+  customerId: string;
+  date: ISODate;
+  /** Regie: who ordered the extra work, and why */
+  orderedBy: string;
+  reason: string;
+  /** what was done */
+  text: string;
+  workers: WorkLine[];
+  materials: MaterialLine[];
+  devices: DeviceLine[];
+  withPrices: boolean;
+  /* Bautagesbericht */
+  weather: string;
+  tempAm: string;
+  tempPm: string;
+  hindrances: string;
+  instructions: string;
+  visitors: string;
+  deliveries: string;
+  /* Übernahme (service) */
+  accepted: "ohne" | "vorbehalt";
+  reservation: string;
+  files: FileRef[];
+  signClient?: Signature;
+  signContractor?: Signature;
+  /** the frozen PDF (IndexedDB) */
+  pdf?: FileRef;
+  hash?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  returnNote?: string;
+};
 
 export type Data = {
   version: number;
@@ -221,7 +339,10 @@ export type Data = {
   calendar: CalendarLayout;
   notes: Note[];
   materials: MaterialItem[];
+  customers: Customer[];
+  orders: ServiceOrder[];
+  reports: Report[];
 };
 
-export type Collection = "people" | "sites" | "points" | "defects" | "tasks" | "entries" | "absences" | "notes" | "materials";
+export type Collection = "people" | "sites" | "points" | "defects" | "tasks" | "entries" | "absences" | "notes" | "materials" | "customers" | "orders" | "reports";
 export type Item<K extends Collection> = Data[K][number];

@@ -36,7 +36,8 @@ export function Modal({
   const ref = useRef<HTMLElement>(null);
   const id = useId();
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), onClose());
+    // only the topmost dialog reacts to Esc
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && [...document.querySelectorAll(".ui-dialog-content")].at(-1) === ref.current && (e.stopPropagation(), onClose());
     window.addEventListener("keydown", esc);
     const first = ref.current?.querySelector<HTMLElement>("[autofocus], .ui-dialog-body input, .ui-dialog-body select, .ui-dialog-body textarea");
     first?.focus();

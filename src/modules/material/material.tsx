@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Barcode, ChevronDown, ChevronRight, Download, Minus, Package, Plus, Printer, ScanLine, Search, Trash2, Truck } from "lucide-react";
+import { AlertTriangle, Barcode, ChevronDown, ChevronRight, Download, Minus, Package, Plus, Printer, ScanLine, Search, Trash2, Truck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BlurInput, BlurTextarea, Empty, Field, Modal, PageHead, SidePanel, SortHead, StatusBadge, useConfirm } from "@/components/app/kit";
 import { Button, Checkbox, IconButton, Input, Select, Switch } from "@/components/ui";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { svg128, validCode128 } from "./code128";
 import { BookDialog } from "./booking";
 import { ScanDialog } from "./scanner";
-import { book, cancelOrder, isLow, MOVE_LABEL, order, orders, receive, suggest, withdrawals } from "./stock";
+import { book, cancelOrder, cancelRequest, isLow, MOVE_LABEL, needsOrder, order, orders, receive, request, suggest, withdrawals } from "./stock";
 
 type SortKey = "name" | "qty" | "supplier" | "site" | "status";
 const UNITS = ["Stk", "m", "m²", "m³", "kg", "l", "Pkg", "Rolle", "Kartusche", "Sack", "Palette"];
@@ -73,7 +73,9 @@ export function Material() {
   }, []);
 
   const scoped = data.materials.filter(inSite(siteId));
-  const toOrder = scoped.filter((m) => low(m) && !m.ordered).sort((a, b) => a.qty / Math.max(1, a.minQty) - b.qty / Math.max(1, b.minQty) || a.name.localeCompare(b.name, "de"));
+  // requested first (oldest first), then below the minimum by how empty they are
+  const toOrder = scoped.filter(needsOrder).sort((a, b) => Number(!!b.requestedQty) - Number(!!a.requestedQty) || (a.requestedAt ?? "").localeCompare(b.requestedAt ?? "") || a.qty / Math.max(1, a.minQty) - b.qty / Math.max(1, b.minQty) || a.name.localeCompare(b.name, "de"));
+  const requested = toOrder.filter((m) => m.requestedQty).length;
   const incoming = scoped.filter((m) => m.ordered).sort((a, b) => (a.orderedAt ?? "").localeCompare(b.orderedAt ?? ""));
   const suppliers = [...new Set(scoped.map((m) => m.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
   const t = term.trim().toLowerCase();
@@ -103,7 +105,7 @@ export function Material() {
     [data, siteId, notify]
   );
 
-  const qtyOf = (m: MaterialItem) => qtys[m.id] ?? String(suggest(m));
+  const qtyOf = (m: MaterialItem) => qtys[m.id] ?? String(m.requestedQty ?? suggest(m)).replace(".", ",");
   const placeOrder = (m: MaterialItem) => {
     const n = parseNum(qtyOf(m));
     if (!Number.isFinite(n) || n <= 0) return notify("Bitte eine Bestellmenge größer 0 eingeben", { tone: "error" });
@@ -139,7 +141,7 @@ export function Material() {
         <div className="panel-head wrap">
           <AlertTriangle size={16} className={toOrder.length ? "signal-text" : "muted"} />
           <h2>Nachbestellen</h2>
-          <span className="muted">{toOrder.length ? `${toOrder.length} Artikel unter Mindestbestand, noch nicht bestellt` : "Alles über dem Mindestbestand oder bereits bestellt"}</span>
+          <span className="muted">{toOrder.length ? `${toOrder.length} Artikel zu bestellen${requested ? ` · ${requested} angefordert` : ""}` : "Nichts angefordert, alles über dem Mindestbestand oder bereits bestellt"}</span>
           <span className="grow" />
           {toOrder.length > 0 && (
             <Button size="sm" variant="secondary" leftIcon={<Download size={14} />} onClick={orderList}>
@@ -155,6 +157,7 @@ export function Material() {
                   <th className="ui-table-head">Artikel</th>
                   {!siteId && <th className="ui-table-head">Baustelle</th>}
                   <th className="ui-table-head num">Bestand / Min.</th>
+                  <th className="ui-table-head">Anforderung</th>
                   <th className="ui-table-head">Lieferant</th>
                   <th className="ui-table-head">Bisher bestellt</th>
                   <th className="ui-table-head">Bestellmenge</th>
@@ -165,7 +168,7 @@ export function Material() {
                 {toOrder.map((m) => {
                   const past = orders(m);
                   return (
-                    <tr key={m.id} className="ui-table-row warn">
+                    <tr key={m.id} className={cn("ui-table-row", (low(m) || m.requestedQty) && "warn")}>
                       <td className="ui-table-cell">
                         <button type="button" className="point-cell link-cell" onClick={() => q.set({ artikel: m.id })}>
                           <strong>{m.name}</strong>
@@ -174,7 +177,21 @@ export function Material() {
                       </td>
                       {!siteId && <td className="ui-table-cell muted">{siteName(data, m.siteId)}</td>}
                       <td className="ui-table-cell num nowrap">
-                        <span className="signal-text">{fmtNum(m.qty)}</span> / {fmtNum(m.minQty)} <small className="muted">{m.unit}</small>
+                        <span className={cn(low(m) && "signal-text")}>{fmtNum(m.qty)}</span> / {fmtNum(m.minQty)} <small className="muted">{m.unit}</small>
+                      </td>
+                      <td className="ui-table-cell">
+                        {m.requestedQty ? (
+                          <div className="point-cell">
+                            <strong>
+                              {fmtNum(m.requestedQty)} {m.unit}
+                            </strong>
+                            <small>
+                              {personName(data, m.requestedBy ?? "") || "–"} · {fmtDateTime(m.requestedAt)}
+                            </small>
+                          </div>
+                        ) : (
+                          <span className="muted">unter Mindestbestand</span>
+                        )}
                       </td>
                       <td className="ui-table-cell">{m.supplier || <span className="muted">–</span>}</td>
                       <td className="ui-table-cell muted nowrap">{past.length ? `${past.length}× · zuletzt ${fmt(past.at(-1)!.at.slice(0, 10))}` : "noch nie"}</td>
@@ -184,9 +201,14 @@ export function Material() {
                           <span className="muted">{m.unit}</span>
                         </div>
                       </td>
-                      <td className="ui-table-cell num">
+                      <td className="ui-table-cell num nowrap">
+                        {m.requestedQty && (
+                          <IconButton label="Anforderung ablehnen" size="sm" variant="danger" onClick={() => (save("materials", cancelRequest(m)), notify(`Anforderung ${m.name} abgelehnt`, { undo: () => save("materials", m) }))}>
+                            <X size={14} />
+                          </IconButton>
+                        )}
                         <Button size="sm" onClick={() => placeOrder(m)}>
-                          Bestellt
+                          Als bestellt markieren
                         </Button>
                       </td>
                     </tr>
@@ -322,7 +344,7 @@ export function Material() {
                       <td className="ui-table-cell num muted">{fmtNum(m.minQty)}</td>
                       <td className="ui-table-cell">{m.supplier || <span className="muted">–</span>}</td>
                       <td className="ui-table-cell">
-                        {m.ordered ? <StatusBadge tone="blue">Bestellt{m.orderedQty ? ` ${fmtNum(m.orderedQty)}` : ""}</StatusBadge> : low(m) ? <StatusBadge tone="amber" icon={AlertTriangle}>Nachbestellen</StatusBadge> : <span className="muted">OK</span>}
+                        {m.ordered ? <StatusBadge tone="blue">Bestellt{m.orderedQty ? ` ${fmtNum(m.orderedQty)}` : ""}</StatusBadge> : m.requestedQty ? <StatusBadge tone="amber">Angefordert {fmtNum(m.requestedQty)}</StatusBadge> : low(m) ? <StatusBadge tone="amber" icon={AlertTriangle}>Nachbestellen</StatusBadge> : <span className="muted">OK</span>}
                       </td>
                     </tr>
                   ))}
@@ -471,8 +493,15 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
     setDelta("");
     notify(`${sign > 0 ? "Zugang" : "Entnahme"} ${fmtNum(n)} ${m.unit} · Bestand ${fmtNum(out.qty)} ${m.unit}`);
   };
+  const requestQty = () => {
+    const n = parseNum(orderQty || String(m.requestedQty ?? suggest(m)));
+    if (!Number.isFinite(n) || n <= 0) return notify("Bitte eine Menge größer 0 eingeben", { tone: "error" });
+    save("materials", request(m, n, data.meId));
+    setOrderQty("");
+    notify(`Angefordert: ${fmtNum(n)} ${m.unit} – steht jetzt in „Nachbestellen“`);
+  };
   const placeOrder = () => {
-    const n = parseNum(orderQty || String(suggest(m)));
+    const n = parseNum(orderQty || String(m.requestedQty ?? suggest(m)));
     if (!Number.isFinite(n) || n <= 0) return notify("Bitte eine Bestellmenge größer 0 eingeben", { tone: "error" });
     save("materials", order(m, n, data.meId));
     setOrderQty("");
@@ -608,18 +637,40 @@ function ItemPanel({ id, onClose }: { id: string; onClose: () => void }) {
             </>
           ) : (
             <form
-              className="order-qty grow"
+              className="order-qty grow wrap"
               onSubmit={(e) => {
                 e.preventDefault();
-                placeOrder();
+                requestQty();
               }}
             >
-              <span className="grow">Nicht bestellt</span>
-              <Input value={orderQty} onChange={(e) => setOrderQty(e.target.value)} placeholder={String(suggest(m))} inputMode="decimal" aria-label="Bestellmenge" />
+              <span className="grow">
+                {m.requestedQty ? (
+                  <>
+                    <strong>
+                      Angefordert: {fmtNum(m.requestedQty)} {m.unit}
+                    </strong>
+                    <small className="muted">
+                      {" "}
+                      · {personName(data, m.requestedBy ?? "") || "–"}, {fmtDateTime(m.requestedAt)}
+                    </small>
+                  </>
+                ) : (
+                  "Nicht bestellt"
+                )}
+              </span>
+              <Input value={orderQty} onChange={(e) => setOrderQty(e.target.value)} placeholder={String(m.requestedQty ?? suggest(m)).replace(".", ",")} inputMode="decimal" aria-label="Menge" />
               <span className="muted">{m.unit}</span>
-              <Button type="submit" size="sm">
-                Bestellen
+              <Button type="submit" size="sm" variant="secondary">
+                {m.requestedQty ? "Menge ändern" : "Anfordern"}
               </Button>
+              <Button type="button" size="sm" onClick={placeOrder}>
+                Als bestellt markieren
+              </Button>
+              {m.requestedQty && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => save("materials", cancelRequest(m))}>
+                  Anforderung zurückziehen
+                </Button>
+              )}
             </form>
           )}
         </div>

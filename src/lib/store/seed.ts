@@ -1,10 +1,10 @@
 import { addDays, isWeekend, startOfWeek, today } from "../date";
-import type { CalendarEntry, Data, Defect, MaterialItem, Note, OpenPoint, Person, PointType, Site, Task, WorkStatus } from "./types";
+import type { CalendarEntry, Customer, Data, Report, ServiceOrder, StockMove, Defect, MaterialItem, Note, OpenPoint, Person, PointType, Site, Task, WorkStatus } from "./types";
 
 /** Bump when the stored shape changes. */
 export const DATA_VERSION = 1;
 /** Bump when the sample company changes – saved demo data is then replaced. */
-export const DEMO_VERSION = 3;
+export const DEMO_VERSION = 5;
 
 export const SITE_COLORS = ["#0e5a7a", "#3d6b45", "#7a4e0e", "#5a3d7a", "#7a1f2b", "#2f4f6f", "#56606b"];
 
@@ -22,7 +22,10 @@ export function createEmpty(): Data {
     absences: [],
     calendar: {},
     notes: [],
-    materials: []
+    materials: [],
+    customers: [],
+    orders: [],
+    reports: []
   };
 }
 
@@ -56,7 +59,9 @@ export function createDemo(): Data {
     { id: "p-gruber", name: "Markus Gruber", role: "Monteur", phone: "+43 676 230 44 13", active: true },
     { id: "p-bauer", name: "Florian Bauer", role: "Installateur", phone: "+43 676 230 44 14", active: true },
     { id: "p-petrovic", name: "Ivan Petrović", role: "Helfer", phone: "+43 660 512 33 07", active: true },
-    { id: "p-schmid", name: "Michael Schmid", role: "Elektriker", phone: "+43 664 980 21 55", active: true }
+    { id: "p-schmid", name: "Michael Schmid", role: "Elektriker", phone: "+43 664 980 21 55", active: true },
+    { id: "p-eder", name: "Patrick Eder", role: "Servicetechniker", phone: "+43 676 230 44 20", active: true },
+    { id: "p-lang", name: "Sandra Lang", role: "Servicetechnikerin", phone: "+43 676 230 44 21", active: true }
   ];
   // master data: personnel number, address, social security, entry date, employment, qualifications
   const master: Record<string, Partial<Person>> = {
@@ -70,9 +75,13 @@ export function createDemo(): Data {
     "p-leitner": { personnelNo: "1008", birthDate: "2008-07-25", svNo: "8901 250708", street: "Dorfstraße 2", zip: "4481", city: "Asten", entryDate: "2024-09-01", employment: "lehrling", weeklyHours: 38.5, trade: "Installateur", qualifications: ["2. Lehrjahr"], licenses: "–" },
     "p-gruber": { personnelNo: "1009", birthDate: "1988-02-03", svNo: "1018 030288", street: "Gartenweg 7", zip: "4470", city: "Enns", entryDate: "2019-04-01", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Schweißer (WIG)"], licenses: "B" },
     "p-bauer": { personnelNo: "1010", birthDate: "1997-10-19", svNo: "1126 191097", street: "Rosenstraße 11", zip: "4400", city: "Steyr", entryDate: "2022-06-07", employment: "vollzeit", weeklyHours: 38.5, trade: "Installateur", qualifications: ["Ersthelfer"], licenses: "B" },
+    "p-eder": { personnelNo: "1011", birthDate: "1993-08-09", entryDate: "2020-03-02", employment: "vollzeit", weeklyHours: 38.5, trade: "Kundendienst Heizung/Sanitär", qualifications: ["Gasgeräte-Service", "Wärmepumpen-Service"], licenses: "B" },
+    "p-lang": { personnelNo: "1012", birthDate: "1996-02-21", entryDate: "2022-10-03", employment: "vollzeit", weeklyHours: 38.5, trade: "Kundendienst Elektro", qualifications: ["E-Check", "Ersthelferin"], licenses: "B" },
     "p-petrovic": { personnelNo: "L-201", company: "Personaldienst Linz GmbH", birthDate: "1991-05-28", entryDate: "2026-09-15", exitDate: "2026-12-18", employment: "leiharbeiter", weeklyHours: 38.5, trade: "Helfer", qualifications: [], licenses: "B" },
     "p-schmid": { personnelNo: "S-301", company: "Elektro Schmid OG", email: "office@schmid-demo.at", entryDate: "2026-10-01", employment: "subunternehmer", trade: "Elektrotechnik", qualifications: ["Konzessionierter Elektrotechniker"], licenses: "B" }
   };
+  people.find((p) => p.id === "p-huber")!.lead = true;
+  people.find((p) => p.id === "p-berger")!.lead = true;
   for (const p of people) {
     const [firstName, ...rest] = p.name.split(" ");
     Object.assign(p, { firstName, lastName: rest.join(" "), email: `${firstName.toLowerCase()}.${rest.join("").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}@demo-haustechnik.at`, emergencyName: "", emergencyPhone: "", note: "" }, master[p.id]);
@@ -253,7 +262,7 @@ export function createDemo(): Data {
 
   // booking history: a few withdrawals and earlier orders, open orders with their quantity
   const move = (kind: "entnahme" | "zugang" | "bestellung", qty: number, n: number, by: string) => ({ id: `mv-${kind}-${n}-${qty}`, at: at(-n, 7 + (n % 8)), by, kind, qty });
-  const history: Record<string, ReturnType<typeof move>[]> = {
+  const history: Record<string, StockMove[]> = {
     "mt-1": [move("bestellung", 200, 40, me), move("zugang", 200, 36, "p-wagner"), move("entnahme", 25, 9, "p-pichler"), move("entnahme", 40, 4, "p-pichler")],
     "mt-2": [move("bestellung", 60, 30, me), move("zugang", 60, 27, "p-wagner"), move("entnahme", 12, 6, "p-pichler"), move("entnahme", 24, 3, "p-steiner"), move("bestellung", 40, 2, me)],
     "mt-4": [move("bestellung", 10, 25, me), move("zugang", 10, 22, "p-wagner"), move("entnahme", 4, 8, "p-wagner"), move("entnahme", 3, 2, "p-wagner")],
@@ -262,15 +271,135 @@ export function createDemo(): Data {
     "mt-10": [move("bestellung", 30, 50, "p-berger"), move("zugang", 30, 45, "p-moser"), move("entnahme", 18, 10, "p-hofer"), move("entnahme", 12, 3, "p-hofer")],
     "mt-13": [move("bestellung", 200, 1, "p-berger")]
   };
+  // a fitter asked for more insulation from the site
+  history["mt-3"] = [move("entnahme", 30, 2, "p-leitner"), { id: "mv-req-mt3", at: at(0, 7), by: "p-pichler", kind: "anforderung" as const, qty: 40 }];
+  Object.assign(materials.find((m) => m.id === "mt-3")!, { requestedQty: 40, requestedBy: "p-pichler", requestedAt: at(0, 7) });
   for (const m of materials) {
     if (history[m.id]) m.log = history[m.id];
     if (m.ordered) m.orderedQty = [...(m.log ?? [])].reverse().find((x) => x.kind === "bestellung")?.qty;
   }
 
+  /* service: customers and orders of this week */
+  const cust = (id: string, no: string, name: string, contact: string, street: string, zip: string, city: string, phone: string, uid = ""): Customer => ({ id, no, name, contact, street, zip, city, phone, email: "", uid, note: "", ...stamp(-90) });
+  const customers: Customer[] = [
+    cust("c-1", "K-1001", "Familie Leitgeb", "Herbert Leitgeb", "Kreuzstraße 14", "4040", "Linz", "+43 664 301 22 10"),
+    cust("c-2", "K-1002", "Bäckerei Sonnleitner OG", "Maria Sonnleitner", "Stadtplatz 9", "4600", "Wels", "+43 7242 451 20", "ATU12345678"),
+    cust("c-3", "K-1003", "Hausverwaltung Donaublick GmbH", "Ing. Peter Rauch", "Untere Donaulände 21", "4020", "Linz", "+43 732 770 410", "ATU23456789"),
+    cust("c-4", "K-1004", "Ordination Dr. Kastner", "Dr. Eva Kastner", "Bahnhofstraße 3", "4050", "Traun", "+43 7229 641 88"),
+    cust("c-5", "K-1005", "Gasthof Zur Linde", "Josef Aigner", "Hauptstraße 40", "4470", "Enns", "+43 7223 822 15", "ATU34567890"),
+    cust("c-6", "K-1006", "Familie Wimmer", "Sabine Wimmer", "Sonnenhang 7", "4061", "Pasching", "+43 680 115 66 02"),
+    cust("c-7", "K-1007", "Autohaus Gruber & Söhne KG", "Thomas Gruber", "Welser Straße 120", "4060", "Leonding", "+43 732 680 900", "ATU45678901")
+  ];
+  let orderNo = 0;
+  const so = (customerId: string, title: string, description: string, techId: string, date: string, seq: number, x: Partial<ServiceOrder> = {}): ServiceOrder => ({
+    id: `so-${++orderNo}`,
+    no: `SA-${t.slice(0, 4)}-${String(orderNo + 140).padStart(4, "0")}`,
+    customerId,
+    street: "",
+    zip: "",
+    city: "",
+    title,
+    description,
+    priority: "mittel",
+    techId,
+    date,
+    seq,
+    status: techId && date ? "geplant" : "offen",
+    times: [],
+    workDone: "",
+    materials: [],
+    files: [],
+    ...stamp(-4),
+    ...x
+  });
+  const today0 = work(t);
+  const next = work(addDays(today0, 1));
+  const orders: ServiceOrder[] = [
+    so("c-1", "Gastherme Jahreswartung", "Jährliche Wartung Gastherme Vaillant ecoTEC, Abgasmessung, Wartungsprotokoll übergeben.", "p-eder", today0, 1),
+    so("c-3", "Heizung Stiege 2 ohne Funktion", "Mieter Top 14 meldet kalte Heizkörper. Umwälzpumpe im Heizraum prüfen, ggf. tauschen. Schlüssel beim Hausbesorger.", "p-eder", today0, 2, { priority: "hoch", street: "Untere Donaulände 21, Stiege 2", zip: "4020", city: "Linz" }),
+    so("c-6", "Wärmepumpe Service", "Jahresservice Luft-Wasser-Wärmepumpe, Filter reinigen, Kältekreis Sichtprüfung.", "p-eder", today0, 3),
+    so("c-5", "Fettabscheider Zulauf verstopft", "Zulauf Küche läuft langsam ab. Spülen, Kamera falls nötig.", "p-eder", today0, 4, { priority: "hoch" }),
+    so("c-4", "Thermostatventile tauschen", "3 Thermostatköpfe Behandlungsräume tauschen (Material im Auto).", "p-eder", today0, 5),
+    so("c-7", "Warmwasserboiler entkalken", "Boiler Werkstatt 300 l entkalken, Schutzanode prüfen.", "p-eder", today0, 6),
+    so("c-2", "Spülmaschine Anschluss undicht", "Tropft beim Eckventil unter der Spüle Backstube.", "p-lang", today0, 1, { priority: "hoch" }),
+    so("c-4", "E-Check Ordination", "Wiederkehrende Prüfung elektrische Anlage, Prüfbefund erstellen.", "p-lang", today0, 2),
+    so("c-7", "Beleuchtung Schauraum flackert", "2 LED-Panels flackern, Treiber prüfen.", "p-lang", today0, 3),
+    so("c-1", "Steckdose Garage ohne Strom", "FI prüfen, Steckdose tauschen.", "p-lang", today0, 4),
+    so("c-3", "Stiegenhausbeleuchtung Bewegungsmelder", "Bewegungsmelder 3. Stock tauschen.", "p-lang", next, 1),
+    so("c-6", "Rauchwarnmelder tauschen", "4 Rauchwarnmelder (10-Jahres-Tausch).", "p-eder", next, 1),
+    so("c-5", "Gaszähler Kontrolle", "Dichtheitsprüfung Gasleitung Küche nach Umbau.", "p-eder", next, 2),
+    so("c-2", "Kühlraum Kondensat", "Kondensatablauf Kühlraum verstopft.", "", "", 0, { priority: "mittel" }),
+    so("c-3", "Wasserzähler Tausch Top 3–8", "Eichfrist: 6 Kaltwasserzähler tauschen, Ablesung dokumentieren.", "", "", 0),
+    so("c-4", "Klimagerät Wartung", "Split-Klimagerät Behandlungsraum 2, Filter und Desinfektion.", "", "", 0, { priority: "niedrig" })
+  ];
+
+  const report = (x: Partial<Report> & Pick<Report, "id" | "kind" | "no" | "date">): Report => ({
+    status: "entwurf",
+    siteId: "",
+    orderId: "",
+    customerId: "",
+    orderedBy: "",
+    reason: "",
+    text: "",
+    workers: [],
+    materials: [],
+    devices: [],
+    withPrices: false,
+    weather: "",
+    tempAm: "",
+    tempPm: "",
+    hindrances: "",
+    instructions: "",
+    visitors: "",
+    deliveries: "",
+    accepted: "ohne",
+    reservation: "",
+    files: [],
+    ...stamp(-1),
+    ...x
+  });
+  let yesterday = addDays(t, -1);
+  while (isWeekend(yesterday)) yesterday = addDays(yesterday, -1);
+  const reports: Report[] = [
+    report({
+      id: "r-1",
+      kind: "bautagesbericht",
+      no: `BTB-${t.slice(0, 4)}-001`,
+      date: yesterday,
+      siteId: "s-linz",
+      weather: "Bewölkt",
+      tempAm: "6",
+      tempPm: "11",
+      text: "Bauteil A, 1. OG: Steigleitungen Schacht 1–3 gedämmt. Top 5–8 Vorwandinstallation fortgesetzt. Technikraum: Heizungsverteiler fertig montiert.",
+      workers: [
+        { id: "w-1", personId: "p-wagner", name: "Stefan Wagner", date: yesterday, from: "07:00", to: "16:00", pause: 30 },
+        { id: "w-2", personId: "p-pichler", name: "Lukas Pichler", date: yesterday, from: "07:00", to: "16:00", pause: 30 },
+        { id: "w-3", personId: "p-leitner", name: "Kevin Leitner", date: yesterday, from: "07:00", to: "15:30", pause: 30 }
+      ],
+      deliveries: "Frauenthal: Mehrschichtverbundrohr 16×2, 200 m",
+      hindrances: "Estrichleger Bauteil A 1. OG verschiebt auf Mittwoch – Durchbrüche bis dahin schließen.",
+      instructions: "",
+      visitors: "Ing. Rauch (ÖBA) 10:30–11:15, Begehung Technikraum"
+    }),
+    report({
+      id: "r-2",
+      kind: "regie",
+      no: `RS-${t.slice(0, 4)}-001`,
+      date: yesterday,
+      siteId: "s-wels",
+      orderedBy: "Martina Berger auf Anordnung Pöttinger Immobilien (Hr. Pöttinger)",
+      reason: "Zusätzliche Kernbohrung für Lüftungsleitung, nicht im Leistungsverzeichnis.",
+      text: "Kernbohrung Ø 250 mm Decke über EG Achse C, inkl. Absaugung und Abdeckung.",
+      workers: [{ id: "w-4", personId: "p-moser", name: "Andreas Moser", date: yesterday, from: "08:00", to: "11:30", pause: 0 }],
+      devices: [{ id: "g-1", name: "Kernbohrgerät inkl. Absaugung", hours: 3 }],
+      materials: [{ id: "m-1", name: "Bohrkrone Ø 250 Verschleiß", qty: 1, unit: "pausch" }]
+    })
+  ];
+
   return {
     version: DATA_VERSION,
     demo: DEMO_VERSION,
-    workspace: { id: "ws-demo", name: "Haustechnik Huber GmbH", address: "Gewerbepark 4, 4020 Linz" },
+    workspace: { id: "ws-demo", name: "Haustechnik Huber GmbH", address: "Gewerbepark 4, 4020 Linz", legalForm: "GmbH", seat: "Linz", fbNo: "FN 123456 a", fbCourt: "Landesgericht Linz", uid: "ATU98765432", phone: "+43 732 123 456", email: "office@demo-haustechnik.at", web: "", modules: { service: true }, maxPerDay: 10 },
     meId: me,
     people,
     sites,
@@ -283,8 +412,11 @@ export function createDemo(): Data {
       { id: "a-2", personId: "p-leitner", type: "schulung", start: w(3), end: w(3), note: "Berufsschule" },
       { id: "a-3", personId: "p-hofer", type: "krank", start: d(-3), end: d(-2), note: "" }
     ],
-    calendar: { groups: [{ id: "g-buero", name: "Bauleitung & Technik" }, { id: "g-bau", name: "Montage" }, { id: "g-fremd", name: "Leiharbeit & Subunternehmer" }], memberGroup: { "p-huber": "g-buero", "p-berger": "g-buero", "p-hofer": "g-buero", "p-wagner": "g-bau", "p-pichler": "g-bau", "p-steiner": "g-bau", "p-moser": "g-bau", "p-leitner": "g-bau", "p-gruber": "g-bau", "p-bauer": "g-bau", "p-petrovic": "g-fremd", "p-schmid": "g-fremd", "r-kran": "g-bau" }, rows: [{ id: "r-kran", name: "Kran / Hebegeräte" }] },
+    calendar: { groups: [{ id: "g-buero", name: "Bauleitung & Technik" }, { id: "g-bau", name: "Montage" }, { id: "g-fremd", name: "Leiharbeit & Subunternehmer" }, { id: "g-service", name: "Kundendienst" }], memberGroup: { "p-huber": "g-buero", "p-berger": "g-buero", "p-hofer": "g-buero", "p-wagner": "g-bau", "p-pichler": "g-bau", "p-steiner": "g-bau", "p-moser": "g-bau", "p-leitner": "g-bau", "p-gruber": "g-bau", "p-bauer": "g-bau", "p-petrovic": "g-fremd", "p-schmid": "g-fremd", "p-eder": "g-service", "p-lang": "g-service", "r-kran": "g-bau" }, rows: [{ id: "r-kran", name: "Kran / Hebegeräte" }] },
     notes,
-    materials
+    materials,
+    customers,
+    orders,
+    reports
   };
 }

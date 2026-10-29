@@ -421,6 +421,10 @@ function PersonPanel({ id, onClose }: { id: string; onClose: () => void }) {
           <Switch checked={p.active} disabled={p.id === data.meId} onChange={(e) => set({ active: e.target.checked })} /> {p.active ? "Aktiv – erscheint im Planner und bei Zuweisungen" : "Inaktiv – ausgeblendet, Daten bleiben erhalten"}
         </label>
 
+        <label className="check-row span-2">
+          <Switch checked={!!p.lead} onChange={(e) => set({ lead: e.target.checked })} /> Darf Berichte freigeben (Team- oder Bauleitung)
+        </label>
+
         <h3 className="span-2 form-section">Qualifikationen</h3>
         <div className="span-2 tags">
           {(p.qualifications ?? []).map((x) => (
