@@ -104,41 +104,28 @@ Dateien kopieren bremst auf 40 MB/s. Schneller oder langsamer: `sudo VYSNER_BWLI
 
 ## 5. Von außen erreichbar machen (HTTPS)
 
-VYSNER lauscht nur auf `127.0.0.1:8100`. Nach außen geht es über den Webserver, der schon auf dem VPS
-läuft. Bei deinem Domain-Anbieter einen DNS-Eintrag `api.vysner.com` → IP des VPS anlegen.
+VYSNER lauscht nur auf `127.0.0.1:8100`. Nach außen geht es über den Webserver, der eGrid schon ins
+Internet bringt. Vorher bei deinem Domain-Anbieter einen DNS-Eintrag anlegen: Typ `A`, Name `api`,
+Wert = IP des VPS.
 
-Nur die API wird freigegeben, **nicht** das Dashboard.
+**eGrid läuft hinter Caddy (Container `supabase-caddy`)** – ein Befehl:
 
-**nginx** (`/etc/nginx/sites-available/vysner-api`, dann verlinken, `nginx -t`, `systemctl reload nginx`,
-Zertifikat mit `certbot --nginx -d api.vysner.com`):
-
-```nginx
-server {
-    server_name api.vysner.com;
-    client_max_body_size 50m;
-
-    location ~ ^/(rest|auth|storage)/v1/ {
-        proxy_pass http://127.0.0.1:8100;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location / { return 404; }
-}
+```bash
+sudo bash vps/50-https.sh
 ```
 
-**Caddy** (`/etc/caddy/Caddyfile` ergänzen, `systemctl reload caddy` – HTTPS kommt automatisch):
+- legt eine eigene Datei `vysner.caddy` neben das eGrid-Caddyfile; im Caddyfile kommt nur die Zeile
+  `import vysner.caddy` dazu (mit Sicherungskopie)
+- Caddy prüft die Konfiguration zuerst – ist etwas falsch, wird alles zurückgesetzt
+- Caddy lädt im laufenden Betrieb neu: kein Neustart, eGrid läuft ohne Unterbrechung weiter,
+  auch das eGrid-Dashboard-Passwort bleibt gültig
+- das HTTPS-Zertifikat für `api.vysner.com` holt Caddy automatisch
+- nur die API wird freigegeben, **nicht** das VYSNER-Dashboard
 
-```
-api.vysner.com {
-    request_body { max_size 50MB }
-    @api path /rest/v1/* /auth/v1/* /storage/v1/*
-    handle @api { reverse_proxy 127.0.0.1:8100 }
-    handle { respond 404 }
-}
-```
+Rückgängig: `sudo bash vps/50-https.sh --entfernen`
 
-Ein Neuladen des Webservers unterbricht laufende eGrid-Anfragen nicht.
+**Anderer Webserver (z. B. nginx)?** Dann die Ausgabe von `sudo ss -ltnp | grep -E ':80 |:443 '`
+an Claude schicken – dafür gibt es den passenden Befehl.
 
 ## 6. Dashboard (Supabase Studio)
 
