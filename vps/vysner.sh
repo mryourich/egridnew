@@ -7,9 +7,20 @@ source "$(dirname "$0")/lib.sh"
 need_root
 [ -f "$VYSNER_DIR/docker-compose.yml" ] || die "VYSNER ist noch nicht installiert (vps/10-installieren.sh)."
 
+# nach einem Neu-Erstellen hängt der Gateway wieder am Netz von Caddy (vps/50-https.sh)
+caddy_link() {
+  local net gw
+  [ -f "$VYSNER_DIR/caddy-network" ] || return 0
+  net="$(cat "$VYSNER_DIR/caddy-network")"
+  gw="$(vysner_compose ps --format '{{.Name}} {{.Ports}}' | awk '/->8000\/tcp/ {print $1; exit}')"
+  [ -n "$gw" ] || return 0
+  docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' "$gw" | grep -qw "$net" ||
+    docker network connect --alias vysner-gateway "$net" "$gw"
+}
+
 case "${1:-status}" in
   status) vysner_compose ps --format 'table {{.Name}}\t{{.Status}}' ;;
-  start) vysner_compose up -d ;;
+  start) vysner_compose up -d && caddy_link ;;
   stop) vysner_compose stop ;;
   logs) vysner_compose logs --tail 200 -f ${2:+"$2"} ;;
   neu-laden)
@@ -23,6 +34,7 @@ case "${1:-status}" in
       MEM_DB="${VYSNER_MEM_DB:-1g}" MEM_OTHER="${VYSNER_MEM_OTHER:-512m}" python3 "$HERE/compose-vysner.py"
     rm -f "$VYSNER_DIR/rendered.json"
     vysner_compose up -d
+    caddy_link
     ;;
   *) die "Unbekannt: $1 (status | start | stop | logs | neu-laden)" ;;
 esac
