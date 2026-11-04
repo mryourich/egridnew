@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowRight, CalendarRange, CheckSquare, ClipboardList, ClipboardPen, FileText, HardHat, Package, Pencil, StickyNote, Trash2, TriangleAlert } from "lucide-react";
+import { Archive, ArrowRight, CalendarRange, CheckSquare, ClipboardList, ClipboardPen, FileText, FolderOpen, HardHat, Package, Pencil, StickyNote, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -104,6 +104,9 @@ export function SiteDetail({ id }: { id: string }) {
             </Button>
             <Button variant="secondary" leftIcon={<ClipboardPen size={14} />} onClick={() => report.start("regie", s.id)}>
               Regieschein
+            </Button>
+            <Button variant="secondary" leftIcon={<FolderOpen size={14} />} onClick={() => router.push(`/dokumente?ort=baustelle:${s.id}`)}>
+              Dokumente
             </Button>
             <Button variant="secondary" leftIcon={<Pencil size={14} />} onClick={() => setEditing(true)}>
               Bearbeiten

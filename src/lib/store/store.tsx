@@ -60,7 +60,7 @@ export function branchOf(points: Data["points"], id: string) {
 }
 
 /** Collections that belong to a site – hidden from people who are not on it. */
-const SITE_BOUND = ["points", "defects", "tasks", "notes", "materials", "reports"] as const;
+const SITE_BOUND = ["points", "defects", "tasks", "notes", "materials", "reports", "docs"] as const;
 
 /**
  * Who sees a site: team or construction management ("Darf freigeben") see all, everyone else only the sites
@@ -98,6 +98,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [siteId, setSite] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const current = useRef<Data | null>(null);
+  useEffect(() => {
+    current.current = data;
+  }, [data]);
+  /** Files go only after the undo window – and only if nothing points to them again. */
+  const dropLater = useCallback((ids: string[]) => {
+    setTimeout(() => {
+      const json = JSON.stringify(current.current ?? {});
+      const gone = ids.filter((id) => !json.includes(`"${id}"`));
+      if (gone.length) void dropFiles(gone);
+    }, 10000);
+  }, []);
 
   useEffect(() => {
     setData(load());
@@ -153,7 +165,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         for (const x of d.points.filter((y) => y.siteId === id)) files.push(...x.files.map((f) => f.id));
         for (const x of d.defects.filter((y) => y.siteId === id)) files.push(...[...x.files, ...(x.fixFiles ?? [])].map((f) => f.id));
         for (const r of d.reports.filter((y) => y.siteId === id)) files.push(...r.files.map((f) => f.id), ...(r.pdf ? [r.pdf.id] : []));
-        next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), entries: keep(d.entries), notes: keep(d.notes), materials: keep(d.materials), reports: keep(d.reports) };
+        for (const x of d.docs.filter((y) => y.siteId === id)) files.push(x.file.id);
+        next = { ...next, points: keep(d.points), defects: keep(d.defects), tasks: keep(d.tasks), entries: keep(d.entries), notes: keep(d.notes), materials: keep(d.materials), reports: keep(d.reports), docs: keep(d.docs) };
       }
       if (key === "points") {
         // a node takes its children; defects stay but lose the link
@@ -190,11 +203,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const r = d.reports.find((y) => y.id === id);
         if (r) files.push(...r.files.map((f) => f.id), ...(r.pdf ? [r.pdf.id] : []));
       }
+      if (key === "customers") {
+        for (const x of d.docs.filter((y) => y.customerId === id)) files.push(x.file.id);
+        next = { ...next, docs: d.docs.filter((x) => x.customerId !== id) };
+      }
+      if (key === "docs") {
+        const x = d.docs.find((y) => y.id === id);
+        if (x) files.push(x.file.id);
+      }
       if (key === "entries") next = { ...next, entries: next.entries.map((e) => (e.links?.includes(id) ? { ...e, links: e.links.filter((l) => l !== id) } : e)) };
-      if (files.length) void dropFiles(files);
+      if (files.length) dropLater(files);
       return next;
     });
-  }, []);
+  }, [dropLater]);
 
   const setSiteId = useCallback((id: string) => {
     setSite(id);

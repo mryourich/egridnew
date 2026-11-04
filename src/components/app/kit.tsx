@@ -366,7 +366,7 @@ export function Toaster() {
 
 /* ------------------------------------------------------------------ attachments */
 
-function Thumb({ f, onOpen }: { f: FileRef; onOpen: () => void }) {
+export function FileThumb({ f, onOpen }: { f: FileRef; onOpen: () => void }) {
   const url = useFileUrl(isImage(f) ? f : undefined);
   return (
     <button type="button" className="thumb" onClick={onOpen} aria-label={`${f.name} öffnen`}>
@@ -375,7 +375,7 @@ function Thumb({ f, onOpen }: { f: FileRef; onOpen: () => void }) {
   );
 }
 
-function Preview({ f, onClose }: { f: FileRef; onClose: () => void }) {
+export function FilePreview({ f, onClose }: { f: FileRef; onClose: () => void }) {
   const url = useFileUrl(f);
   const { data, notify } = useStore();
   return (
@@ -430,7 +430,7 @@ export function Attachments({ files, onChange, label = "Fotos & Dateien" }: { fi
       <div className="files">
         {files.map((f) => (
           <div className="file-tile" key={f.id}>
-            <Thumb f={f} onOpen={() => setOpen(f)} />
+            <FileThumb f={f} onOpen={() => setOpen(f)} />
             <span className="name" title={f.name}>
               {f.name}
             </span>
@@ -450,7 +450,7 @@ export function Attachments({ files, onChange, label = "Fotos & Dateien" }: { fi
       </div>
       <input ref={input} type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" hidden onChange={(e) => (void add(Array.from(e.target.files ?? [])), (e.target.value = ""))} />
       {camera && <CameraCapture title={label} onClose={() => setCamera(false)} onDone={(list) => (setCamera(false), void add(list))} />}
-      {open && <Preview f={open} onClose={() => setOpen(null)} />}
+      {open && <FilePreview f={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }

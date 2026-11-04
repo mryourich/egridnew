@@ -25,7 +25,8 @@ export function createEmpty(): Data {
     materials: [],
     customers: [],
     orders: [],
-    reports: []
+    reports: [],
+    docs: []
   };
 }
 
@@ -417,6 +418,7 @@ export function createDemo(): Data {
     materials,
     customers,
     orders,
-    reports
+    reports,
+    docs: []
   };
 }

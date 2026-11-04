@@ -42,9 +42,10 @@ async function shrink(file: File): Promise<Blob> {
 }
 
 /** Stores a picked file and returns its reference. */
-export async function storeFile(file: File, by: string): Promise<FileRef> {
-  if (file.size > MAX) throw new Error(`„${file.name}“ ist größer als 15 MB.`);
-  const blob = await shrink(file);
+export async function storeFile(file: File, by: string, opts: { max?: number; keep?: boolean } = {}): Promise<FileRef> {
+  const max = opts.max ?? MAX;
+  if (file.size > max) throw new Error(`„${file.name}“ ist größer als ${Math.round(max / 1024 / 1024)} MB.`);
+  const blob = opts.keep ? file : await shrink(file);
   const id = uid();
   await tx("readwrite", (s) => s.put(blob, id));
   return { id, name: file.name, mime: blob.type || file.type || "application/octet-stream", size: blob.size, addedBy: by, addedAt: now() };

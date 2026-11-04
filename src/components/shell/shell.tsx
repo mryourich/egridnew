@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, CheckSquare, ClipboardList, FileText, GanttChart, IdCard, LayoutGrid, Menu, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Sun, Wrench, X } from "lucide-react";
+import { CalendarRange, CheckSquare, ClipboardList, FileText, FolderOpen, GanttChart, IdCard, LayoutGrid, Menu, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, StickyNote, Sun, Wrench, X } from "lucide-react";
 
 const COLLAPSE_KEY = "vysner:nav-collapsed";
 import Link from "next/link";
@@ -29,6 +29,7 @@ export const NAV = [
       { href: "/openpoints", label: "OpenPoints", icon: ClipboardList },
       { href: "/kalender", label: "Kalender", icon: CalendarRange },
       { href: "/berichte", label: "Berichte", icon: FileText },
+      { href: "/dokumente", label: "Dokumente", icon: FolderOpen },
       { href: "/notizen", label: "Notizen", icon: StickyNote },
       { href: "/material", label: "Material", icon: Package }
     ]
