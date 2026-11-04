@@ -205,7 +205,8 @@ export function ReportPage({ id }: { id: string }) {
       )}
       {r.status === "freigegeben" && (
         <p className="ok-text">
-          Freigegeben von {personName(data, r.approvedBy ?? "")} am {fmtDateTime(r.approvedAt)}
+          Freigegeben von {personName(data, r.approvedBy ?? "")} am {fmtDateTime(r.approvedAt)} · PDF abgelegt in{" "}
+          <Link href={r.siteId ? `/dokumente?ort=baustelle:${r.siteId}&ordner=Berichte` : r.customerId ? `/dokumente?ort=kunde:${r.customerId}&ordner=Berichte` : "/dokumente?ort=firma&ordner=Berichte"}>Dokumente › Berichte</Link>
         </p>
       )}
 

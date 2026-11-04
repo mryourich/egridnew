@@ -1339,3 +1339,125 @@
   align-items: center;
   gap: 4px;
 }
+
+/* ------------------------------------------------------------------ Dokumente */
+.tree-group {
+  display: block;
+  padding: 6px 12px 2px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tree-icon {
+  flex: none;
+  color: var(--muted);
+}
+.doc-panel {
+  position: relative;
+  min-height: 320px;
+}
+.doc-panel.drag {
+  border-color: var(--accent);
+}
+.doc-folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--surface-3);
+}
+.doc-folder {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+.doc-folder > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.doc-folder.add {
+  gap: 6px;
+  padding: 0 10px;
+  border-style: dashed;
+  color: var(--muted);
+}
+.doc-folder:hover {
+  background: var(--surface-2);
+}
+.doc-folder svg {
+  color: var(--muted);
+}
+.doc-folder small {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.doc-folder.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.doc-folder.on svg {
+  color: var(--accent);
+}
+.doc-folder > .doc-folder-x {
+  padding: 0 6px 0 0;
+}
+.doc-hint {
+  margin: 0;
+  padding: var(--s2) var(--s3) 0;
+}
+.doc-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.doc-name .thumb {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  overflow: hidden;
+}
+.doc-name .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.doc-name .point-cell strong {
+  overflow-wrap: anywhere;
+}
+.doc-drop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent-soft) 85%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  pointer-events: none;
+}

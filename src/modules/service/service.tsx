@@ -402,7 +402,8 @@ function Customers() {
   const drop = async (c: Customer) => {
     const n = data.orders.filter((o) => o.customerId === c.id).length;
     if (n) return notify(`${c.name} hat ${n} Aufträge und kann nicht gelöscht werden.`, { tone: "error" });
-    if (!(await ask({ title: `${c.name} löschen?` }))) return;
+    const docs = data.docs.filter((d) => d.customerId === c.id).length;
+    if (!(await ask({ title: `${c.name} löschen?`, text: docs ? `${docs} ${docs === 1 ? "Dokument wird" : "Dokumente werden"} mitgelöscht.` : undefined }))) return;
     const before = data;
     remove("customers", c.id);
     notify("Kunde gelöscht", { undo: () => restore(before) });

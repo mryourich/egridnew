@@ -226,6 +226,8 @@ export type Workspace = {
   modules?: { service?: boolean };
   /** service orders per technician and day */
   maxPerDay?: number;
+  /** own document folders per place ("firma", "baustelle:<id>", "kunde:<id>") */
+  docFolders?: Record<string, string[]>;
 };
 
 /* ------------------------------------------------------------------ Service */
@@ -323,6 +325,22 @@ export type Report = Stamped & {
   returnNote?: string;
 };
 
+/* ------------------------------------------------------------------ Documents */
+
+/** Where a document belongs: the company, a site or a customer. */
+export type DocScope = "firma" | "baustelle" | "kunde";
+
+/** An uploaded document in a folder (Pläne, Verträge …); the content lives in IndexedDB. */
+export type Doc = Stamped & {
+  id: string;
+  scope: DocScope;
+  siteId: string;
+  customerId: string;
+  folder: string;
+  file: FileRef;
+  note: string;
+};
+
 export type Data = {
   version: number;
   /** content version of the sample company – refreshed when it changes */
@@ -342,7 +360,8 @@ export type Data = {
   customers: Customer[];
   orders: ServiceOrder[];
   reports: Report[];
+  docs: Doc[];
 };
 
-export type Collection = "people" | "sites" | "points" | "defects" | "tasks" | "entries" | "absences" | "notes" | "materials" | "customers" | "orders" | "reports";
+export type Collection = "people" | "sites" | "points" | "defects" | "tasks" | "entries" | "absences" | "notes" | "materials" | "customers" | "orders" | "reports" | "docs";
 export type Item<K extends Collection> = Data[K][number];
